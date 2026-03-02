@@ -2,7 +2,7 @@ import { prisma } from '../config/database';
 import { aggregateGst, calcGstBreakdown } from '../utils/gst';
 import { pushOrderToPos } from '../integrations/urbanpiper';
 import { AppError } from '../middleware/errorHandler';
-import { OrderType, QueueEntryStatus } from '@prisma/client';
+import { OrderType, PaymentStatus, PaymentType, QueueEntryStatus } from '@prisma/client';
 
 export interface OrderItemInput {
   menuItemId: string;
@@ -19,9 +19,47 @@ export async function createPreOrder(params: {
   notes?:       string;
 }) {
   const entry = await prisma.queueEntry.findFirst({
-    where: { id: params.queueEntryId, venueId: params.venueId, status: QueueEntryStatus.WAITING },
+    where: {
+      id: params.queueEntryId,
+      venueId: params.venueId,
+      status: { in: [QueueEntryStatus.WAITING, QueueEntryStatus.NOTIFIED] },
+    },
   });
   if (!entry) throw new AppError('Queue entry not found or already seated', 400);
+  if (entry.depositPaid > 0) {
+    throw new AppError('A deposit-backed pre-order already exists for this guest', 400, 'PREORDER_LOCKED');
+  }
+
+  const existingPreOrders = await prisma.order.findMany({
+    where: {
+      venueId: params.venueId,
+      queueEntryId: params.queueEntryId,
+      type: OrderType.PRE_ORDER,
+      status: { notIn: ['CANCELLED'] },
+    },
+    select: { id: true },
+  });
+
+  if (existingPreOrders.length) {
+    const staleOrderIds = existingPreOrders.map((order) => order.id);
+    await prisma.$transaction([
+      prisma.payment.updateMany({
+        where: {
+          orderId: { in: staleOrderIds },
+          type: PaymentType.DEPOSIT,
+          status: { in: [PaymentStatus.PENDING, PaymentStatus.PROCESSING] },
+        },
+        data: {
+          status: PaymentStatus.FAILED,
+          failureReason: 'Superseded by a newer pre-order attempt',
+        },
+      }),
+      prisma.order.updateMany({
+        where: { id: { in: staleOrderIds } },
+        data: { status: 'CANCELLED' },
+      }),
+    ]);
+  }
 
   return buildOrder(params.venueId, params.queueEntryId, OrderType.PRE_ORDER, params.items, params.notes);
 }
@@ -126,13 +164,14 @@ export async function getGuestBill(queueEntryId: string) {
   });
   if (!entry) throw new AppError('Queue entry not found', 404);
 
-  const allItems = entry.orders.flatMap(o => o.items);
+  const billableOrders = selectBillableOrders(entry.orders);
+  const allItems = billableOrders.flatMap(o => o.items);
   const gst      = aggregateGst(allItems.map(i => ({ priceExGst: i.priceExGst, quantity: i.quantity, gstPercent: i.gstPercent })));
 
   return {
     queueEntryId: entry.id,
     guestName:    entry.guestName,
-    orders: entry.orders.map(o => ({
+    orders: billableOrders.map(o => ({
       id:     o.id,
       type:   o.type,
       status: o.status,
@@ -148,6 +187,16 @@ export async function getGuestBill(queueEntryId: string) {
       balanceDue:    Math.max(0, gst.totalIncGst - entry.depositPaid),
     },
   };
+}
+
+export function selectBillableOrders<T extends { type: OrderType; createdAt: Date; status: string }>(orders: T[]): T[] {
+  const activeOrders = orders.filter((order) => order.status !== 'CANCELLED');
+  const latestPreOrder = activeOrders
+    .filter((order) => order.type === OrderType.PRE_ORDER)
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+
+  const nonPreOrders = activeOrders.filter((order) => order.type !== OrderType.PRE_ORDER);
+  return latestPreOrder ? [latestPreOrder, ...nonPreOrders] : nonPreOrders;
 }
 
 // ── Internal ──────────────────────────────────────────────────────

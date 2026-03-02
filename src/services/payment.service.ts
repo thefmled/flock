@@ -6,6 +6,7 @@ import { AppError } from '../middleware/errorHandler';
 import { Notify } from '../integrations/notifications';
 import { PaymentType, PaymentStatus, OrderType } from '@prisma/client';
 import { completeQueueEntry } from './queue.service';
+import { selectBillableOrders } from './order.service';
 
 // ── Initiate deposit payment for pre-order ────────────────────────
 
@@ -98,7 +99,8 @@ export async function initiateFinalPayment(params: {
 
   // Find the primary order to attach the final payment to
   const orders = await prisma.order.findMany({ where: { queueEntryId: params.queueEntryId } });
-  const mainOrder = orders[0];
+  const billableOrders = selectBillableOrders(orders);
+  const mainOrder = billableOrders[0];
   if (!mainOrder) throw new AppError('No orders found for this entry', 404);
 
   const rzpOrder = await createRazorpayOrder({
@@ -186,7 +188,8 @@ export async function settleFinalOffline(params: { venueId: string; queueEntryId
     where: { queueEntryId: params.queueEntryId },
     orderBy: { createdAt: 'asc' },
   });
-  const mainOrder = orders[0];
+  const billableOrders = selectBillableOrders(orders);
+  const mainOrder = billableOrders[0];
   if (!mainOrder) throw new AppError('No orders found for this entry', 404);
 
   const existingFinal = await prisma.payment.findFirst({
@@ -372,7 +375,8 @@ async function getBillSummary(queueEntryId: string) {
   });
   if (!entry) throw new AppError('Queue entry not found', 404);
 
-  const allItems   = entry.orders.flatMap(o => o.items);
+  const billableOrders = selectBillableOrders(entry.orders);
+  const allItems   = billableOrders.flatMap(o => o.items);
   const totalIncGst = allItems.reduce((s, i) => s + i.totalIncGst, 0);
   return { totalIncGst, depositPaid: entry.depositPaid, balanceDue: Math.max(0, totalIncGst - entry.depositPaid) };
 }
