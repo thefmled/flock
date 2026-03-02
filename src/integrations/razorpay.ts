@@ -30,6 +30,13 @@ export interface InitiateRefundParams {
   notes?: Record<string, string>;
 }
 
+export interface RazorpayPayment {
+  id: string;
+  order_id: string;
+  amount: number;
+  status: string;
+}
+
 /** Create a Razorpay order for UPI payment */
 export async function createRazorpayOrder(params: CreateOrderParams): Promise<RazorpayOrder> {
   if (env.USE_MOCK_PAYMENTS) {
@@ -75,6 +82,21 @@ export function verifyPaymentSignature(params: {
     .update(message)
     .digest('hex');
   return expected === params.signature;
+}
+
+/** Fetch payment details directly from Razorpay for server-side verification fallback */
+export async function fetchRazorpayPayment(paymentId: string): Promise<RazorpayPayment> {
+  if (env.USE_MOCK_PAYMENTS) {
+    return {
+      id: paymentId,
+      order_id: '',
+      amount: 0,
+      status: 'captured',
+    };
+  }
+
+  const payment = await (razorpay.payments as any).fetch(paymentId);
+  return payment as RazorpayPayment;
 }
 
 /** Initiate refund */

@@ -1,5 +1,5 @@
 import { prisma } from '../config/database';
-import { createRazorpayOrder, calculateFees, verifyPaymentSignature, initiateRefund } from '../integrations/razorpay';
+import { createRazorpayOrder, calculateFees, verifyPaymentSignature, initiateRefund, fetchRazorpayPayment } from '../integrations/razorpay';
 import { generateGstInvoice } from '../integrations/cleartax';
 import { generateTxnRef, generateInvoiceNumber } from '../utils/txnRef';
 import { AppError } from '../middleware/errorHandler';
@@ -305,7 +305,19 @@ async function capturePaymentByOrder(params: {
       paymentId: params.razorpayPaymentId,
       signature: params.razorpaySignature ?? '',
     });
-    if (!valid) throw new AppError('Payment signature invalid', 400, 'SIGNATURE_INVALID');
+    if (!valid) {
+      const remotePayment = await fetchRazorpayPayment(params.razorpayPaymentId).catch(() => null);
+      const remotelyVerified = Boolean(
+        remotePayment &&
+        remotePayment.id === params.razorpayPaymentId &&
+        remotePayment.order_id === params.razorpayOrderId &&
+        ['authorized', 'captured'].includes(String(remotePayment.status).toLowerCase())
+      );
+
+      if (!remotelyVerified) {
+        throw new AppError('Payment signature invalid', 400, 'SIGNATURE_INVALID');
+      }
+    }
   }
 
   await prisma.payment.update({
