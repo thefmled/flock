@@ -1848,7 +1848,7 @@ async function runHostedPayment({ title, initiatePath, initiateBody, capturePath
     body: initiateBody,
   });
 
-  if (!window.Razorpay || initiation.keyId === 'mock_key') {
+  if (initiation.keyId === 'mock_key') {
     await apiRequest(capturePath, {
       method: 'POST',
       body: {
@@ -1858,6 +1858,10 @@ async function runHostedPayment({ title, initiatePath, initiateBody, capturePath
       },
     });
     return;
+  }
+
+  if (!window.Razorpay) {
+    throw new Error('Razorpay checkout failed to load. Please refresh and retry.');
   }
 
   await new Promise((resolve, reject) => {

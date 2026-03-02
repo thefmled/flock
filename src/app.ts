@@ -18,7 +18,21 @@ if (env.isProd()) {
   app.set('trust proxy', 1);
 }
 
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      baseUri: ["'self'"],
+      fontSrc: ["'self'", 'data:', 'https:'],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      objectSrc: ["'none'"],
+      scriptSrc: ["'self'", 'https://checkout.razorpay.com'],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https:'],
+      connectSrc: ["'self'", 'https://api.razorpay.com', 'https://checkout.razorpay.com'],
+      frameSrc: ["'self'", 'https://api.razorpay.com', 'https://checkout.razorpay.com'],
+    },
+  },
+}));
 app.use(cors({
   origin:      env.isProd() ? env.APP_ALLOWED_ORIGINS : true,
   credentials: true,
