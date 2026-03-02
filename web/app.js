@@ -187,7 +187,7 @@ function renderHome() {
   renderPage(`
     <main id="landing">
       <div class="brand">
-        <div class="brand-name">fl<em>o</em>ck</div>
+        <div class="brand-name">Fl<em>o</em>ck</div>
         <div class="brand-tag">Queue · Pre-order · Pay</div>
       </div>
       <div class="role-cards">
@@ -222,7 +222,7 @@ async function renderVenueLanding(slug) {
   renderPage(`
     <main id="landing">
       <div class="brand">
-        <div class="brand-name">fl<em>o</em>ck</div>
+        <div class="brand-name">Fl<em>o</em>ck</div>
         <div class="brand-tag">Queue · Pre-order · Pay</div>
       </div>
       <div class="role-cards">
@@ -1473,7 +1473,7 @@ function renderShell({ pill, body, right = '' }) {
     <main class="app-shell">
       <header class="app-header">
         <div class="header-left">
-          <div class="header-logo">fl<em>o</em>ck</div>
+          <div class="header-logo">Fl<em>o</em>ck</div>
           <div class="header-pill">${escapeHtml(pill)}</div>
         </div>
         <div class="header-right">${right}</div>
