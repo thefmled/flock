@@ -187,8 +187,8 @@ function renderHome() {
   renderPage(`
     <main id="landing">
       <div class="brand">
-        <div class="brand-name">Flock <em>v2</em></div>
-        <div class="brand-tag">Queue · Pre-order · Seat · Pay</div>
+        <div class="brand-name">fl<em>o</em>ck</div>
+        <div class="brand-tag">Queue · Pre-order · Pay</div>
       </div>
       <div class="role-cards">
         <a class="role-card" data-nav href="/v/${DEFAULT_VENUE_SLUG}">
@@ -222,8 +222,8 @@ async function renderVenueLanding(slug) {
   renderPage(`
     <main id="landing">
       <div class="brand">
-        <div class="brand-name">Flock <em>v2</em></div>
-        <div class="brand-tag">${escapeHtml(venue.name)} · Queue &amp; Pre-order</div>
+        <div class="brand-name">fl<em>o</em>ck</div>
+        <div class="brand-tag">Queue · Pre-order · Pay</div>
       </div>
       <div class="role-cards">
         <div class="role-card" style="cursor:default">
@@ -1473,7 +1473,7 @@ function renderShell({ pill, body, right = '' }) {
     <main class="app-shell">
       <header class="app-header">
         <div class="header-left">
-          <div class="header-logo">Flock <em>v2</em></div>
+          <div class="header-logo">fl<em>o</em>ck</div>
           <div class="header-pill">${escapeHtml(pill)}</div>
         </div>
         <div class="header-right">${right}</div>

@@ -90,13 +90,16 @@ button, input, select {
 .brand-name {
   font-family: "Instrument Serif", serif;
   font-size: clamp(64px, 14vw, 120px);
-  line-height: 0.92;
-  letter-spacing: -0.01em;
+  line-height: 0.86;
+  letter-spacing: -0.045em;
+  font-style: italic;
+  font-weight: 400;
+  text-transform: lowercase;
 }
 
 .brand-name em {
   color: var(--amber);
-  font-style: italic;
+  font-style: inherit;
 }
 
 .brand-tag {
@@ -198,12 +201,15 @@ button, input, select {
 .header-logo {
   font-family: "Instrument Serif", serif;
   font-size: 22px;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.03em;
+  font-style: italic;
+  font-weight: 400;
+  text-transform: lowercase;
 }
 
 .header-logo em {
   color: var(--amber);
-  font-style: italic;
+  font-style: inherit;
 }
 
 .header-pill,
