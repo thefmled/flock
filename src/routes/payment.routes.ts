@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import * as Payment from '../controllers/payment.controller';
-import { requireAuth, requireRole } from '../middleware/auth';
+import { requireAuth, requireGuestAuth, requireRole } from '../middleware/auth';
 const router = Router();
-// Guest flows — no auth (authenticated by queueEntryId + venueId)
-router.post('/deposit/initiate',        Payment.initiateDeposit);
+// Guest flows
+router.post('/deposit/initiate',        requireGuestAuth, Payment.initiateDeposit);
 router.post('/deposit/capture',         Payment.captureDeposit);
-router.post('/final/initiate',          Payment.initiateFinalPayment);
+router.post('/final/initiate',          requireGuestAuth, Payment.initiateFinalPayment);
 router.post('/final/capture',           Payment.captureFinalPayment);
 router.post('/final/settle-offline',    requireAuth, requireRole('OWNER','MANAGER','STAFF'), Payment.settleFinalOffline);
 // Staff flows

@@ -28,6 +28,8 @@ export const env = {
 
   JWT_SECRET:     required('JWT_SECRET'),
   JWT_EXPIRES_IN: optional('JWT_EXPIRES_IN', '7d'),
+  GUEST_JWT_EXPIRES_IN: optional('GUEST_JWT_EXPIRES_IN', '6h'),
+  ONBOARDING_TOKEN: optional('ONBOARDING_TOKEN'),
   OTP_EXPIRES_SECONDS: parseInt(optional('OTP_EXPIRES_SECONDS', '300'), 10),
 
   RAZORPAY_KEY_ID:       optional('RAZORPAY_KEY_ID'),

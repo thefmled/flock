@@ -17,7 +17,7 @@ export async function initiateDeposit(params: {
 }) {
   const [entry, order, venue] = await Promise.all([
     prisma.queueEntry.findFirst({ where: { id: params.queueEntryId, venueId: params.venueId } }),
-    prisma.order.findFirst({ where: { id: params.orderId, venueId: params.venueId, type: OrderType.PRE_ORDER } }),
+    prisma.order.findFirst({ where: { id: params.orderId, venueId: params.venueId, queueEntryId: params.queueEntryId, type: OrderType.PRE_ORDER } }),
     prisma.venue.findUnique({ where: { id: params.venueId } }),
   ]);
 
@@ -25,9 +25,42 @@ export async function initiateDeposit(params: {
   if (!order) throw new AppError('Pre-order not found', 404);
   if (!venue) throw new AppError('Venue not found', 404);
 
+  const existingCaptured = await prisma.payment.findFirst({
+    where: {
+      orderId: params.orderId,
+      type: PaymentType.DEPOSIT,
+      status: PaymentStatus.CAPTURED,
+    },
+  });
+  if (existingCaptured) {
+    throw new AppError('Deposit already captured for this pre-order', 409, 'DEPOSIT_ALREADY_CAPTURED');
+  }
+
+  const existingPending = await prisma.payment.findFirst({
+    where: {
+      orderId: params.orderId,
+      type: PaymentType.DEPOSIT,
+      status: { in: [PaymentStatus.PENDING, PaymentStatus.PROCESSING] },
+    },
+  });
+
   const depositAmount = Math.round(order.totalIncGst * venue.depositPercent / 100);
-  const txnRef        = generateTxnRef();
-  const fees          = calculateFees(depositAmount);
+  if (existingPending) {
+    return {
+      paymentId: existingPending.id,
+      txnRef: existingPending.txnRef,
+      amount: existingPending.amount,
+      depositPercent: venue.depositPercent,
+      totalOrderValue: order.totalIncGst,
+      balanceAtTable: order.totalIncGst - existingPending.amount,
+      razorpayOrderId: existingPending.razorpayOrderId,
+      currency: 'INR',
+      keyId: process.env.RAZORPAY_KEY_ID ?? 'mock_key',
+    };
+  }
+
+  const txnRef = generateTxnRef();
+  const fees = calculateFees(depositAmount);
 
   const rzpOrder = await createRazorpayOrder({
     amount:  depositAmount,
@@ -94,14 +127,43 @@ export async function initiateFinalPayment(params: {
   const bill = await getBillSummary(params.queueEntryId);
   if (bill.balanceDue <= 0) throw new AppError('No balance due — bill already settled', 400);
 
-  const txnRef = generateTxnRef();
-  const fees   = calculateFees(bill.balanceDue);
-
   // Find the primary order to attach the final payment to
   const orders = await prisma.order.findMany({ where: { queueEntryId: params.queueEntryId } });
   const billableOrders = selectBillableOrders(orders);
   const mainOrder = billableOrders[0];
   if (!mainOrder) throw new AppError('No orders found for this entry', 404);
+
+  const existingCaptured = await prisma.payment.findFirst({
+    where: {
+      orderId: mainOrder.id,
+      type: PaymentType.FINAL,
+      status: PaymentStatus.CAPTURED,
+    },
+  });
+  if (existingCaptured) {
+    throw new AppError('Final payment already captured for this bill', 409, 'FINAL_ALREADY_CAPTURED');
+  }
+
+  const existingPending = await prisma.payment.findFirst({
+    where: {
+      orderId: mainOrder.id,
+      type: PaymentType.FINAL,
+      status: { in: [PaymentStatus.PENDING, PaymentStatus.PROCESSING] },
+    },
+  });
+  if (existingPending) {
+    return {
+      paymentId: existingPending.id,
+      txnRef: existingPending.txnRef,
+      amount: existingPending.amount,
+      razorpayOrderId: existingPending.razorpayOrderId,
+      currency: 'INR',
+      keyId: process.env.RAZORPAY_KEY_ID ?? 'mock_key',
+    };
+  }
+
+  const txnRef = generateTxnRef();
+  const fees = calculateFees(bill.balanceDue);
 
   const rzpOrder = await createRazorpayOrder({
     amount:  bill.balanceDue,
@@ -109,7 +171,7 @@ export async function initiateFinalPayment(params: {
     notes:   { venueId: params.venueId, queueEntryId: params.queueEntryId, type: 'FINAL' },
   });
 
-  await prisma.payment.create({
+  const payment = await prisma.payment.create({
     data: {
       venueId:          params.venueId,
       orderId:          mainOrder.id,
@@ -125,6 +187,7 @@ export async function initiateFinalPayment(params: {
   });
 
   return {
+    paymentId: payment.id,
     txnRef,
     amount: bill.balanceDue,
     razorpayOrderId: rzpOrder.id,
@@ -243,18 +306,24 @@ async function issueFinalInvoice(queueEntryId: string, venueId: string): Promise
     }),
   ]);
   if (!entry || !venue || orders.length === 0) return;
-  const existingInvoice = await prisma.invoice.findUnique({ where: { orderId: orders[0].id } });
+  const billableOrders = selectBillableOrders(orders);
+  const primaryOrder = billableOrders[0];
+  if (!primaryOrder) return;
+  const existingInvoice = await prisma.invoice.findUnique({ where: { orderId: primaryOrder.id } });
   if (existingInvoice) return;
 
-  const allItems = orders.flatMap(o => o.items);
+  const allItems = billableOrders.flatMap(o => o.items);
   const subtotal = allItems.reduce((s, i) => s + i.subtotal, 0);
   const cgst     = allItems.reduce((s, i) => s + Math.round(i.gstAmount / 2), 0);
   const sgst     = allItems.reduce((s, i) => s + (i.gstAmount - Math.round(i.gstAmount / 2)), 0);
   const total    = subtotal + cgst + sgst;
 
-  // Get next invoice sequence
-  const count = await prisma.invoice.count({ where: { venueId } });
-  const invoiceNumber = generateInvoiceNumber(count + 1);
+  const sequenceState = await prisma.venue.update({
+    where: { id: venueId },
+    data: { invoiceSequence: { increment: 1 } },
+    select: { invoiceSequence: true },
+  });
+  const invoiceNumber = generateInvoiceNumber(sequenceState.invoiceSequence);
 
   const result = await generateGstInvoice({
     invoiceNumber, venueGstin: venue.gstin ?? '', venueName: venue.name, venueAddress: venue.address,
@@ -268,7 +337,7 @@ async function issueFinalInvoice(queueEntryId: string, venueId: string): Promise
 
   await prisma.invoice.create({
     data: {
-      orderId:       orders[0].id,
+      orderId:       primaryOrder.id,
       venueId,
       invoiceNumber,
       irn:           result.irn,

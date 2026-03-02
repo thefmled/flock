@@ -18,8 +18,16 @@ export interface GuestJwtPayload {
 
 export type JwtPayload = StaffJwtPayload | GuestJwtPayload;
 
-export function signToken(payload: JwtPayload): string {
+export function signStaffToken(payload: StaffJwtPayload): string {
   return jwt.sign(payload, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN } as jwt.SignOptions);
+}
+
+export function signGuestToken(payload: GuestJwtPayload): string {
+  return jwt.sign(payload, env.JWT_SECRET, { expiresIn: env.GUEST_JWT_EXPIRES_IN } as jwt.SignOptions);
+}
+
+export function signToken(payload: JwtPayload): string {
+  return payload.kind === 'guest' ? signGuestToken(payload) : signStaffToken(payload);
 }
 
 export function verifyToken(token: string): JwtPayload {

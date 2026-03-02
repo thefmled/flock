@@ -334,3 +334,49 @@ Any future substantive work on Flock should:
   - `/admin/login` returned HTTP `200`
 - Added a copy-pasteable first-deploy env sheet:
   - `docs/RENDER_SMOKE_RELEASE_SHEET.md`
+- Implemented the core Phase 4 reliability/security hardening locally:
+  - added schema support for `QueueEntry.tableReadyDeadlineAt`, `QueueEntry.tableReadyExpiredAt`, and `Venue.invoiceSequence`
+  - added `GUEST_JWT_EXPIRES_IN` to the env contract and split guest-token issuance from staff-token issuance
+  - removed OTP from ordinary `GET /api/v1/queue/:entryId` responses while keeping OTP in join/session bootstrap
+  - protected guest-owned reads/writes with guest auth after join bootstrap
+  - made deposit and final payment initiation idempotent by reusing active pending payments
+  - added auto-refund handling on queue cancellation with explicit refund outcome in the cancel response
+  - moved no-show authority into DB-backed deadlines and added poller-based expiry sweeps
+  - added `docs/PHASE4_DATA_REMEDIATION.sql` and ran targeted remediation for corrupted duplicate pre-orders on queue entry `1f2c4ae7-19d0-431d-adc8-7c159c3a9d95`
+- Applied the Phase 4 schema migration to the connected Supabase project:
+  - `phase4_reliability_security_hardening`
+- Verified the TypeScript build after the Phase 4 changes:
+  - `npx prisma generate`
+  - `npm run build`
+- Implemented the first Flock v2 feedback-response pass locally:
+  - fixed `tryAdvanceQueue` so venue-specific `tableReadyWindowMin` is fetched before the reservation transaction and now drives `tableReadyDeadlineAt`
+  - fixed `GET /api/v1/venues/stats/today` route shadowing by reordering `venue.routes.ts`
+  - fixed `/api/v1/menu/admin/current` so it now returns `{ categories }` for the SPA contract
+  - fixed table-order POS/manual kitchen sync to use the human-readable table label instead of a UUID
+  - fixed `getVenueStats` to stop mutating the `now` `Date` instance
+  - removed production file logging so hosted containers now use console-only logs
+  - added `ONBOARDING_TOKEN` support and locked down `POST /api/v1/venues` behind `x-flock-onboarding-token`
+  - upgraded `/api/v1/health` to be DB-authoritative and Redis-aware (`ok` / `degraded` / `down`)
+  - moved all `@types/*` packages into `devDependencies` and refreshed `package-lock.json`
+  - removed the eager Razorpay checkout script tag from `web/index.html` and switched the SPA to lazy-load Razorpay on demand
+  - reduced frontend churn:
+    - guest auto-refresh now stops in `SEATED`
+    - staff seated bill fetches only run on the `Seated` tab and refresh at 10s cadence
+  - added explicit in-flight guards and loading labels for:
+    - join queue
+    - restore guest session
+    - pre-order payment start
+    - seated table order submit
+    - final payment start
+  - strengthened client-side error normalization so fatal route failures no longer collapse into `[object Object]`
+  - added a checked-in retention utility:
+    - `scripts/prune_operational_data.ts`
+  - added the next schema-hardening migration:
+    - `20260303093000_v2_feedback_hardening`
+    - includes:
+      - `QueueEntry @@index([status, tableReadyDeadlineAt])`
+      - `Notification.status` enum migration
+      - `MenuItem @@unique([venueId, name])`
+- Current drift after this pass:
+  - the new migration is checked in locally but not yet applied to Supabase from this session
+  - the current Render deployment has not been refreshed to pick up the new local code yet

@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { AuthenticatedRequest } from '../types';
@@ -42,7 +43,7 @@ export async function getAdminMenu(req: AuthenticatedRequest, res: Response, nex
       orderBy: { sortOrder: 'asc' },
       include: { items: { orderBy: { sortOrder: 'asc' } } },
     });
-    ok(res, categories);
+    ok(res, { categories });
   } catch (e) { next(e); }
 }
 
@@ -51,7 +52,13 @@ export async function createCategory(req: AuthenticatedRequest, res: Response, n
     const data = CategorySchema.parse(req.body);
     const cat = await prisma.menuCategory.create({ data: { venueId: req.venue!.id, ...data } });
     created(res, cat);
-  } catch (e) { next(e); }
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      next(new AppError('A menu item with this name already exists for this venue', 409));
+      return;
+    }
+    next(e);
+  }
 }
 
 export async function createItem(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
@@ -64,7 +71,13 @@ export async function createItem(req: AuthenticatedRequest, res: Response, next:
     if (!category) throw new AppError('Category not found', 404);
     const item = await prisma.menuItem.create({ data: { venueId: req.venue!.id, ...data } });
     created(res, item);
-  } catch (e) { next(e); }
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      next(new AppError('A menu item with this name already exists for this venue', 409));
+      return;
+    }
+    next(e);
+  }
 }
 
 export async function updateItem(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {

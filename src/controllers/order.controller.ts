@@ -16,15 +16,14 @@ const OrderBodySchema = z.object({
   notes:        z.string().optional(),
 });
 
-export async function createPreOrder(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function createPreOrder(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     const { queueEntryId, items, notes } = OrderBodySchema.parse(req.body);
-    // venueId comes from the queueEntry itself — validated in service
-    const entry = await import('../config/database').then(m =>
-      m.prisma.queueEntry.findUnique({ where: { id: queueEntryId }, select: { venueId: true } })
-    );
-    if (!entry) { res.status(404).json({ success: false, error: 'Queue entry not found' }); return; }
-    const order = await OrderService.createPreOrder({ venueId: entry.venueId, queueEntryId, items, notes });
+    if (!req.guest || req.guest.queueEntryId !== queueEntryId) {
+      res.status(403).json({ success: false, error: 'Guest session does not match this queue entry' });
+      return;
+    }
+    const order = await OrderService.createPreOrder({ venueId: req.guest.venueId, queueEntryId, items, notes });
     created(res, order);
   } catch (e) { next(e); }
 }
@@ -55,8 +54,12 @@ export async function createGuestTableOrder(req: AuthenticatedRequest, res: Resp
   } catch (e) { next(e); }
 }
 
-export async function getGuestBill(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function getGuestBill(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!req.staff && (!req.guest || req.guest.queueEntryId !== req.params.queueEntryId)) {
+      res.status(403).json({ success: false, error: 'Guest session does not match this queue entry' });
+      return;
+    }
     const bill = await OrderService.getGuestBill(req.params.queueEntryId);
     ok(res, bill);
   } catch (e) { next(e); }

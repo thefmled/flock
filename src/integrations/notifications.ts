@@ -1,7 +1,7 @@
 import { env } from '../config/env';
 import { logger } from '../config/logger';
 import { prisma } from '../config/database';
-import { NotificationType, NotificationChannel, Prisma } from '@prisma/client';
+import { NotificationType, NotificationChannel, NotificationStatus, Prisma } from '@prisma/client';
 
 // ── Template builders ──────────────────────────────────────────────
 
@@ -99,7 +99,7 @@ export async function sendNotification(params: SendNotificationParams): Promise<
       channel,
       to:           params.to,
       payload:      params.payload as Prisma.InputJsonValue | undefined,
-      status:       'pending',
+      status:       NotificationStatus.PENDING,
     },
   });
 
@@ -113,14 +113,14 @@ export async function sendNotification(params: SendNotificationParams): Promise<
 
     await prisma.notification.update({
       where: { id: log.id },
-      data:  { status: 'sent', externalRef, sentAt: new Date() },
+      data:  { status: NotificationStatus.SENT, externalRef, sentAt: new Date() },
     });
   } catch (err) {
     const error = err instanceof Error ? err.message : String(err);
     logger.error('Notification send failed', { error, to: params.to, type: params.type });
     await prisma.notification.update({
       where: { id: log.id },
-      data:  { status: 'failed', error },
+      data:  { status: NotificationStatus.FAILED, error },
     });
     // Try SMS fallback if WhatsApp fails
     if (channel === NotificationChannel.WHATSAPP) {

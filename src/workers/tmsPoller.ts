@@ -11,7 +11,7 @@
 import { prisma } from '../config/database';
 import { env } from '../config/env';
 import { logger } from '../config/logger';
-import { tryAdvanceQueue, updateTableStatus } from '../services/table.service';
+import { sweepExpiredTableReadyEntries, tryAdvanceQueue, updateTableStatus } from '../services/table.service';
 import { TableStatus, TmsProvider } from '@prisma/client';
 
 interface TmsTableState {
@@ -144,6 +144,8 @@ export function startTmsPoller(): NodeJS.Timeout {
 
   return setInterval(async () => {
     try {
+      await sweepExpiredTableReadyEntries();
+
       const venues = await prisma.venue.findMany({
         where:  { isQueueOpen: true },
         select: { id: true, tmsProvider: true, tmsApiKey: true, tmsVenueId: true, isQueueOpen: true },

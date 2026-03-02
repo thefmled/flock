@@ -34,8 +34,12 @@ export async function getVenueQueue(req: AuthenticatedRequest, res: Response, ne
   } catch (e) { next(e); }
 }
 
-export async function getQueueEntry(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function getQueueEntry(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!req.guest || req.guest.queueEntryId !== req.params.entryId) {
+      res.status(403).json({ success: false, error: 'Guest session does not match this queue entry' });
+      return;
+    }
     const entry = await QueueService.getQueueEntry(req.params.entryId);
     ok(res, entry);
   } catch (e) { next(e); }
@@ -59,7 +63,7 @@ export async function seatGuest(req: AuthenticatedRequest, res: Response, next: 
 
 export async function cancelEntry(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
   try {
-    await QueueService.cancelQueueEntry(req.params.entryId, req.venue!.id);
-    ok(res, { message: 'Queue entry cancelled' });
+    const result = await QueueService.cancelQueueEntry(req.params.entryId, req.venue!.id);
+    ok(res, result);
   } catch (e) { next(e); }
 }

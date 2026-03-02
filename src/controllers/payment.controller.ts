@@ -18,9 +18,13 @@ const CaptureSchema = z.object({
   razorpaySignature: z.string(),
 });
 
-export async function initiateDeposit(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function initiateDeposit(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data   = InitiateDepositSchema.parse(req.body);
+    const data = InitiateDepositSchema.parse(req.body);
+    if (!req.guest || req.guest.queueEntryId !== data.queueEntryId || req.guest.venueId !== data.venueId) {
+      res.status(403).json({ success: false, error: 'Guest session does not match this payment target' });
+      return;
+    }
     const result = await PaymentService.initiateDeposit(data);
     ok(res, result);
   } catch (e) { next(e); }
@@ -33,9 +37,13 @@ export async function captureDeposit(req: Request, res: Response, next: NextFunc
   } catch (e) { next(e); }
 }
 
-export async function initiateFinalPayment(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function initiateFinalPayment(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     const { queueEntryId, venueId } = z.object({ queueEntryId: z.string().min(1), venueId: z.string().min(1) }).parse(req.body);
+    if (!req.guest || req.guest.queueEntryId !== queueEntryId || req.guest.venueId !== venueId) {
+      res.status(403).json({ success: false, error: 'Guest session does not match this payment target' });
+      return;
+    }
     const result = await PaymentService.initiateFinalPayment({ venueId, queueEntryId });
     ok(res, result);
   } catch (e) { next(e); }

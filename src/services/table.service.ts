@@ -84,6 +84,8 @@ export async function updateTableStatus(params: {
 export async function tryAdvanceQueue(venueId: string, tableId: string): Promise<void> {
   const table = await prisma.table.findUnique({ where: { id: tableId } });
   if (!table || table.status !== TableStatus.FREE) return;
+  const venue = await prisma.venue.findUnique({ where: { id: venueId } });
+  const tableReadyWindowMin = venue?.tableReadyWindowMin ?? env.TABLE_READY_WINDOW_MINUTES;
 
   // Find the first waiting group that fits this table
   const nextEntry = await prisma.queueEntry.findFirst({
@@ -101,14 +103,19 @@ export async function tryAdvanceQueue(venueId: string, tableId: string): Promise
     await tx.table.update({ where: { id: tableId }, data: { status: TableStatus.RESERVED } });
     await tx.queueEntry.update({
       where: { id: nextEntry.id },
-      data: { status: QueueEntryStatus.NOTIFIED, notifiedAt: new Date(), tableId },
+      data: {
+        status: QueueEntryStatus.NOTIFIED,
+        notifiedAt: new Date(),
+        tableId,
+        tableReadyDeadlineAt: new Date(Date.now() + tableReadyWindowMin * 60 * 1000),
+        tableReadyExpiredAt: null,
+      },
     });
     await tx.tableEvent.create({
       data: { tableId, fromStatus: TableStatus.FREE, toStatus: TableStatus.RESERVED, triggeredBy: 'AUTO_ADVANCE' },
     });
   });
 
-  const venue = await prisma.venue.findUnique({ where: { id: venueId } });
   if (venue) {
     await Notify.tableReady(venueId, nextEntry.id, nextEntry.guestPhone, nextEntry.guestName, table.label, venue.name, venue.tableReadyWindowMin);
   }
@@ -117,36 +124,77 @@ export async function tryAdvanceQueue(venueId: string, tableId: string): Promise
     type: 'TABLE_ASSIGNED', entryId: nextEntry.id, tableId, tableLabel: table.label,
   }));
 
-  // Schedule timeout: if guest doesn't arrive, release table to next in queue
-  scheduleTableReadyTimeout(venueId, tableId, nextEntry.id, (venue?.tableReadyWindowMin ?? 10) * 60 * 1000);
-
   logger.info(`Table ${table.label} assigned to ${nextEntry.guestName} (${nextEntry.id})`);
 }
 
-// ── Table-ready timeout ───────────────────────────────────────────
+export async function sweepExpiredTableReadyEntries(): Promise<void> {
+  const expiredEntries = await prisma.queueEntry.findMany({
+    where: {
+      status: QueueEntryStatus.NOTIFIED,
+      tableReadyDeadlineAt: { lte: new Date() },
+    },
+    include: {
+      table: true,
+    },
+    orderBy: { tableReadyDeadlineAt: 'asc' },
+  });
 
-function scheduleTableReadyTimeout(venueId: string, tableId: string, entryId: string, windowMs: number): void {
-  setTimeout(async () => {
-    const [entry, table] = await Promise.all([
-      prisma.queueEntry.findUnique({ where: { id: entryId } }),
-      prisma.table.findUnique({ where: { id: tableId } }),
-    ]);
+  for (const entry of expiredEntries) {
+    logger.warn(`Guest ${entry.id} did not arrive within window — marking as NO_SHOW`);
 
-    // Guest arrived before timeout — nothing to do
-    if (!entry || entry.status !== QueueEntryStatus.NOTIFIED) return;
-    if (!table || table.status !== TableStatus.RESERVED) return;
-
-    logger.warn(`Guest ${entryId} did not arrive within window — marking as NO_SHOW`);
+    const releasedTableId = entry.table && entry.table.status === TableStatus.RESERVED ? entry.table.id : null;
 
     await prisma.$transaction(async (tx) => {
-      await tx.queueEntry.update({ where: { id: entryId }, data: { status: QueueEntryStatus.NO_SHOW, tableId: null } });
-      await tx.table.update({ where: { id: tableId }, data: { status: TableStatus.FREE } });
-      await tx.tableEvent.create({
-        data: { tableId, fromStatus: TableStatus.RESERVED, toStatus: TableStatus.FREE, triggeredBy: 'NO_SHOW_TIMEOUT' },
+      await tx.queueEntry.update({
+        where: { id: entry.id },
+        data: {
+          status: QueueEntryStatus.NO_SHOW,
+          tableId: null,
+          tableReadyExpiredAt: new Date(),
+          tableReadyDeadlineAt: null,
+        },
       });
+
+      if (releasedTableId && entry.table) {
+        await tx.table.update({
+          where: { id: releasedTableId },
+          data: { status: TableStatus.FREE },
+        });
+        await tx.tableEvent.create({
+          data: {
+            tableId: releasedTableId,
+            fromStatus: TableStatus.RESERVED,
+            toStatus: TableStatus.FREE,
+            triggeredBy: 'NO_SHOW_TIMEOUT',
+          },
+        });
+      }
     });
 
-    // Try next person in queue
-    await tryAdvanceQueue(venueId, tableId);
-  }, windowMs);
+    await recompactQueuePositions(entry.venueId);
+
+    if (releasedTableId) {
+      await tryAdvanceQueue(entry.venueId, releasedTableId);
+    }
+  }
+}
+
+async function recompactQueuePositions(venueId: string): Promise<void> {
+  const activeEntries = await prisma.queueEntry.findMany({
+    where: {
+      venueId,
+      status: { in: [QueueEntryStatus.WAITING, QueueEntryStatus.NOTIFIED] },
+    },
+    orderBy: { joinedAt: 'asc' },
+  });
+
+  await Promise.all(activeEntries.map((entry, index) =>
+    prisma.queueEntry.update({
+      where: { id: entry.id },
+      data: {
+        position: index + 1,
+        estimatedWaitMin: Math.ceil((index + 1) * 55 * 0.7),
+      },
+    })
+  ));
 }

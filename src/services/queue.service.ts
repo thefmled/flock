@@ -3,11 +3,12 @@ import { redis, RedisKeys, PubSubChannels, isRedisReady } from '../config/redis'
 import { generateSeatingOtp } from '../utils/otp';
 import { Notify } from '../integrations/notifications';
 import { AppError } from '../middleware/errorHandler';
-import { QueueEntryStatus, TableStatus } from '@prisma/client';
+import { PaymentStatus, PaymentType, QueueEntryStatus, TableStatus } from '@prisma/client';
 import { QueuePositionInfo } from '../types';
 import { logger } from '../config/logger';
 import { syncPendingPreOrderForSeating } from './order.service';
-import { signToken } from '../utils/jwt';
+import { signGuestToken } from '../utils/jwt';
+import { initiateRefund } from '../integrations/razorpay';
 
 const AVG_TURN_MINUTES = 55; // used for wait time estimation
 
@@ -85,6 +86,7 @@ export async function getVenueQueue(venueId: string) {
         },
       },
       orders: {
+        where: { status: { notIn: ['CANCELLED'] } },
         select: {
           id: true,
           type: true,
@@ -112,13 +114,16 @@ export async function getQueueEntry(entryId: string) {
     where: { id: entryId },
     include: {
       orders: {
+        where: { status: { notIn: ['CANCELLED'] } },
         include: { items: true },
       },
       table: { select: { label: true, section: true } },
     },
   });
   if (!entry) throw new AppError('Queue entry not found', 404);
-  return entry;
+
+  const { otp: _otp, ...safeEntry } = entry;
+  return safeEntry;
 }
 
 export async function reissueGuestSession(entryId: string, otp: string) {
@@ -167,7 +172,12 @@ export async function seatGuest(params: {
   await prisma.$transaction(async (tx) => {
     await tx.queueEntry.update({
       where: { id: entry.id },
-      data:  { status: QueueEntryStatus.SEATED, tableId: params.tableId, seatedAt: new Date() },
+      data:  {
+        status: QueueEntryStatus.SEATED,
+        tableId: params.tableId,
+        seatedAt: new Date(),
+        tableReadyDeadlineAt: null,
+      },
     });
     await tx.table.update({
       where: { id: params.tableId },
@@ -209,16 +219,91 @@ export async function seatGuest(params: {
 
 // ── Cancel entry ──────────────────────────────────────────────────
 
-export async function cancelQueueEntry(entryId: string, venueId: string): Promise<void> {
+export async function cancelQueueEntry(entryId: string, venueId: string): Promise<{
+  queueCancelled: true;
+  refundStatus: 'refunded' | 'failed' | 'not_needed';
+  refundedPaymentId?: string;
+  refundId?: string;
+  refundFailureReason?: string;
+}> {
   const entry = await prisma.queueEntry.findFirst({
     where: { id: entryId, venueId, status: { in: ['WAITING', 'NOTIFIED'] } },
   });
   if (!entry) throw new AppError('Queue entry not found or already completed', 404);
 
+  const [capturedDeposit, capturedFinal] = await Promise.all([
+    prisma.payment.findFirst({
+      where: {
+        venueId,
+        type: PaymentType.DEPOSIT,
+        status: PaymentStatus.CAPTURED,
+        order: {
+          queueEntryId: entryId,
+          status: { not: 'CANCELLED' },
+        },
+      },
+      orderBy: { capturedAt: 'desc' },
+    }),
+    prisma.payment.findFirst({
+      where: {
+        venueId,
+        type: PaymentType.FINAL,
+        status: PaymentStatus.CAPTURED,
+        order: {
+          queueEntryId: entryId,
+        },
+      },
+    }),
+  ]);
+
+  let refundStatus: 'refunded' | 'failed' | 'not_needed' = 'not_needed';
+  let refundedPaymentId: string | undefined;
+  let refundId: string | undefined;
+  let refundFailureReason: string | undefined;
+
+  if (capturedDeposit && !capturedFinal) {
+    try {
+      if (!capturedDeposit.razorpayPaymentId) {
+        throw new AppError('No Razorpay payment ID on captured deposit', 400);
+      }
+
+      const refund = await initiateRefund({
+        paymentId: capturedDeposit.razorpayPaymentId,
+        amount: capturedDeposit.amount,
+        notes: { reason: 'QUEUE_CANCELLED' },
+      });
+
+      await prisma.payment.update({
+        where: { id: capturedDeposit.id },
+        data: {
+          status: PaymentStatus.REFUNDED,
+          refundedAt: new Date(),
+          refundAmount: capturedDeposit.amount,
+        },
+      });
+
+      refundStatus = 'refunded';
+      refundedPaymentId = capturedDeposit.id;
+      refundId = refund.id;
+    } catch (error) {
+      refundStatus = 'failed';
+      refundFailureReason = error instanceof Error ? error.message : 'Refund failed';
+      logger.error('Auto-refund failed during queue cancellation', {
+        queueEntryId: entryId,
+        paymentId: capturedDeposit.id,
+        error: refundFailureReason,
+      });
+    }
+  }
+
   await prisma.$transaction(async (tx) => {
     await tx.queueEntry.update({
       where: { id: entryId },
-      data:  { status: QueueEntryStatus.CANCELLED, tableId: null },
+      data:  {
+        status: QueueEntryStatus.CANCELLED,
+        tableId: null,
+        tableReadyDeadlineAt: null,
+      },
     });
 
     if (entry.tableId) {
@@ -237,6 +322,14 @@ export async function cancelQueueEntry(entryId: string, venueId: string): Promis
   await safeRedisExec(() =>
     redis.publish(PubSubChannels.queueUpdate(venueId), JSON.stringify({ type: 'ENTRY_CANCELLED', entryId }))
   );
+
+  return {
+    queueCancelled: true,
+    refundStatus,
+    refundedPaymentId,
+    refundId,
+    refundFailureReason,
+  };
 }
 
 // ── Complete (checkout) ───────────────────────────────────────────
@@ -248,7 +341,11 @@ export async function completeQueueEntry(entryId: string): Promise<void> {
   await prisma.$transaction(async (tx) => {
     await tx.queueEntry.update({
       where: { id: entryId },
-      data:  { status: QueueEntryStatus.COMPLETED, completedAt: new Date() },
+      data:  {
+        status: QueueEntryStatus.COMPLETED,
+        completedAt: new Date(),
+        tableReadyDeadlineAt: null,
+      },
     });
     if (entry.tableId) {
       await tx.table.update({
@@ -299,7 +396,7 @@ async function safeRedisExec(operation: () => Promise<unknown>): Promise<void> {
 }
 
 function issueGuestSessionToken(queueEntryId: string, venueId: string, guestPhone: string): string {
-  return signToken({
+  return signGuestToken({
     kind: 'guest',
     queueEntryId,
     venueId,

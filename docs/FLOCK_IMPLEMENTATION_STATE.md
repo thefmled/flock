@@ -725,3 +725,72 @@ Impact:
 
 - architecture is directionally aligned, but not yet operationally faithful until mock mode is removed for pilot
 - these must stay mocked until PM product-flow fidelity is complete
+
+## Phase 4 hardening status
+
+The Phase 4 reliability and security pass is now implemented in code.
+
+What changed:
+
+- `QueueEntry` now has durable table-ready deadline fields:
+  - `tableReadyDeadlineAt`
+  - `tableReadyExpiredAt`
+- `Venue` now has:
+  - `invoiceSequence`
+- the TMS/background poller now sweeps expired `NOTIFIED` entries and releases `RESERVED` tables based on DB deadlines instead of in-memory timeout authority
+- deposit and final payment initiation now reuse existing pending payments and reject duplicate already-captured initiation attempts
+- queue cancellation now attempts automatic refund of the latest captured, non-cancelled deposit and returns structured refund outcome
+- guest-owned queue reads, bill reads, preorder creation, and payment initiation are now guest-token protected after bootstrap
+- ordinary `GET /queue/:entryId` responses no longer return the seating OTP
+- guest token TTL is now split from staff token TTL via `GUEST_JWT_EXPIRES_IN`
+- duplicate preorder cleanup is now documented in:
+  - [`PHASE4_DATA_REMEDIATION.sql`](/Users/adsaha/Desktop/Pricing%20Engine/C/Flock/docs/PHASE4_DATA_REMEDIATION.sql)
+
+Environment status:
+
+- the schema migration for Phase 4 was applied to the connected Supabase project
+- the known duplicate preorder corruption on queue entry `1f2c4ae7-19d0-431d-adc8-7c159c3a9d95` was remediated in Supabase
+
+Validation:
+
+- `npx prisma generate` succeeded
+- `npm run build` succeeded
+
+## Flock v2 feedback-response status
+
+The next review-response pass is now implemented locally in code, but not yet deployed.
+
+Implemented:
+
+- `tryAdvanceQueue` now loads the venue before reserving the table so venue-specific `tableReadyWindowMin` is honored
+- `GET /api/v1/venues/stats/today` is no longer shadowed by `/:slug`
+- `GET /api/v1/menu/admin/current` now returns the SPA-compatible shape:
+  - `{ categories: [...] }`
+- table-order POS/manual fallback now uses the table label instead of the raw table UUID
+- `getVenueStats` no longer mutates the `now` `Date`
+- `/api/v1/health` now checks Postgres and reports Redis as `ok` or `degraded`
+- production logging is now console-only
+- `POST /api/v1/venues` is now protected by `x-flock-onboarding-token`
+- the SPA now:
+  - lazy-loads Razorpay checkout
+  - stops guest polling in `SEATED`
+  - fetches seated bills only on the `Seated` staff tab, at a 10-second cadence
+  - adds submit guards/loading labels for guest queue join, restore, preorder, table-order, and final-pay actions
+  - unwraps structured client/API errors more safely so fatal screens do not show `[object Object]`
+- retention tooling now exists in:
+  - [`prune_operational_data.ts`](/Users/adsaha/Desktop/Pricing%20Engine/C/Flock/scripts/prune_operational_data.ts)
+
+Schema hardening prepared locally:
+
+- `QueueEntry` now declares:
+  - `@@index([status, tableReadyDeadlineAt])`
+- `Notification.status` now uses `NotificationStatus`
+- `MenuItem` now declares:
+  - `@@unique([venueId, name])`
+- migration added:
+  - [`migration.sql`](/Users/adsaha/Desktop/Pricing%20Engine/C/Flock/prisma/migrations/20260303093000_v2_feedback_hardening/migration.sql)
+
+Still pending after this local pass:
+
+- apply the new migration to Supabase
+- redeploy Render so the hosted app reflects these changes

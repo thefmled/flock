@@ -264,6 +264,14 @@ async function createTableOrderInternal(params: {
 }) {
   const entry = await prisma.queueEntry.findFirst({
     where: { id: params.queueEntryId, venueId: params.venueId, status: QueueEntryStatus.SEATED },
+    select: {
+      id: true,
+      tableId: true,
+      guestName: true,
+      table: {
+        select: { label: true },
+      },
+    },
   });
   if (!entry) throw new AppError('Guest is not currently seated', 400);
 
@@ -271,7 +279,7 @@ async function createTableOrderInternal(params: {
   const posSync = await syncTableOrderToPos({
     venueId: params.venueId,
     orderId: order.id,
-    fallbackTableNumber: entry.tableId ?? 'unknown',
+    fallbackTableNumber: entry.table?.label ?? 'unknown',
     guestName: entry.guestName,
     notes: params.notes,
   });

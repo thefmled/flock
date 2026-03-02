@@ -77,6 +77,12 @@ enum NotificationChannel {
   SMS
 }
 
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
 enum StaffRole {
   OWNER
   MANAGER
@@ -113,6 +119,7 @@ model Venue {
   posPlatform         String?
   posOutletId         String?
   monthlyCoversUsed   Int            @default(0)
+  invoiceSequence     Int            @default(0)
   billingCycleStart   DateTime       @default(now())
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
@@ -225,6 +232,7 @@ model MenuItem {
   category    MenuCategory @relation(fields: [categoryId], references: [id])
   orderItems  OrderItem[]
   @@index([venueId, isAvailable])
+  @@unique([venueId, name])
 }
 
 model QueueEntry {
@@ -239,6 +247,8 @@ model QueueEntry {
   tableId          String?
   seatedAt         DateTime?
   notifiedAt       DateTime?
+  tableReadyDeadlineAt DateTime?
+  tableReadyExpiredAt  DateTime?
   completedAt      DateTime?
   preOrderTotal    Int              @default(0)
   depositPaid      Int              @default(0)
@@ -252,6 +262,7 @@ model QueueEntry {
   notifications    Notification[]
   @@index([venueId, status])
   @@index([venueId, position])
+  @@index([status, tableReadyDeadlineAt])
   @@index([otp])
   @@index([guestPhone])
 }
@@ -355,7 +366,7 @@ model Notification {
   to           String
   templateId   String?
   payload      Json?
-  status       String              @default("pending")
+  status       NotificationStatus  @default(PENDING)
   externalRef  String?
   error        String?
   sentAt       DateTime?

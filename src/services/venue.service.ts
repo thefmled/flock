@@ -65,7 +65,8 @@ export async function updateVenueConfig(venueId: string, data: z.infer<typeof Up
 
 export async function getVenueStats(venueId: string) {
   const now = new Date();
-  const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+  const startOfDay = new Date(now.getTime());
+  startOfDay.setHours(0, 0, 0, 0);
 
   const [queueStats, tableStats, revenueStats] = await Promise.all([
     prisma.queueEntry.aggregate({

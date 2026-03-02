@@ -10,9 +10,15 @@ const TABLE_CART_PREFIX = 'flock_table_cart:';
 const FLASH_KEY = 'flock_flash';
 
 const appRoot = document.getElementById('app');
+let razorpayLoaderPromise = null;
 const uiState = {
   timerId: null,
   nextRenderResetScroll: false,
+  guestJoinSubmitting: false,
+  preorderSubmitting: false,
+  tableOrderSubmitting: false,
+  paymentSubmitting: false,
+  guestSessionRestoring: false,
   staffTab: 'queue',
   staffSeat: {
     otpDigits: ['', '', '', '', '', ''],
@@ -85,7 +91,7 @@ function renderPage(html, title = 'Flock') {
 }
 
 function handleFatalError(error) {
-  const message = error instanceof Error ? error.message : 'Something broke';
+  const message = describeClientError(error);
   renderPage(renderShell({
     pill: 'System',
     body: `
@@ -109,7 +115,7 @@ function handleFatalError(error) {
 }
 
 function handleBackgroundRefreshError(error) {
-  const message = error instanceof Error ? error.message : 'Background refresh failed';
+  const message = describeClientError(error);
   console.warn('Background refresh failed:', message);
 
   const staleBanners = document.querySelectorAll('[data-transient-error="true"]');
@@ -268,6 +274,15 @@ async function renderVenueLanding(slug) {
 
   document.getElementById('join-form')?.addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (uiState.guestJoinSubmitting) return;
+
+    const submitButton = event.currentTarget.querySelector('button[type="submit"]');
+    uiState.guestJoinSubmitting = true;
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Joining...';
+    }
+
     const name = document.getElementById('guest-name').value.trim();
     const phone = normalisePhone(document.getElementById('guest-phone').value);
     const partySize = Number(document.getElementById('party-size').value);
@@ -288,29 +303,104 @@ async function renderVenueLanding(slug) {
         venueSlug: slug,
         venueId: venue.id,
         guestToken: entry.guestToken,
+        otp: entry.otp,
       });
       setFlash('green', `Joined queue. OTP ${entry.otp} issued with position #${entry.position}.`);
       navigate(`/v/${slug}/e/${entry.id}`);
     } catch (error) {
       setFlash('red', error.message);
       await renderVenueLanding(slug);
+    } finally {
+      uiState.guestJoinSubmitting = false;
     }
   });
 }
 
 async function renderGuestEntry(slug, entryId) {
-  const [venue, entry] = await Promise.all([
-    apiRequest(`/venues/${slug}`),
-    apiRequest(`/queue/${entryId}`),
-  ]);
+  const guestSession = getGuestSession(entryId);
+  const venue = await apiRequest(`/venues/${slug}`);
+
+  if (!guestSession?.guestToken) {
+    const flash = consumeFlash();
+    renderPage(renderShell({
+      pill: 'Guest',
+      body: `
+        ${flash ? renderInlineFlash(flash) : ''}
+        <div class="card">
+          <div class="card-title">Restore your guest session</div>
+          <div class="card-sub">This device no longer has the active guest session token. Enter the seating OTP once to recover the queue entry securely.</div>
+          <form id="recover-guest-session-form">
+            <div class="form-group">
+              <label class="form-label" for="guest-session-otp">Seating OTP</label>
+              <input class="form-input" id="guest-session-otp" required maxlength="6" placeholder="123456">
+            </div>
+            <button class="btn btn-secondary btn-full" type="submit">Restore ordering</button>
+          </form>
+        </div>
+      `,
+      right: `<a class="btn btn-secondary btn-sm" data-nav href="/v/${slug}">Venue</a>`,
+    }), `Flock | ${venue.name}`);
+
+    document.getElementById('recover-guest-session-form')?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (uiState.guestSessionRestoring) return;
+
+      const submitButton = event.currentTarget.querySelector('button[type="submit"]');
+      uiState.guestSessionRestoring = true;
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = 'Restoring...';
+      }
+
+      const otp = document.getElementById('guest-session-otp').value.trim();
+
+      try {
+        const session = await apiRequest(`/queue/${entryId}/session`, {
+          method: 'POST',
+          body: { otp },
+        });
+        setGuestSession({
+          entryId,
+          venueSlug: slug,
+          venueId: venue.id,
+          guestToken: session.guestToken,
+          otp,
+        });
+        setFlash('green', 'Guest ordering session restored.');
+        await renderGuestEntry(slug, entryId);
+      } catch (error) {
+        setFlash('red', error.message);
+        await renderGuestEntry(slug, entryId);
+      } finally {
+        uiState.guestSessionRestoring = false;
+      }
+    });
+
+    return;
+  }
+
+  let entry;
+  try {
+    entry = await apiRequest(`/queue/${entryId}`, {
+      auth: 'guest',
+      guestToken: guestSession.guestToken,
+    });
+  } catch (error) {
+    clearGuestSession(entryId);
+    setFlash('amber', 'Your guest session expired on this device. Restore it with the seating OTP.');
+    await renderGuestEntry(slug, entryId);
+    return;
+  }
 
   setGuestEntryId(slug, entryId);
   const flash = consumeFlash();
-  const guestSession = getGuestSession(entryId);
   const tableCart = getTableCart(entryId);
   const tableCartSummary = buildCartSummary(venue.menuCategories || [], tableCart);
   const bill = entry.status === 'SEATED' || entry.status === 'COMPLETED'
-    ? await apiRequest(`/orders/bill/${entryId}`).catch(() => null)
+    ? await apiRequest(`/orders/bill/${entryId}`, {
+      auth: 'guest',
+      guestToken: guestSession.guestToken,
+    }).catch(() => null)
     : null;
 
   const hasDeposit = entry.depositPaid > 0;
@@ -326,7 +416,7 @@ async function renderGuestEntry(slug, entryId) {
     ${entry.status === 'NOTIFIED' ? `<div class="banner">Table ready${entry.table?.label ? ` · ${escapeHtml(entry.table.label)}` : ''} · Show your OTP to staff now</div>` : ''}
     ${renderStepBar(activeStep)}
     ${flash ? renderInlineFlash(flash) : ''}
-    ${renderGuestStateHero(entry)}
+    ${renderGuestStateHero(entry, guestSession)}
     ${renderGuestStateCards({ slug, entry, venue, bill, guestSession, tableCartSummary })}
   `;
 
@@ -341,6 +431,15 @@ async function renderGuestEntry(slug, entryId) {
   });
 
   document.getElementById('final-pay-cta')?.addEventListener('click', async () => {
+    if (uiState.paymentSubmitting) return;
+
+    const button = document.getElementById('final-pay-cta');
+    uiState.paymentSubmitting = true;
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Preparing payment...';
+    }
+
     try {
       await runHostedPayment({
         title: 'Flock final bill',
@@ -354,12 +453,16 @@ async function renderGuestEntry(slug, entryId) {
           name: entry.guestName,
           contact: entry.guestPhone,
         },
+        auth: 'guest',
+        guestToken: guestSession.guestToken,
       });
       setFlash('green', 'Final payment captured.');
       await renderGuestEntry(slug, entryId);
     } catch (error) {
       setFlash('red', error.message);
       await renderGuestEntry(slug, entryId);
+    } finally {
+      uiState.paymentSubmitting = false;
     }
   });
 
@@ -381,6 +484,15 @@ async function renderGuestEntry(slug, entryId) {
 
   document.getElementById('recover-guest-session-form')?.addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (uiState.guestSessionRestoring) return;
+
+    const submitButton = event.currentTarget.querySelector('button[type="submit"]');
+    uiState.guestSessionRestoring = true;
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Restoring...';
+    }
+
     const otp = document.getElementById('guest-session-otp').value.trim();
 
     try {
@@ -393,21 +505,33 @@ async function renderGuestEntry(slug, entryId) {
         venueSlug: slug,
         venueId: venue.id,
         guestToken: session.guestToken,
+        otp: guestSession?.otp || otp,
       });
       setFlash('green', 'Guest ordering session restored.');
       await renderGuestEntry(slug, entryId);
     } catch (error) {
       setFlash('red', error.message);
       await renderGuestEntry(slug, entryId);
+    } finally {
+      uiState.guestSessionRestoring = false;
     }
   });
 
   document.getElementById('submit-table-order')?.addEventListener('click', async () => {
+    if (uiState.tableOrderSubmitting) return;
+
     const activeGuestSession = getGuestSession(entryId);
     if (!activeGuestSession?.guestToken) {
       setFlash('amber', 'Re-enter OTP to continue ordering.');
       await renderGuestEntry(slug, entryId);
       return;
+    }
+
+    const button = document.getElementById('submit-table-order');
+    uiState.tableOrderSubmitting = true;
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Sending order...';
     }
 
     try {
@@ -437,18 +561,30 @@ async function renderGuestEntry(slug, entryId) {
     } catch (error) {
       setFlash('red', error.message);
       await renderGuestEntry(slug, entryId);
+    } finally {
+      uiState.tableOrderSubmitting = false;
     }
   });
 
-  if (!['COMPLETED', 'CANCELLED', 'NO_SHOW'].includes(entry.status)) {
+  if (['WAITING', 'NOTIFIED'].includes(entry.status)) {
     scheduleRefresh(() => renderGuestEntry(slug, entryId), 5000);
   }
 }
 
 async function renderPreorder(slug, entryId) {
+  const guestSession = getGuestSession(entryId);
+  if (!guestSession?.guestToken) {
+    setFlash('amber', 'Restore the guest session before placing a pre-order.');
+    navigate(`/v/${slug}/e/${entryId}`);
+    return;
+  }
+
   const [venue, entry] = await Promise.all([
     apiRequest(`/venues/${slug}`),
-    apiRequest(`/queue/${entryId}`),
+    apiRequest(`/queue/${entryId}`, {
+      auth: 'guest',
+      guestToken: guestSession.guestToken,
+    }),
   ]);
 
   if (!['WAITING', 'NOTIFIED'].includes(entry.status)) {
@@ -515,9 +651,20 @@ async function renderPreorder(slug, entryId) {
   });
 
   document.getElementById('submit-preorder')?.addEventListener('click', async () => {
+    if (uiState.preorderSubmitting) return;
+
+    const button = document.getElementById('submit-preorder');
+    uiState.preorderSubmitting = true;
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Preparing payment...';
+    }
+
     try {
       const order = await apiRequest('/orders/preorder', {
         method: 'POST',
+        auth: 'guest',
+        guestToken: guestSession.guestToken,
         body: {
           queueEntryId: entryId,
           items: cartSummary.lines.map((line) => ({
@@ -540,6 +687,8 @@ async function renderPreorder(slug, entryId) {
           name: entry.guestName,
           contact: entry.guestPhone,
         },
+        auth: 'guest',
+        guestToken: guestSession.guestToken,
       });
 
       setCart(entryId, {});
@@ -548,6 +697,8 @@ async function renderPreorder(slug, entryId) {
     } catch (error) {
       setFlash('red', error.message);
       await renderPreorder(slug, entryId);
+    } finally {
+      uiState.preorderSubmitting = false;
     }
   });
 }
@@ -758,9 +909,19 @@ async function renderStaffDashboard() {
   const waiting = queue.filter((entry) => entry.status === 'WAITING' || entry.status === 'NOTIFIED');
   const seated = queue.filter((entry) => entry.status === 'SEATED');
   const currentTab = uiState.staffTab;
-  const seatedBills = await loadSeatedBills(seated);
-  uiState.staffSeatedBills = seatedBills;
-  uiState.staffLastUpdatedAt = Date.now();
+  let seatedBills = uiState.staffSeatedBills;
+  const shouldRefreshSeatedBills = currentTab === 'seated'
+    && (
+      !uiState.staffLastUpdatedAt
+      || (Date.now() - uiState.staffLastUpdatedAt) >= 10000
+      || seated.some((entry) => !(entry.id in uiState.staffSeatedBills))
+    );
+
+  if (shouldRefreshSeatedBills) {
+    seatedBills = await loadSeatedBills(seated);
+    uiState.staffSeatedBills = seatedBills;
+    uiState.staffLastUpdatedAt = Date.now();
+  }
 
   renderPage(renderShell({
     pill: 'Staff',
@@ -1011,7 +1172,7 @@ async function renderStaffDashboard() {
   });
 
   if (currentTab !== 'seat' && !uiState.staffSeat.isSubmitting) {
-    scheduleRefresh(() => renderStaffDashboard(), 3000);
+    scheduleRefresh(() => renderStaffDashboard(), currentTab === 'seated' ? 10000 : 3000);
   }
 }
 
@@ -1501,7 +1662,9 @@ function renderStepBar(activeStep) {
   `;
 }
 
-function renderGuestStateHero(entry) {
+function renderGuestStateHero(entry, guestSession) {
+  const guestOtp = guestSession?.otp;
+
   if (entry.status === 'WAITING') {
     const pct = Math.max(10, Math.min(95, Math.round(100 - (entry.position * 8))));
     return `
@@ -1519,8 +1682,8 @@ function renderGuestStateHero(entry) {
         <div class="progress-ring" style="--pct:${pct}%"></div>
       </div>
       <div class="otp-block">
-        <div class="otp-num">${escapeHtml(entry.otp)}</div>
-        <div class="otp-label">Show this OTP when called</div>
+        <div class="otp-num">${guestOtp ? escapeHtml(guestOtp) : 'Active'}</div>
+        <div class="otp-label">${guestOtp ? 'Show this OTP when called' : 'Your seating code is active on this device'}</div>
       </div>
     `;
   }
@@ -1533,8 +1696,8 @@ function renderGuestStateHero(entry) {
         <div class="queue-pos-sub">Head to the entrance and show the OTP to staff.</div>
       </div>
       <div class="otp-block">
-        <div class="otp-num">${escapeHtml(entry.otp)}</div>
-        <div class="otp-label">Your reserved table is waiting</div>
+        <div class="otp-num">${guestOtp ? escapeHtml(guestOtp) : 'Active'}</div>
+        <div class="otp-label">${guestOtp ? 'Your reserved table is waiting' : 'Use your active seating code when you arrive'}</div>
       </div>
     `;
   }
@@ -1850,10 +2013,12 @@ function buildCartSummary(categories, cart) {
   };
 }
 
-async function runHostedPayment({ title, initiatePath, initiateBody, capturePath, prefill }) {
+async function runHostedPayment({ title, initiatePath, initiateBody, capturePath, prefill, auth, guestToken }) {
   const initiation = await apiRequest(initiatePath, {
     method: 'POST',
     body: initiateBody,
+    auth,
+    guestToken,
   });
 
   if (initiation.keyId === 'mock_key') {
@@ -1867,6 +2032,8 @@ async function runHostedPayment({ title, initiatePath, initiateBody, capturePath
     });
     return;
   }
+
+  await ensureRazorpayLoaded();
 
   if (!window.Razorpay) {
     throw new Error('Razorpay checkout failed to load. Please refresh and retry.');
@@ -1960,6 +2127,11 @@ function normaliseApiError(rawError, status) {
     return fallback;
   }
 
+  const extractedMessage = extractErrorText(rawError);
+  if (extractedMessage) {
+    return extractedMessage;
+  }
+
   const errorText = String(rawError).trim();
   const looksLikeHtml = errorText.startsWith('<!DOCTYPE') || errorText.startsWith('<html');
 
@@ -1975,6 +2147,82 @@ function normaliseApiError(rawError, status) {
   }
 
   return errorText;
+}
+
+function describeClientError(error) {
+  if (error instanceof Error) {
+    return normaliseApiError(error.message, 500);
+  }
+
+  if (typeof error === 'string') {
+    return normaliseApiError(error, 500);
+  }
+
+  if (error && typeof error === 'object') {
+    return normaliseApiError(error, 500);
+  }
+
+  return 'Something broke';
+}
+
+function extractErrorText(rawError, depth = 0) {
+  if (!rawError || depth > 3) {
+    return '';
+  }
+
+  if (typeof rawError === 'string') {
+    return rawError.trim();
+  }
+
+  if (rawError instanceof Error) {
+    return rawError.message.trim();
+  }
+
+  if (Array.isArray(rawError)) {
+    for (const item of rawError) {
+      const nested = extractErrorText(item, depth + 1);
+      if (nested) return nested;
+    }
+    return '';
+  }
+
+  if (typeof rawError === 'object') {
+    if (Array.isArray(rawError.details)) {
+      const nested = extractErrorText(rawError.details, depth + 1);
+      if (nested) return nested;
+    }
+
+    for (const key of ['message', 'error', 'detail']) {
+      if (key in rawError) {
+        const nested = extractErrorText(rawError[key], depth + 1);
+        if (nested) return nested;
+      }
+    }
+  }
+
+  return '';
+}
+
+async function ensureRazorpayLoaded() {
+  if (window.Razorpay) {
+    return;
+  }
+
+  if (!razorpayLoaderPromise) {
+    razorpayLoaderPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = () => {
+        razorpayLoaderPromise = null;
+        reject(new Error('Razorpay checkout failed to load. Please refresh and retry.'));
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  await razorpayLoaderPromise;
 }
 
 function escapeHtml(value) {
@@ -2124,7 +2372,7 @@ function setSeatOtpFromString(value) {
 async function loadSeatedBills(seatedEntries) {
   const bills = await Promise.all(seatedEntries.map(async (entry) => {
     try {
-      const bill = await apiRequest(`/orders/bill/${entry.id}`);
+      const bill = await apiRequest(`/orders/bill/${entry.id}`, { auth: true });
       return [entry.id, bill];
     } catch (_error) {
       return [entry.id, null];
