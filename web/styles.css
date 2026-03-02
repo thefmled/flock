@@ -137,9 +137,19 @@ button, input, select {
 }
 
 .role-card-icon {
-  font-size: 26px;
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
   margin-bottom: 18px;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(232, 168, 48, 0.12), rgba(232, 168, 48, 0.05));
+  border: 1px solid var(--amber-border);
+  font-family: "Instrument Serif", serif;
+  font-size: 28px;
+  color: var(--amber);
+  letter-spacing: -0.03em;
 }
 
 .role-card-title {
@@ -561,7 +571,21 @@ button, input, select {
 }
 
 .wait-icon {
-  font-size: 22px;
+  min-width: 64px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cream-dim);
 }
 
 .wait-text {

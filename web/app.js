@@ -192,19 +192,19 @@ function renderHome() {
       </div>
       <div class="role-cards">
         <a class="role-card" data-nav href="/v/${DEFAULT_VENUE_SLUG}">
-          <span class="role-card-icon">Queue</span>
+          <span class="role-card-icon">G</span>
           <div class="role-card-title">Guest Flow</div>
           <div class="role-card-desc">Join the queue, pre-order, track the table-ready state, and complete the final payment.</div>
           <div class="role-card-cta">+</div>
         </a>
         <a class="role-card" data-nav href="/staff/login">
-          <span class="role-card-icon">Floor</span>
+          <span class="role-card-icon">S</span>
           <div class="role-card-title">Staff Console</div>
           <div class="role-card-desc">Run live queue ops, free tables, verify OTPs, and manage the pilot venue in real time.</div>
           <div class="role-card-cta">+</div>
         </a>
         <a class="role-card" data-nav href="/admin/login">
-          <span class="role-card-icon">Admin</span>
+          <span class="role-card-icon">A</span>
           <div class="role-card-title">Admin Console</div>
           <div class="role-card-desc">Run menu operations, enable or disable items, and manage category growth in the same visual system.</div>
           <div class="role-card-cta">+</div>
@@ -227,7 +227,7 @@ async function renderVenueLanding(slug) {
       </div>
       <div class="role-cards">
         <div class="role-card" style="cursor:default">
-          <span class="role-card-icon">Venue</span>
+          <span class="role-card-icon">V</span>
           <div class="role-card-title">${escapeHtml(venue.name)}</div>
           <div class="role-card-desc">${escapeHtml(venue.address)}, ${escapeHtml(venue.city)}. Deposit default: ${venue.depositPercent}%.</div>
           <div class="role-card-cta">${venue.isQueueOpen ? 'Open' : 'Closed'}</div>
