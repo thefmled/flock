@@ -964,13 +964,6 @@ function closeShareSheet(options = {}) {
     uiState.shareContext = null;
   }
   document.getElementById('share-sheet-backdrop')?.remove();
-
-  if (!keepState && !uiState.activeGuestView) {
-    const guestRoute = getCurrentGuestRouteContext();
-    if (guestRoute) {
-      renderGuestEntry(guestRoute.slug, guestRoute.entryId).catch(handleFatalError);
-    }
-  }
 }
 
 async function renderPreorder(slug, entryId) {

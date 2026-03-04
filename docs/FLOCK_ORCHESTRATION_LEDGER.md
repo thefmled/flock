@@ -539,3 +539,27 @@ Any future substantive work on Flock should:
   - the fix is local only
   - Render has not been manually redeployed yet
   - the live app still needs a post-deploy browser re-test to confirm the pre-order regression is actually resolved in production
+
+### 2026-03-04 (post-deploy verification + second local fix)
+
+- Ran a focused production verification pass after the first manual Render deploy of the UX hotfix commit.
+- Verified live on `https://taurant.onrender.com`:
+  - the QR preload churn fix is working
+    - waiting-state guest pages no longer repeatedly refetch `/api/v1/share/qr` while idle
+  - the narrow-mobile share tray layout fix is working
+    - the invite-link preview now wraps
+    - the `Copy` button stacks cleanly below the link preview on iPhone-width screens
+- The guest pre-order flow is still broken in production after that deploy.
+- Root cause identified during the re-test:
+  - `closeShareSheet()` was still force-calling `renderGuestEntry(...)`
+  - `renderRoute()` invokes `closeShareSheet({ keepState: false })` at the start of every route render
+  - this means `/v/:slug/e/:entryId/preorder` gets immediately overwritten back into the guest waiting-state screen
+- Applied a second local-only frontend fix:
+  - removed the forced `renderGuestEntry(...)` side effect from `closeShareSheet()`
+- Validation completed after the second fix:
+  - `node --check web/app.js`
+  - `npm run build`
+- Current state now:
+  - QR/network fix: confirmed live
+  - share-tray narrow-width layout fix: confirmed live
+  - pre-order fix: still needs one more push + manual Render deploy before production can be re-tested

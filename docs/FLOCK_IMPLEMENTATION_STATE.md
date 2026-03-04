@@ -1049,3 +1049,38 @@ Important deployment note:
 
 - this hotfix is only in the local repo right now
 - the current live Render deployment still needs a manual deploy before the fixes can be verified in production
+
+## Post-deploy verification status (same-day re-test)
+
+After the first manual Render deploy of the Phase 6 UX hotfix commit, a focused production re-test was run against `https://taurant.onrender.com`.
+
+Confirmed live:
+
+- the QR prefetch churn fix is active in production
+  - repeated idle `/api/v1/share/qr` fetches were no longer observed
+- the narrow-mobile share tray layout fix is active in production
+  - the invite-link preview wraps
+  - the `Copy` button stacks below the preview on iPhone-width screens
+
+Still broken in production:
+
+- the guest pre-order route still renders the waiting-state guest screen even on `/v/:slug/e/:entryId/preorder`
+
+Root cause now identified:
+
+- `closeShareSheet()` still force-rendered `renderGuestEntry(...)`
+- because `renderRoute()` begins by calling `closeShareSheet({ keepState: false })`, the pre-order route was being overwritten back into the guest-entry view
+
+Follow-up local-only fix applied:
+
+- removed the forced `renderGuestEntry(...)` side effect from `closeShareSheet()`
+
+Validation:
+
+- `node --check web/app.js` succeeded
+- `npm run build` succeeded
+
+Current deployment note:
+
+- the first UX hotfix deploy is partially verified live
+- the second pre-order fix is still local only and requires one more push + manual Render deploy before production can be re-tested
