@@ -14,6 +14,8 @@ export interface GuestJwtPayload {
   queueEntryId: string;
   venueId: string;
   guestPhone: string;
+  partySessionId?: string;
+  participantId?: string;
 }
 
 export type JwtPayload = StaffJwtPayload | GuestJwtPayload;
@@ -39,6 +41,8 @@ export function verifyToken(token: string): JwtPayload {
       queueEntryId: String(payload.queueEntryId),
       venueId: String(payload.venueId),
       guestPhone: String(payload.guestPhone),
+      partySessionId: payload.partySessionId ? String(payload.partySessionId) : undefined,
+      participantId: payload.participantId ? String(payload.participantId) : undefined,
     };
   }
 

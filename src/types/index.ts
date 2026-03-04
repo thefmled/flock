@@ -5,6 +5,8 @@ export interface GuestAuthContext {
   queueEntryId: string;
   venueId: string;
   guestPhone: string;
+  partySessionId?: string;
+  participantId?: string;
 }
 
 export interface AuthenticatedRequest extends Request {

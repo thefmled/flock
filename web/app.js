@@ -23,6 +23,7 @@ const appRoot = document.getElementById('app');
 let razorpayLoaderPromise = null;
 const uiState = {
   timerId: null,
+  partyPollerId: null,
   nextRenderResetScroll: false,
   guestJoinSubmitting: false,
   preorderSubmitting: false,
@@ -31,6 +32,27 @@ const uiState = {
   guestSessionRestoring: false,
   guestTray: 'ordered',
   guestMenuActiveCategory: null,
+  activeGuestView: null,
+  activePartySessionId: null,
+  partySessionMeta: null,
+  partyParticipants: [],
+  shareContext: null,
+  shareSheetOpen: false,
+  shareQrLoading: false,
+  shareQrSrc: '',
+  shareLink: '',
+  sessionJoinSubmitting: false,
+  sessionJoinError: '',
+  partyBucket: {
+    cart: {},
+    serverItems: [],
+    lastSyncedAt: 0,
+    lastSyncError: '',
+    isLoading: false,
+    isSyncing: false,
+    pendingSyncTimer: null,
+    dirty: false,
+  },
   staffTab: 'queue',
   staffSeat: {
     otpDigits: ['', '', '', '', '', ''],
@@ -74,6 +96,43 @@ function clearTimer() {
   }
 }
 
+function clearPartySessionPolling() {
+  if (uiState.partyPollerId) {
+    window.clearTimeout(uiState.partyPollerId);
+    uiState.partyPollerId = null;
+  }
+}
+
+function clearPartyBucketSyncTimer() {
+  if (uiState.partyBucket.pendingSyncTimer) {
+    window.clearTimeout(uiState.partyBucket.pendingSyncTimer);
+    uiState.partyBucket.pendingSyncTimer = null;
+  }
+}
+
+function resetPartyBucketState() {
+  clearPartyBucketSyncTimer();
+  uiState.partyBucket = {
+    cart: {},
+    serverItems: [],
+    lastSyncedAt: 0,
+    lastSyncError: '',
+    isLoading: false,
+    isSyncing: false,
+    pendingSyncTimer: null,
+    dirty: false,
+  };
+}
+
+function resetActiveGuestShellState() {
+  clearPartySessionPolling();
+  uiState.activeGuestView = null;
+  uiState.activePartySessionId = null;
+  uiState.partySessionMeta = null;
+  uiState.partyParticipants = [];
+  resetPartyBucketState();
+}
+
 function scheduleRefresh(fn, delayMs) {
   clearTimer();
   uiState.timerId = window.setTimeout(() => {
@@ -91,8 +150,20 @@ function navigate(path) {
   renderRoute().catch(handleFatalError);
 }
 
+function getCurrentGuestRouteContext() {
+  const segments = window.location.pathname.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
+  if (segments[0] === 'v' && segments[2] === 'e' && segments[1] && segments[3]) {
+    return {
+      slug: segments[1],
+      entryId: segments[3],
+    };
+  }
+  return null;
+}
+
 function renderPage(html, title = 'Flock') {
   clearTimer();
+  clearPartySessionPolling();
   document.title = title;
   const previousScrollY = window.scrollY;
   const shouldResetScroll = uiState.nextRenderResetScroll;
@@ -149,6 +220,8 @@ function handleBackgroundRefreshError(error) {
 }
 
 async function renderRoute() {
+  closeShareSheet({ keepState: false });
+  resetActiveGuestShellState();
   const segments = window.location.pathname.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
 
   if (segments.length === 0) {
@@ -158,6 +231,11 @@ async function renderRoute() {
 
   if (segments[0] === 'v' && segments[1] && segments.length === 2) {
     await renderVenueLanding(segments[1]);
+    return;
+  }
+
+  if (segments[0] === 'v' && segments[1] && segments[2] === 'session' && segments[3] && segments.length === 4) {
+    await renderGuestSessionJoin(segments[1], decodeURIComponent(segments[3]));
     return;
   }
 
@@ -207,7 +285,7 @@ function renderHome() {
   renderPage(`
     <main id="landing">
       <div class="brand">
-        <div class="brand-name">Fl<em>o</em>ck</div>
+        <div class="brand-name">fl<em>o</em>ck</div>
         <div class="brand-tag">Queue · Pre-order · Pay</div>
       </div>
       <div class="role-cards">
@@ -242,7 +320,7 @@ async function renderVenueLanding(slug) {
   renderPage(`
     <main id="landing">
       <div class="brand">
-        <div class="brand-name">Fl<em>o</em>ck</div>
+        <div class="brand-name">fl<em>o</em>ck</div>
         <div class="brand-tag">Queue · Pre-order · Pay</div>
       </div>
       <div class="role-cards">
@@ -432,6 +510,14 @@ async function renderGuestEntry(slug, entryId) {
   }
 
   setGuestEntryId(slug, entryId);
+  if (entry.status === 'SEATED') {
+    await loadPartySessionState(entry, guestSession);
+  } else {
+    uiState.activePartySessionId = null;
+    uiState.partySessionMeta = null;
+    uiState.partyParticipants = [];
+    resetPartyBucketState();
+  }
   const flash = consumeFlash();
   const tableCart = getTableCart(entryId);
   const tableCartSummary = buildCartSummary(venue.menuCategories || [], tableCart);
@@ -465,17 +551,31 @@ async function renderGuestEntry(slug, entryId) {
       ${renderGuestStateCards({ slug, entry, venue, bill, guestSession, tableCartSummary })}
     `;
 
+  const showShareAction = ['WAITING', 'NOTIFIED', 'SEATED'].includes(entry.status)
+    && Boolean(entry.partySession?.joinToken);
+
   renderPage(renderShell({
     pill: 'Guest',
     body,
-    right: `<a class="btn btn-secondary btn-sm" data-nav href="/">Exit</a>`,
+    right: `
+      ${showShareAction ? '<button class="btn btn-secondary btn-sm" id="guest-invite-cta" type="button">Invite others</button>' : ''}
+      <a class="btn btn-secondary btn-sm" data-nav href="/">Exit</a>
+    `,
   }), `Flock | ${venue.name}`);
+
+  if (showShareAction) {
+    preloadPartyInviteQr(slug, entry.partySession.joinToken, 240);
+    document.getElementById('guest-invite-cta')?.addEventListener('click', () => {
+      openShareSheet({ slug, joinToken: entry.partySession.joinToken });
+    });
+  }
 
   if (entry.status === 'SEATED') {
     if (!['menu', 'bucket', 'ordered'].includes(uiState.guestTray)) {
       uiState.guestTray = 'ordered';
     }
-    if (!getBucketItemCount(tableCartSummary)) {
+    const seatedDraftSummary = buildCartSummary(venue.menuCategories || [], BucketStore.getDraftCart());
+    if (!getBucketItemCount(seatedDraftSummary)) {
       uiState.guestTray = (entry.orders.length || (bill?.summary?.balanceDue || 0) > 0) ? 'ordered' : 'menu';
     }
     mountSeatedGuestExperience({ slug, entry, venue, bill, guestSession });
@@ -565,7 +665,302 @@ async function renderGuestEntry(slug, entryId) {
   });
 
   if (['WAITING', 'NOTIFIED'].includes(entry.status)) {
-    scheduleRefresh(() => renderGuestEntry(slug, entryId), 5000);
+    if (!uiState.shareSheetOpen) {
+      scheduleRefresh(() => renderGuestEntry(slug, entryId), 5000);
+    }
+  }
+}
+
+async function renderGuestSessionJoin(slug, joinToken) {
+  const venue = await apiRequest(`/venues/${slug}`);
+  const flash = consumeFlash();
+
+  renderPage(renderShell({
+    pill: 'Join',
+    body: `
+      ${flash ? renderInlineFlash(flash) : ''}
+      <div class="card join-session-card">
+        <div class="card-title">Join this table session</div>
+        <div class="card-sub">Enter your name to join the active table and order with the group.</div>
+        <form id="join-party-session-form">
+          <div class="form-group">
+            <label class="form-label" for="join-display-name">Your name</label>
+            <input class="form-input" id="join-display-name" required maxlength="48" placeholder="Aditi">
+          </div>
+          <div id="join-party-session-error"></div>
+          <div class="row">
+            <a class="btn btn-secondary" data-nav href="/v/${slug}">Back to venue</a>
+            <button class="btn btn-primary" id="join-party-session-submit" type="submit">
+              ${uiState.sessionJoinSubmitting ? 'Joining...' : 'Join table'}
+            </button>
+          </div>
+        </form>
+      </div>
+    `,
+    right: `<a class="btn btn-secondary btn-sm" data-nav href="/v/${slug}">Venue</a>`,
+  }), `Flock | Join ${venue.name}`);
+
+  document.getElementById('join-party-session-form')?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (uiState.sessionJoinSubmitting) return;
+
+    const nameInput = document.getElementById('join-display-name');
+    const errorHost = document.getElementById('join-party-session-error');
+    const submitButton = document.getElementById('join-party-session-submit');
+    const displayName = nameInput?.value.trim();
+
+    if (!displayName) {
+      if (errorHost) {
+        errorHost.innerHTML = renderInlineFlash({ kind: 'red', message: 'Enter your name to continue.' });
+      }
+      return;
+    }
+
+    uiState.sessionJoinSubmitting = true;
+    uiState.sessionJoinError = '';
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Joining...';
+    }
+    if (errorHost) {
+      errorHost.innerHTML = '';
+    }
+
+    try {
+      const payload = await apiRequest(`/party-sessions/join/${encodeURIComponent(joinToken)}`, {
+        method: 'POST',
+        body: { displayName },
+      });
+      const existingSession = getGuestSession(payload.queueEntryId);
+      setGuestEntryId(slug, payload.queueEntryId);
+      setGuestSession({
+        entryId: payload.queueEntryId,
+        venueSlug: slug,
+        venueId: payload.venueId,
+        guestToken: payload.guestToken,
+        otp: existingSession?.otp || '',
+        partySessionId: payload.sessionId,
+        participantId: payload.participant?.id || null,
+      });
+      setFlash('green', `Joined ${venue.name}.`);
+      navigate(`/v/${slug}/e/${payload.queueEntryId}`);
+    } catch (error) {
+      const message = /invalid|expired/i.test(error.message)
+        ? 'This invite is invalid or expired.'
+        : error.message;
+      uiState.sessionJoinError = message;
+      if (errorHost) {
+        errorHost.innerHTML = renderInlineFlash({ kind: 'red', message });
+      }
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Join table';
+      }
+    } finally {
+      uiState.sessionJoinSubmitting = false;
+    }
+  });
+}
+
+function buildPartyInviteUrl(slug, joinToken) {
+  return `${window.location.origin}/v/${slug}/session/${encodeURIComponent(joinToken)}`;
+}
+
+function copyToClipboard(value) {
+  if (navigator.clipboard?.writeText) {
+    return navigator.clipboard.writeText(value);
+  }
+
+  return new Promise((resolve, reject) => {
+    const input = document.createElement('textarea');
+    input.value = value;
+    input.setAttribute('readonly', 'readonly');
+    input.style.position = 'fixed';
+    input.style.opacity = '0';
+    document.body.appendChild(input);
+    input.select();
+    try {
+      const ok = document.execCommand('copy');
+      document.body.removeChild(input);
+      if (!ok) {
+        reject(new Error('Clipboard unavailable'));
+        return;
+      }
+      resolve();
+    } catch (error) {
+      document.body.removeChild(input);
+      reject(error);
+    }
+  });
+}
+
+async function copyPartyInviteLink(slug, joinToken) {
+  const inviteUrl = buildPartyInviteUrl(slug, joinToken);
+  await copyToClipboard(inviteUrl);
+  setFlash('green', 'Invite link copied');
+  uiState.shareLink = inviteUrl;
+}
+
+function buildInviteQrImageUrl(inviteUrl, size = 240) {
+  return `${API_BASE}/share/qr?data=${encodeURIComponent(inviteUrl)}&size=${size}`;
+}
+
+function preloadPartyInviteQr(slug, joinToken, size = 240) {
+  const inviteUrl = buildPartyInviteUrl(slug, joinToken);
+  const qrUrl = buildInviteQrImageUrl(inviteUrl, size);
+  uiState.shareQrSrc = qrUrl;
+
+  const image = new Image();
+  image.decoding = 'async';
+  image.loading = 'eager';
+  image.src = qrUrl;
+
+  return qrUrl;
+}
+
+async function renderPartyInviteQr(targetEl, inviteUrl, size = 240) {
+  if (!targetEl) return;
+
+  uiState.shareQrLoading = true;
+  targetEl.innerHTML = '<div class="share-qr-loading">Loading QR…</div>';
+
+  try {
+    const image = new Image();
+    image.className = 'share-qr-image';
+    image.alt = 'Invite QR code';
+    image.decoding = 'async';
+    image.loading = 'lazy';
+    image.addEventListener('load', () => {
+      uiState.shareQrLoading = false;
+      targetEl.innerHTML = '';
+      targetEl.appendChild(image);
+    }, { once: true });
+    image.addEventListener('error', () => {
+      uiState.shareQrLoading = false;
+      targetEl.innerHTML = '<div class="alert alert-amber"><div>QR is unavailable right now, but the invite link still works.</div></div>';
+    }, { once: true });
+    image.src = uiState.shareQrSrc || buildInviteQrImageUrl(inviteUrl, size);
+  } catch (_error) {
+    uiState.shareQrLoading = false;
+    targetEl.innerHTML = '<div class="alert alert-amber"><div>QR is unavailable right now, but the invite link still works.</div></div>';
+  }
+}
+
+async function sharePartyInvite(slug, joinToken) {
+  const inviteUrl = buildPartyInviteUrl(slug, joinToken);
+  if (typeof navigator.share !== 'function') {
+    throw new Error('Native sharing is unavailable on this browser');
+  }
+
+  await navigator.share({
+    title: 'Join this Flock table session',
+    text: 'Join this table session and order with the group.',
+    url: inviteUrl,
+  });
+}
+
+function renderShareSheetContent() {
+  const inviteUrl = uiState.shareLink;
+  const canUseNativeShare = typeof navigator.share === 'function';
+
+  return `
+    <div class="share-sheet-panel">
+      <div class="share-sheet-handle"></div>
+      <div class="section-head share-sheet-head">
+        <div class="section-title">Invite others</div>
+        <div class="section-sub">Invite others to join this table session.</div>
+      </div>
+      <div class="share-link-row">
+        <div class="share-link-preview">${escapeHtml(inviteUrl)}</div>
+        <button class="btn btn-secondary" id="share-copy-link" type="button">Copy</button>
+      </div>
+      <div class="share-qr-panel">
+        <div class="share-qr-frame" id="share-qr-inline-host"></div>
+      </div>
+      ${canUseNativeShare ? `
+        <button class="btn btn-secondary btn-full" id="share-native-share" type="button">Share</button>
+      ` : ''}
+      <button class="btn btn-secondary btn-full" id="share-close-sheet" type="button">Close</button>
+    </div>
+  `;
+}
+
+function mountShareSheet() {
+  const existingBackdrop = document.getElementById('share-sheet-backdrop');
+  existingBackdrop?.remove();
+
+  if (!uiState.shareSheetOpen || !uiState.shareContext) {
+    return;
+  }
+
+  const backdrop = document.createElement('div');
+  backdrop.id = 'share-sheet-backdrop';
+  backdrop.className = 'share-sheet-backdrop';
+  backdrop.innerHTML = renderShareSheetContent();
+  document.body.appendChild(backdrop);
+
+  backdrop.addEventListener('click', (event) => {
+    if (event.target === backdrop) {
+      closeShareSheet();
+    }
+  });
+
+  backdrop.querySelector('#share-close-sheet')?.addEventListener('click', () => closeShareSheet());
+  backdrop.querySelector('#share-copy-link')?.addEventListener('click', async () => {
+    try {
+      await copyPartyInviteLink(uiState.shareContext.slug, uiState.shareContext.joinToken);
+    } catch (_error) {
+      backdrop.querySelector('.share-sheet-head')?.insertAdjacentHTML(
+        'afterend',
+        renderInlineFlash({ kind: 'amber', message: 'Copy failed. Select the invite link manually.' }),
+      );
+    }
+  });
+  backdrop.querySelector('#share-native-share')?.addEventListener('click', async () => {
+    try {
+      await sharePartyInvite(uiState.shareContext.slug, uiState.shareContext.joinToken);
+    } catch (error) {
+      if (error?.name === 'AbortError') {
+        return;
+      }
+      backdrop.querySelector('.share-sheet-head')?.insertAdjacentHTML(
+        'afterend',
+        renderInlineFlash({ kind: 'amber', message: 'Sharing is unavailable right now. Copy the invite link instead.' }),
+      );
+    }
+  });
+
+  renderPartyInviteQr(
+    backdrop.querySelector('#share-qr-inline-host'),
+    uiState.shareLink,
+    240,
+  );
+}
+
+function openShareSheet({ slug, joinToken }) {
+  clearTimer();
+  uiState.shareContext = { slug, joinToken };
+  uiState.shareLink = buildPartyInviteUrl(slug, joinToken);
+  preloadPartyInviteQr(slug, joinToken, 240);
+  uiState.shareSheetOpen = true;
+  mountShareSheet();
+}
+
+function closeShareSheet(options = {}) {
+  const keepState = options.keepState === true;
+  uiState.shareSheetOpen = false;
+  if (!keepState) {
+    uiState.shareLink = '';
+    uiState.shareQrSrc = '';
+    uiState.shareContext = null;
+  }
+  document.getElementById('share-sheet-backdrop')?.remove();
+
+  if (!keepState && !uiState.activeGuestView) {
+    const guestRoute = getCurrentGuestRouteContext();
+    if (guestRoute) {
+      renderGuestEntry(guestRoute.slug, guestRoute.entryId).catch(handleFatalError);
+    }
   }
 }
 
@@ -1661,7 +2056,7 @@ function renderShell({ pill, body, right = '' }) {
     <main class="app-shell">
       <header class="app-header">
         <div class="header-left">
-          <div class="header-logo">Fl<em>o</em>ck</div>
+          <div class="header-logo">fl<em>o</em>ck</div>
           <div class="header-pill">${escapeHtml(pill)}</div>
         </div>
         <div class="header-right">${right}</div>
@@ -1791,9 +2186,12 @@ function renderGuestBucketTray({ draftSummary }) {
     <section class="guest-tray-panel" data-guest-tray-panel="bucket">
       <div class="section-head">
         <div class="section-title">Your Bucket</div>
-        <div class="section-sub">This draft round is local to this device until you send it to the table.</div>
+        <div class="section-sub">This draft round is shared across the active table session until it is sent.</div>
       </div>
       <div class="card">
+        ${uiState.partyBucket.lastSyncError ? `
+          <div class="alert alert-amber" style="margin-bottom:16px;"><div>Sync delayed. Retrying in the background.</div></div>
+        ` : ''}
         ${draftSummary.lines.length ? draftSummary.lines.map((line) => `
           <div class="order-line order-line-editable">
             <div>
@@ -1802,11 +2200,10 @@ function renderGuestBucketTray({ draftSummary }) {
             </div>
             <div class="bucket-line-actions">
               <div class="qty-ctrl">
-                <button class="qty-btn" type="button" data-bucket-line-item data-item-id="${line.id}" data-delta="-1">-</button>
+                <button class="qty-btn" type="button" data-bucket-line-item data-item-id="${line.id}" data-delta="-1" aria-label="${line.quantity > 1 ? 'Decrease quantity' : 'Remove item'}">-</button>
                 <span class="qty-num ${line.quantity > 0 ? 'active' : ''}">${line.quantity}</span>
-                <button class="qty-btn" type="button" data-bucket-line-item data-item-id="${line.id}" data-delta="1">+</button>
+                <button class="qty-btn" type="button" data-bucket-line-item data-item-id="${line.id}" data-delta="1" aria-label="Increase quantity">+</button>
               </div>
-              <button class="btn btn-ghost btn-sm" type="button" data-bucket-remove="${line.id}">Remove</button>
               <div class="order-line-price">${formatMoney(line.total)}</div>
             </div>
           </div>
@@ -1859,14 +2256,19 @@ function renderGuestOrderedTray({ entry, bill }) {
 }
 
 function renderSeatedGuestShell({ entry, venue, bill, guestSession }) {
-  const draftSummary = buildCartSummary(venue.menuCategories || [], BucketStore.getDraft(entry.id));
+  const draftSummary = buildCartSummary(venue.menuCategories || [], BucketStore.getDraftCart());
   const bucketItemCount = getBucketItemCount(draftSummary);
+  const participantCount = Math.max(
+    1,
+    Number(uiState.partySessionMeta?.participantCount || uiState.partyParticipants.length || 1),
+  );
   return `
     <div class="guest-seated-shell">
       <div class="guest-shell-top card">
         <div class="guest-shell-eyebrow">Table ${entry.table?.label ? escapeHtml(entry.table.label) : 'assigned'}</div>
         <div class="guest-shell-title">Now seated</div>
         <div class="guest-shell-sub">Add to your next round from Menu, review live totals in Ordered, and only pay the remaining balance when ready.</div>
+        <div class="guest-shell-meta">${participantCount} guest${participantCount === 1 ? '' : 's'} in this table session</div>
         ${entry.table?.section ? `<div class="guest-shell-meta">Section: ${escapeHtml(entry.table.section)}</div>` : ''}
       </div>
       <div id="guest-tray-host"></div>
@@ -1912,9 +2314,19 @@ function mountSeatedGuestExperience({ slug, entry, venue, bill, guestSession }) 
   }
 
   const renderTrayShell = () => {
-    const draftCart = BucketStore.getDraft(entry.id);
+    const draftCart = BucketStore.getDraftCart();
     const draftSummary = buildCartSummary(venue.menuCategories || [], draftCart);
     const bucketCount = getBucketItemCount(draftSummary);
+
+    uiState.activeGuestView = {
+      slug,
+      entryId: entry.id,
+      entry,
+      venue,
+      bill,
+      guestSession,
+      refreshSeatedShell: renderTrayShell,
+    };
 
     navHost.innerHTML = renderGuestBottomNav(uiState.guestTray, bucketCount);
     payHost.innerHTML = renderFloatingPayButton(bill?.summary?.balanceDue || 0);
@@ -1926,8 +2338,12 @@ function mountSeatedGuestExperience({ slug, entry, venue, bill, guestSession }) 
         button.addEventListener('click', () => {
           const menuItemId = button.getAttribute('data-item-id');
           const delta = Number(button.getAttribute('data-delta'));
-          BucketStore.updateItem(entry.id, menuItemId, delta);
-          renderTrayShell();
+          if (uiState.activePartySessionId) {
+            applyPartyBucketDelta(menuItemId, delta);
+          } else {
+            BucketStore.updateItem(entry.id, menuItemId, delta);
+            renderTrayShell();
+          }
         });
       });
 
@@ -1951,20 +2367,12 @@ function mountSeatedGuestExperience({ slug, entry, venue, bill, guestSession }) 
         button.addEventListener('click', () => {
           const menuItemId = button.getAttribute('data-item-id');
           const delta = Number(button.getAttribute('data-delta'));
-          BucketStore.updateItem(entry.id, menuItemId, delta);
-          renderTrayShell();
-        });
-      });
-
-      trayHost.querySelectorAll('[data-bucket-remove]').forEach((button) => {
-        button.addEventListener('click', () => {
-          const menuItemId = button.getAttribute('data-bucket-remove');
-          const currentDraft = BucketStore.getDraft(entry.id);
-          const currentQty = Number(currentDraft[menuItemId] || 0);
-          if (currentQty > 0) {
-            BucketStore.updateItem(entry.id, menuItemId, currentQty * -1);
+          if (uiState.activePartySessionId) {
+            applyPartyBucketDelta(menuItemId, delta);
+          } else {
+            BucketStore.updateItem(entry.id, menuItemId, delta);
+            renderTrayShell();
           }
-          renderTrayShell();
         });
       });
 
@@ -1995,7 +2403,15 @@ function mountSeatedGuestExperience({ slug, entry, venue, bill, guestSession }) 
             },
           });
 
-          BucketStore.clearDraft(entry.id);
+          BucketStore.clearDraftCart();
+          if (uiState.activePartySessionId) {
+            try {
+              await flushPartyBucketToServer({ force: true });
+            } catch (_error) {
+              setFlash('amber', 'Order was sent, but the shared bucket needs a refresh.');
+              await refreshPartySessionState({ includeSummary: false, rerender: false });
+            }
+          }
           uiState.guestTray = 'ordered';
           setFlash(
             order.posSync?.status === 'manual_fallback' ? 'amber' : 'green',
@@ -2090,6 +2506,7 @@ function mountSeatedGuestExperience({ slug, entry, venue, bill, guestSession }) 
   };
 
   renderTrayShell();
+  startPartySessionPolling();
 }
 
 function renderGuestStateHero(entry, guestSession) {
@@ -2786,19 +3203,334 @@ function updateTableCart(entryId, menuItemId, delta) {
   setTableCart(entryId, cart);
 }
 
+function normaliseDraftCart(cart) {
+  return Object.fromEntries(
+    Object.entries(cart || {})
+      .filter(([, quantity]) => Number(quantity) > 0)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([menuItemId, quantity]) => [menuItemId, Math.min(99, Math.max(0, Math.floor(Number(quantity) || 0)))]),
+  );
+}
+
+function serialiseDraftCart(cart) {
+  return JSON.stringify(normaliseDraftCart(cart));
+}
+
+function bucketItemsToCart(bucketItems) {
+  return (bucketItems || []).reduce((acc, item) => {
+    if (item.quantity > 0) {
+      acc[item.menuItemId] = item.quantity;
+    }
+    return acc;
+  }, {});
+}
+
+function cartToBucketItems(cart) {
+  return Object.entries(normaliseDraftCart(cart)).map(([menuItemId, quantity]) => ({
+    menuItemId,
+    quantity,
+  }));
+}
+
 const BucketStore = {
+  getDraftCart() {
+    if (uiState.activePartySessionId) {
+      return { ...uiState.partyBucket.cart };
+    }
+    const fallbackEntryId = uiState.activeGuestView?.entryId;
+    return fallbackEntryId ? getTableCart(fallbackEntryId) : {};
+  },
+  setDraftCart(cart) {
+    const nextCart = normaliseDraftCart(cart);
+    if (uiState.activePartySessionId) {
+      uiState.partyBucket.cart = nextCart;
+      uiState.partyBucket.dirty = true;
+      return;
+    }
+    const fallbackEntryId = uiState.activeGuestView?.entryId;
+    if (fallbackEntryId) {
+      setTableCart(fallbackEntryId, nextCart);
+    }
+  },
+  applyDelta(menuItemId, delta) {
+    const currentCart = BucketStore.getDraftCart();
+    const current = currentCart[menuItemId] || 0;
+    const next = Math.max(0, current + delta);
+    if (next === 0) {
+      delete currentCart[menuItemId];
+    } else {
+      currentCart[menuItemId] = next;
+    }
+    BucketStore.setDraftCart(currentCart);
+  },
+  replaceFromServer(bucketItems) {
+    uiState.partyBucket.serverItems = bucketItems || [];
+    uiState.partyBucket.cart = normaliseDraftCart(bucketItemsToCart(bucketItems));
+    uiState.partyBucket.lastSyncedAt = Date.now();
+    uiState.partyBucket.lastSyncError = '';
+    uiState.partyBucket.dirty = false;
+  },
+  clearDraftCart() {
+    BucketStore.setDraftCart({});
+  },
   getDraft(queueEntryId) {
+    if (uiState.activePartySessionId) {
+      return BucketStore.getDraftCart();
+    }
     return getTableCart(queueEntryId);
   },
   setDraft(queueEntryId, cart) {
+    if (uiState.activePartySessionId) {
+      BucketStore.setDraftCart(cart);
+      return;
+    }
     setTableCart(queueEntryId, cart);
   },
   updateItem(queueEntryId, menuItemId, delta) {
+    if (uiState.activePartySessionId) {
+      BucketStore.applyDelta(menuItemId, delta);
+      return;
+    }
     updateTableCart(queueEntryId, menuItemId, delta);
   },
   clearDraft(queueEntryId) {
+    if (uiState.activePartySessionId) {
+      BucketStore.clearDraftCart();
+      return;
+    }
     setTableCart(queueEntryId, {});
   },
+};
+
+function rerenderActiveGuestShell() {
+  uiState.activeGuestView?.refreshSeatedShell?.();
+}
+
+async function loadPartySessionState(entry, guestSession) {
+  if (!entry?.partySession?.id || !guestSession?.guestToken) {
+    console.warn('Party session unavailable for seated guest shell. Falling back to local bucket.');
+    uiState.activePartySessionId = null;
+    uiState.partySessionMeta = null;
+    uiState.partyParticipants = [];
+    resetPartyBucketState();
+    return false;
+  }
+
+  uiState.partyBucket.isLoading = true;
+
+  try {
+    const sessionId = entry.partySession.id;
+    const [sessionMeta, bucketItems, participants] = await Promise.all([
+      apiRequest(`/party-sessions/${sessionId}`, {
+        auth: 'guest',
+        guestToken: guestSession.guestToken,
+      }),
+      apiRequest(`/party-sessions/${sessionId}/bucket`, {
+        auth: 'guest',
+        guestToken: guestSession.guestToken,
+      }),
+      apiRequest(`/party-sessions/${sessionId}/participants`, {
+        auth: 'guest',
+        guestToken: guestSession.guestToken,
+      }),
+    ]);
+
+    uiState.activePartySessionId = sessionId;
+    uiState.partySessionMeta = sessionMeta;
+    uiState.partyParticipants = participants;
+    BucketStore.replaceFromServer(bucketItems);
+    return true;
+  } catch (error) {
+    console.warn('Failed to load party session state:', error);
+    uiState.activePartySessionId = null;
+    uiState.partySessionMeta = null;
+    uiState.partyParticipants = [];
+    resetPartyBucketState();
+    return false;
+  } finally {
+    uiState.partyBucket.isLoading = false;
+  }
+}
+
+async function refreshPartySessionState({ includeSummary = false, rerender = true } = {}) {
+  const sessionId = uiState.activePartySessionId;
+  const guestToken = uiState.activeGuestView?.guestSession?.guestToken;
+
+  if (!sessionId || !guestToken) {
+    return;
+  }
+
+  try {
+    const requests = [
+      apiRequest(`/party-sessions/${sessionId}/bucket`, {
+        auth: 'guest',
+        guestToken,
+      }),
+      apiRequest(`/party-sessions/${sessionId}/participants`, {
+        auth: 'guest',
+        guestToken,
+      }),
+    ];
+
+    if (includeSummary) {
+      requests.unshift(apiRequest(`/party-sessions/${sessionId}`, {
+        auth: 'guest',
+        guestToken,
+      }));
+    }
+
+    const results = await Promise.all(requests);
+    const sessionMeta = includeSummary ? results[0] : null;
+    const bucketItems = includeSummary ? results[1] : results[0];
+    const participants = includeSummary ? results[2] : results[1];
+
+    if (sessionMeta) {
+      uiState.partySessionMeta = sessionMeta;
+    }
+    uiState.partyParticipants = participants;
+
+    if (!uiState.partyBucket.dirty && !uiState.partyBucket.isSyncing) {
+      BucketStore.replaceFromServer(bucketItems);
+    } else {
+      uiState.partyBucket.serverItems = bucketItems;
+      uiState.partyBucket.lastSyncedAt = Date.now();
+    }
+
+    if (rerender) {
+      rerenderActiveGuestShell();
+    }
+  } catch (error) {
+    uiState.partyBucket.lastSyncError = error.message || 'Shared bucket refresh failed.';
+    if (rerender) {
+      rerenderActiveGuestShell();
+    }
+  }
+}
+
+async function flushPartyBucketToServer(options = {}) {
+  const sessionId = uiState.activePartySessionId;
+  const guestToken = uiState.activeGuestView?.guestSession?.guestToken;
+  const force = options.force === true;
+
+  if (!sessionId || !guestToken) {
+    return null;
+  }
+
+  if (!uiState.partyBucket.dirty && !force) {
+    return uiState.partyBucket.serverItems;
+  }
+
+  if (uiState.partyBucket.isSyncing) {
+    uiState.partyBucket.dirty = true;
+    return null;
+  }
+
+  const outboundCart = { ...uiState.partyBucket.cart };
+  const outboundSignature = serialiseDraftCart(outboundCart);
+  uiState.partyBucket.isSyncing = true;
+
+  try {
+    const bucketItems = await apiRequest(`/party-sessions/${sessionId}/bucket`, {
+      method: 'PUT',
+      auth: 'guest',
+      guestToken,
+      body: {
+        items: cartToBucketItems(outboundCart),
+      },
+    });
+
+    const currentSignature = serialiseDraftCart(uiState.partyBucket.cart);
+    uiState.partyBucket.lastSyncError = '';
+    uiState.partyBucket.lastSyncedAt = Date.now();
+
+    if (currentSignature === outboundSignature) {
+      BucketStore.replaceFromServer(bucketItems);
+    } else {
+      uiState.partyBucket.serverItems = bucketItems;
+      uiState.partyBucket.dirty = true;
+    }
+
+    return bucketItems;
+  } catch (error) {
+    uiState.partyBucket.lastSyncError = error.message || 'Shared bucket sync failed.';
+    uiState.partyBucket.dirty = true;
+    throw error;
+  } finally {
+    uiState.partyBucket.isSyncing = false;
+    if (uiState.partyBucket.dirty) {
+      schedulePartyBucketSync(true);
+    }
+    rerenderActiveGuestShell();
+  }
+}
+
+function schedulePartyBucketSync(immediate = false) {
+  if (!uiState.activePartySessionId) {
+    return;
+  }
+
+  clearPartyBucketSyncTimer();
+  uiState.partyBucket.pendingSyncTimer = window.setTimeout(() => {
+    uiState.partyBucket.pendingSyncTimer = null;
+    flushPartyBucketToServer().catch(() => {});
+  }, immediate ? 0 : 350);
+}
+
+function applyPartyBucketDelta(menuItemId, delta) {
+  BucketStore.applyDelta(menuItemId, delta);
+  if (uiState.activePartySessionId) {
+    schedulePartyBucketSync();
+  }
+  rerenderActiveGuestShell();
+}
+
+function startPartySessionPolling() {
+  clearPartySessionPolling();
+
+  const runTick = async () => {
+    await refreshPartySessionState({ includeSummary: false, rerender: true });
+    if (uiState.activePartySessionId && uiState.activeGuestView?.entry?.status === 'SEATED') {
+      uiState.partyPollerId = window.setTimeout(() => {
+        runTick().catch(() => {});
+      }, 3000);
+    }
+  };
+
+  uiState.partyPollerId = window.setTimeout(() => {
+    runTick().catch(() => {});
+  }, 3000);
+}
+
+window.__flockJoinPartySession = async function joinPartySessionForLocalTest(joinToken, displayName = '') {
+  const payload = await apiRequest(`/party-sessions/join/${encodeURIComponent(joinToken)}`, {
+    method: 'POST',
+    body: displayName ? { displayName } : {},
+  });
+
+  const currentView = uiState.activeGuestView;
+  const segments = window.location.pathname.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
+  const routeContext = currentView || (
+    segments[0] === 'v' && segments[2] === 'e' && segments[3]
+      ? { slug: segments[1], entryId: segments[3] }
+      : null
+  );
+
+  if (routeContext && payload.queueEntryId === routeContext.entryId) {
+    const existingSession = getGuestSession(payload.queueEntryId);
+    setGuestEntryId(routeContext.slug, payload.queueEntryId);
+    setGuestSession({
+      entryId: payload.queueEntryId,
+      venueSlug: routeContext.slug,
+      venueId: payload.venueId,
+      guestToken: payload.guestToken,
+      otp: existingSession?.otp || '',
+      partySessionId: payload.sessionId,
+      participantId: payload.participant?.id || null,
+    });
+    await renderGuestEntry(routeContext.slug, payload.queueEntryId);
+  }
+
+  return payload;
 };
 
 function isManagerRole(role) {

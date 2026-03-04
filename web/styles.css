@@ -43,7 +43,7 @@ body {
     radial-gradient(ellipse at 85% 30%, rgba(232, 168, 48, 0.04) 0%, transparent 45%),
     var(--bg);
   color: var(--cream);
-  font-family: "Instrument Sans", sans-serif;
+  font-family: "DM Sans", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -88,16 +88,19 @@ button, input, select {
 }
 
 .brand-name {
-  font-family: "Instrument Serif", serif;
-  font-size: clamp(64px, 14vw, 120px);
-  font-weight: 400;
-  line-height: 0.92;
-  color: var(--cream);
-  letter-spacing: -0.01em;
+  font-family: "Fraunces", serif;
+  font-size: clamp(64px, 14vw, 110px);
+  font-weight: 300;
+  font-style: italic;
+  font-optical-sizing: none;
+  font-variation-settings: "opsz" 72;
+  line-height: 0.95;
+  color: #f2ead8;
+  letter-spacing: -0.02em;
 }
 
 .brand-name em {
-  color: var(--amber);
+  color: #e8a830;
   font-style: italic;
 }
 
@@ -145,8 +148,9 @@ button, input, select {
 }
 
 .role-card-title {
-  font-family: "Instrument Serif", serif;
-  font-size: 22px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 17px;
+  font-weight: 500;
   margin-bottom: 6px;
 }
 
@@ -198,14 +202,18 @@ button, input, select {
 }
 
 .header-logo {
-  font-family: "Instrument Serif", serif;
-  font-size: 22px;
-  color: var(--cream);
-  letter-spacing: -0.01em;
+  font-family: "Fraunces", serif;
+  font-size: 21px;
+  font-weight: 300;
+  font-style: italic;
+  font-optical-sizing: none;
+  font-variation-settings: "opsz" 72;
+  color: #f2ead8;
+  letter-spacing: -0.02em;
 }
 
 .header-logo em {
-  color: var(--amber);
+  color: #e8a830;
   font-style: italic;
 }
 
@@ -532,10 +540,13 @@ button, input, select {
 }
 
 .queue-pos-num {
-  font-family: "Instrument Serif", serif;
-  font-size: clamp(72px, 13vw, 108px);
+  font-family: "Fraunces", serif;
+  font-size: clamp(72px, 13vw, 100px);
+  font-weight: 300;
+  font-style: italic;
   line-height: 1;
   color: var(--amber);
+  letter-spacing: -0.02em;
 }
 
 .queue-pos-label {
@@ -580,12 +591,14 @@ button, input, select {
 }
 
 .wait-value {
-  font-family: "Instrument Serif", serif;
+  font-family: "Fraunces", serif;
   font-size: 26px;
+  font-weight: 300;
+  font-style: italic;
 }
 
 .wait-value span {
-  font-family: "Instrument Sans", sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 14px;
   margin-left: 4px;
   color: var(--cream-dim);
@@ -618,11 +631,12 @@ button, input, select {
 }
 
 .otp-num {
-  font-family: "Instrument Serif", serif;
-  font-size: clamp(42px, 8vw, 56px);
-  letter-spacing: 0.25em;
+  font-family: "Fraunces", serif;
+  font-size: clamp(42px, 8vw, 52px);
+  font-weight: 300;
+  font-style: italic;
+  letter-spacing: 0.12em;
   color: var(--amber);
-  padding-left: 0.25em;
 }
 
 .otp-label {
@@ -692,9 +706,10 @@ button, input, select {
 }
 
 .cat-header-name {
-  font-family: "Instrument Serif", serif;
-  font-size: 24px;
-  color: var(--cream);
+  font-family: "Fraunces", serif;
+  font-size: 18px;
+  font-weight: 300;
+  color: var(--cream-dim);
   font-style: italic;
   white-space: nowrap;
   text-shadow: 0 0 14px rgba(242, 234, 216, 0.05);
@@ -858,6 +873,122 @@ button, input, select {
   box-shadow: 0 16px 32px rgba(232, 168, 48, 0.16);
 }
 
+.join-session-card {
+  max-width: 560px;
+}
+
+.share-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 240;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 18px max(16px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: rgba(6, 5, 4, 0.66);
+  backdrop-filter: blur(10px);
+}
+
+.share-sheet-panel {
+  width: min(100%, 720px);
+  max-height: min(75vh, 640px);
+  overflow: auto;
+  border: 1px solid var(--border2);
+  border-radius: calc(var(--r) + 4px);
+  background: rgba(20, 18, 16, 0.97);
+  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.46);
+  padding: 16px;
+}
+
+.share-sheet-handle {
+  width: 58px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(242, 234, 216, 0.18);
+  margin: 0 auto 14px;
+}
+
+.share-sheet-head {
+  margin-bottom: 12px;
+}
+
+.share-link-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: stretch;
+  margin-bottom: 14px;
+}
+
+.share-link-preview {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 12px 14px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: rgba(30, 27, 24, 0.96);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--cream-dim);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.share-qr-panel {
+  margin-bottom: 14px;
+}
+
+.share-qr-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 208px;
+  padding: 12px;
+  border-radius: calc(var(--r-sm) + 2px);
+  border: 1px solid var(--border);
+  background: rgba(30, 27, 24, 0.96);
+}
+
+.share-qr-image {
+  display: block;
+  width: min(100%, 240px);
+  height: auto;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 8px;
+}
+
+.share-qr-loading {
+  font-size: 13px;
+  color: var(--cream-dim);
+}
+
+@media (max-width: 720px) {
+  .share-sheet-backdrop {
+    padding: 12px max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  }
+
+  .share-sheet-panel {
+    width: 100%;
+    max-height: 78vh;
+    padding: 14px;
+  }
+
+  .share-link-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .share-link-preview {
+    white-space: nowrap;
+    word-break: normal;
+    font-size: 11px;
+  }
+}
+
 .preorder-page-shell {
   display: grid;
   gap: 18px;
@@ -964,8 +1095,9 @@ button, input, select {
 }
 
 .menu-item-price {
-  font-family: "Instrument Serif", serif;
-  font-size: 20px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
   color: var(--amber);
 }
 
@@ -1030,8 +1162,9 @@ button, input, select {
 }
 
 .order-line-price {
-  font-family: "Instrument Serif", serif;
-  font-size: 17px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 15px;
+  font-weight: 400;
 }
 
 .bucket-line-actions {
@@ -1059,8 +1192,9 @@ button, input, select {
 }
 
 .order-total-val {
-  font-family: "Instrument Serif", serif;
-  font-size: 32px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 36px;
+  font-weight: 500;
   color: var(--amber);
 }
 
@@ -1300,8 +1434,10 @@ button, input, select {
 }
 
 .stat-value {
-  font-family: "Instrument Serif", serif;
-  font-size: 24px;
+  font-family: "Fraunces", serif;
+  font-size: 30px;
+  font-weight: 300;
+  font-style: italic;
 }
 
 .empty-state {

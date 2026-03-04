@@ -70,10 +70,33 @@ export async function requireGuestAuth(
       return;
     }
 
+    if (payload.partySessionId && payload.participantId) {
+      const participant = await prisma.partyParticipant.findFirst({
+        where: {
+          id: payload.participantId,
+          partySessionId: payload.partySessionId,
+          isActive: true,
+          partySession: {
+            queueEntryId: entry.id,
+            venueId: entry.venueId,
+            status: { in: ['ACTIVE', 'LOCKED'] },
+          },
+        },
+        select: { id: true },
+      });
+
+      if (!participant) {
+        unauthorized(res, 'Guest participant invalid');
+        return;
+      }
+    }
+
     req.guest = {
       queueEntryId: entry.id,
       venueId: entry.venueId,
       guestPhone: entry.guestPhone,
+      partySessionId: payload.partySessionId,
+      participantId: payload.participantId,
     };
 
     next();
@@ -121,10 +144,33 @@ export async function requireGuestOrStaffAuth(
       return;
     }
 
+    if (payload.partySessionId && payload.participantId) {
+      const participant = await prisma.partyParticipant.findFirst({
+        where: {
+          id: payload.participantId,
+          partySessionId: payload.partySessionId,
+          isActive: true,
+          partySession: {
+            queueEntryId: entry.id,
+            venueId: entry.venueId,
+            status: { in: ['ACTIVE', 'LOCKED'] },
+          },
+        },
+        select: { id: true },
+      });
+
+      if (!participant) {
+        unauthorized(res, 'Guest participant invalid');
+        return;
+      }
+    }
+
     req.guest = {
       queueEntryId: entry.id,
       venueId: entry.venueId,
       guestPhone: entry.guestPhone,
+      partySessionId: payload.partySessionId,
+      participantId: payload.participantId,
     };
     next();
   } catch {

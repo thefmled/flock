@@ -1,6 +1,6 @@
 # Flock Orchestration Ledger
 
-Last updated: 2026-03-02
+Last updated: 2026-03-03
 Status: active
 
 ## Purpose
@@ -48,6 +48,23 @@ Ship a single-venue closed pilot for Flock that proves:
 - invoice creation
 
 without disrupting restaurant floor operations.
+
+## Current Build Focus
+
+Phase 6A has started: backend groundwork for true multi-user table sessions.
+
+Current implementation target:
+
+- add `PartySession`, `PartyParticipant`, and `PartyBucketItem`
+- create one party session automatically for each queue entry
+- issue guest tokens that can carry participant and party-session identity
+- add backend APIs for:
+  - join-by-token
+  - session summary
+  - participant list
+  - shared bucket reads/writes
+
+This phase is intentionally backend-first. The current guest tray shell remains local-bucket-based until the shared session APIs are stable.
 
 ## Locked Decisions
 
@@ -405,3 +422,21 @@ Any future substantive work on Flock should:
   - improved mobile/staff navigation usability:
     - compact mobile header
     - horizontally scrollable staff/admin tabs on narrow screens
+
+## Phase 6B shared-bucket cutover
+
+- Implemented the first real multi-user frontend slice locally on top of the existing `party-sessions` backend APIs.
+- The seated guest shell now hydrates party-session state when `GET /queue/:entryId` returns `entry.partySession`.
+- The seated bucket is now session-backed:
+  - `Menu` and `Your Bucket` edit an in-memory cart sourced from `GET /party-sessions/:id/bucket`
+  - edits debounce-sync through `PUT /party-sessions/:id/bucket`
+- Seated guest collaboration now uses compact scoped polling every 3 seconds for:
+  - `GET /party-sessions/:id/bucket`
+  - `GET /party-sessions/:id/participants`
+  and does not re-poll the full guest route while seated.
+- The seated shell now shows lightweight participant awareness:
+  - `n guests in this table session`
+- Sending an order from `Your Bucket` now clears the shared bucket after the order succeeds and preserves the existing ordered/bill flow.
+- Added a developer-only local test helper:
+  - `window.__flockJoinPartySession(joinToken, displayName)`
+  so a second tab can join the same active party session before we build visible invite/share UI.

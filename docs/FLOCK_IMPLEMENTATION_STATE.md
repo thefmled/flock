@@ -1,6 +1,6 @@
 # Flock Implementation State
 
-Last updated: 2026-03-02
+Last updated: 2026-03-03
 
 ## Purpose
 
@@ -52,6 +52,28 @@ Out of current pilot scope:
 - fully live POS/TMS dependency
 - public launch
 - split bills
+
+## New In-Progress Workstream
+
+Phase 6A backend groundwork for real multi-user sessions is now implemented locally but not yet wired into the guest frontend:
+
+- schema now defines:
+  - `PartySession`
+  - `PartyParticipant`
+  - `PartyBucketItem`
+- a new migration is checked in:
+  - `20260303121500_party_sessions_phase6a`
+- queue join now creates and/or ensures a party session plus an initial host/payer participant
+- guest tokens can now include:
+  - `partySessionId`
+  - `participantId`
+- new backend routes exist under `/api/v1/party-sessions` for:
+  - invite-token join
+  - session summary
+  - participant list
+  - shared bucket read/update
+
+This is a backend foundation only. The current guest shell still uses the local bucket until a later frontend pass switches it to the shared session APIs.
 
 ## Source-Of-Truth Decisions Already Applied
 
@@ -848,3 +870,37 @@ Validation:
 
 - `node --check web/app.js` succeeded
 - `npm run build` succeeded after the follow-up patch
+
+## Phase 6B shared bucket status
+
+The first real multi-user guest slice is now implemented locally and build-clean.
+
+Implemented:
+
+- the existing seated tray shell (`Menu / Your Bucket / Ordered`) now uses the existing backend `party-sessions` APIs when a `partySession` is present on the queue entry
+- local seated bucket state has been replaced by a session-backed in-memory cart:
+  - `GET /party-sessions/:id/bucket`
+  - `PUT /party-sessions/:id/bucket`
+- quantity changes in `Menu` and `Your Bucket` are now:
+  - optimistic
+  - debounced
+  - synced back to the shared bucket
+- compact seated-only polling now keeps cross-device state in sync using:
+  - `GET /party-sessions/:id/bucket`
+  - `GET /party-sessions/:id/participants`
+- the seated guest shell now shows a compact participant-count line
+- `Your Bucket` now correctly describes the draft round as shared across the active table session
+- successful `Send order to table` clears the shared bucket after order submission
+- a developer-only local test helper now exists:
+  - `window.__flockJoinPartySession(joinToken, displayName)`
+
+Validation:
+
+- `node --check web/app.js` succeeded
+- `npm run build` succeeded
+
+Still pending:
+
+- no visible invite/share UI yet
+- no payer-role gating yet
+- local browser verification in two tabs/devices is the next required check before adding user-facing invite/join

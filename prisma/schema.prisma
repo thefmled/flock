@@ -96,6 +96,17 @@ enum TmsProvider {
   MANUAL
 }
 
+enum PartySessionStatus {
+  ACTIVE
+  LOCKED
+  CLOSED
+}
+
+enum PartyParticipantRole {
+  HOST
+  MEMBER
+}
+
 model Venue {
   id                  String         @id @default(uuid())
   name                String
@@ -133,6 +144,7 @@ model Venue {
   notifications       Notification[]
   invoices            Invoice[]
   otpCodes            OtpCode[]
+  partySessions       PartySession[]
   @@index([slug])
   @@index([city])
 }
@@ -231,6 +243,7 @@ model MenuItem {
   venue       Venue        @relation(fields: [venueId], references: [id], onDelete: Cascade)
   category    MenuCategory @relation(fields: [categoryId], references: [id])
   orderItems  OrderItem[]
+  partyBucketItems PartyBucketItem[]
   @@index([venueId, isAvailable])
   @@unique([venueId, name])
 }
@@ -260,6 +273,7 @@ model QueueEntry {
   table            Table?           @relation(fields: [tableId], references: [id])
   orders           Order[]
   notifications    Notification[]
+  partySession     PartySession?
   @@index([venueId, status])
   @@index([venueId, position])
   @@index([status, tableReadyDeadlineAt])
@@ -375,4 +389,52 @@ model Notification {
   queueEntry   QueueEntry?         @relation(fields: [queueEntryId], references: [id])
   @@index([venueId])
   @@index([queueEntryId])
+}
+
+model PartySession {
+  id           String             @id @default(uuid())
+  queueEntryId String             @unique
+  venueId      String
+  status       PartySessionStatus @default(ACTIVE)
+  joinToken    String             @unique
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  queueEntry   QueueEntry         @relation(fields: [queueEntryId], references: [id], onDelete: Cascade)
+  venue        Venue              @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  participants PartyParticipant[]
+  bucketItems  PartyBucketItem[]
+  @@index([venueId, status])
+}
+
+model PartyParticipant {
+  id                   String               @id @default(uuid())
+  partySessionId       String
+  displayName          String?
+  guestPhone           String?
+  role                 PartyParticipantRole @default(MEMBER)
+  isPayer              Boolean              @default(false)
+  isActive             Boolean              @default(true)
+  joinedAt             DateTime             @default(now())
+  lastSeenAt           DateTime?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  partySession         PartySession         @relation(fields: [partySessionId], references: [id], onDelete: Cascade)
+  updatedBucketItems   PartyBucketItem[]    @relation("BucketItemUpdatedBy")
+  @@index([partySessionId, role])
+  @@index([partySessionId, isPayer])
+}
+
+model PartyBucketItem {
+  id                   String            @id @default(uuid())
+  partySessionId       String
+  menuItemId           String
+  quantity             Int
+  updatedByParticipantId String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  partySession         PartySession      @relation(fields: [partySessionId], references: [id], onDelete: Cascade)
+  menuItem             MenuItem          @relation(fields: [menuItemId], references: [id])
+  updatedBy            PartyParticipant? @relation("BucketItemUpdatedBy", fields: [updatedByParticipantId], references: [id])
+  @@unique([partySessionId, menuItemId])
+  @@index([partySessionId])
 }

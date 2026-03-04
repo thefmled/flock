@@ -9,6 +9,7 @@ import { logger } from '../config/logger';
 import { syncPendingPreOrderForSeating } from './order.service';
 import { signGuestToken } from '../utils/jwt';
 import { initiateRefund } from '../integrations/razorpay';
+import { ensurePartySessionForQueueEntry } from './partySession.service';
 
 const AVG_TURN_MINUTES = 55; // used for wait time estimation
 
@@ -52,6 +53,13 @@ export async function joinQueue(params: {
     },
   });
 
+  const { session, hostParticipant } = await ensurePartySessionForQueueEntry({
+    queueEntryId: entry.id,
+    venueId: entry.venueId,
+    guestName: entry.guestName,
+    guestPhone: entry.guestPhone,
+  });
+
   // Cache in Redis for low-latency reads
   await safeRedisExec(() =>
     redis.set(
@@ -68,7 +76,19 @@ export async function joinQueue(params: {
 
   await Notify.queueJoined(params.venueId, entry.id, params.guestPhone, params.guestName, position, estimatedWaitMin, venue.name);
 
-  return { id: entry.id, otp, position, estimatedWaitMin, guestToken: issueGuestSessionToken(entry.id, entry.venueId, entry.guestPhone) };
+  return {
+    id: entry.id,
+    otp,
+    position,
+    estimatedWaitMin,
+    guestToken: issueGuestSessionToken({
+      queueEntryId: entry.id,
+      venueId: entry.venueId,
+      guestPhone: entry.guestPhone,
+      partySessionId: session.id,
+      participantId: hostParticipant.id,
+    }),
+  };
 }
 
 // ── Get live queue ─────────────────────────────────────────────────
@@ -118,6 +138,13 @@ export async function getQueueEntry(entryId: string) {
         include: { items: true },
       },
       table: { select: { label: true, section: true } },
+      partySession: {
+        select: {
+          id: true,
+          joinToken: true,
+          status: true,
+        },
+      },
     },
   });
   if (!entry) throw new AppError('Queue entry not found', 404);
@@ -146,8 +173,20 @@ export async function reissueGuestSession(entryId: string, otp: string) {
     throw new AppError('Incorrect OTP', 400, 'OTP_INCORRECT');
   }
 
+  const { session, hostParticipant } = await ensurePartySessionForQueueEntry({
+    queueEntryId: entry.id,
+    venueId: entry.venueId,
+    guestPhone: entry.guestPhone,
+  });
+
   return {
-    guestToken: issueGuestSessionToken(entry.id, entry.venueId, entry.guestPhone),
+    guestToken: issueGuestSessionToken({
+      queueEntryId: entry.id,
+      venueId: entry.venueId,
+      guestPhone: entry.guestPhone,
+      partySessionId: session.id,
+      participantId: hostParticipant.id,
+    }),
   };
 }
 
@@ -395,11 +434,19 @@ async function safeRedisExec(operation: () => Promise<unknown>): Promise<void> {
   }
 }
 
-function issueGuestSessionToken(queueEntryId: string, venueId: string, guestPhone: string): string {
+function issueGuestSessionToken(params: {
+  queueEntryId: string;
+  venueId: string;
+  guestPhone: string;
+  partySessionId?: string;
+  participantId?: string;
+}): string {
   return signGuestToken({
     kind: 'guest',
-    queueEntryId,
-    venueId,
-    guestPhone,
+    queueEntryId: params.queueEntryId,
+    venueId: params.venueId,
+    guestPhone: params.guestPhone,
+    partySessionId: params.partySessionId,
+    participantId: params.participantId,
   });
 }
