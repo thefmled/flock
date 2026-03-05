@@ -978,13 +978,13 @@ button, input, select {
   }
 
   .share-link-row {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: 1fr;
     gap: 8px;
   }
 
   .share-link-preview {
-    white-space: nowrap;
-    word-break: normal;
+    white-space: normal;
+    word-break: break-word;
     font-size: 11px;
   }
 }

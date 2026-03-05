@@ -31,6 +31,7 @@ export const env = {
   GUEST_JWT_EXPIRES_IN: optional('GUEST_JWT_EXPIRES_IN', '6h'),
   ONBOARDING_TOKEN: optional('ONBOARDING_TOKEN'),
   OTP_EXPIRES_SECONDS: parseInt(optional('OTP_EXPIRES_SECONDS', '300'), 10),
+  EXPOSE_MOCK_OTP_IN_API: optional('EXPOSE_MOCK_OTP_IN_API', 'false') === 'true',
 
   RAZORPAY_KEY_ID:       optional('RAZORPAY_KEY_ID'),
   RAZORPAY_KEY_SECRET:   optional('RAZORPAY_KEY_SECRET'),

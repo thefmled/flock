@@ -1,6 +1,6 @@
 # Flock Orchestration Ledger
 
-Last updated: 2026-03-03
+Last updated: 2026-03-04
 Status: active
 
 ## Purpose
@@ -51,20 +51,23 @@ without disrupting restaurant floor operations.
 
 ## Current Build Focus
 
-Phase 6A has started: backend groundwork for true multi-user table sessions.
+Phase 6C is the active feature track in code: visible multi-user share/join on top of shared table sessions.
 
 Current implementation target:
 
-- add `PartySession`, `PartyParticipant`, and `PartyBucketItem`
-- create one party session automatically for each queue entry
-- issue guest tokens that can carry participant and party-session identity
-- add backend APIs for:
-  - join-by-token
-  - session summary
-  - participant list
-  - shared bucket reads/writes
+- backend already defines:
+  - `PartySession`
+  - `PartyParticipant`
+  - `PartyBucketItem`
+- queue join now creates and/or ensures one party session automatically per queue entry
+- guest tokens can carry participant and party-session identity
+- shared-bucket frontend cutover exists in the guest tray shell
+- a visible share/join layer now exists in the guest UI:
+  - `Invite others`
+  - share tray
+  - public join route `/v/:slug/session/:joinToken`
 
-This phase is intentionally backend-first. The current guest tray shell remains local-bucket-based until the shared session APIs are stable.
+The current open work is no longer “backend-first only.” The remaining work is validation, deployment parity, and refinement of the user-facing multi-user flow.
 
 ## Locked Decisions
 
@@ -109,6 +112,16 @@ This phase is intentionally backend-first. The current guest tray shell remains 
 - The full seated happy path is now validated for both branches:
   - no-preorder seated guest branch
   - prepaid seated guest branch
+- Multi-user foundations now exist in code:
+  - party sessions
+  - party participants
+  - shared bucket rows
+- The guest tray shell is no longer local-bucket-only:
+  - the seated shell now uses backend `party-sessions` bucket state
+- A visible guest invite/share flow now exists in code and should be live on production commit lineage:
+  - `Invite others`
+  - share tray with link copy and QR
+  - public join route `/v/:slug/session/:joinToken`
 
 ## Database
 
@@ -131,8 +144,13 @@ This phase is intentionally backend-first. The current guest tray shell remains 
 
 ## Deployment
 
-- No stable public deployment yet
-- Current proven runtime is local only
+- Stable public deployment exists:
+  - `https://taurant.onrender.com`
+- Render deploys remain manual (`autoDeploy: no`)
+- Latest verified live Render commit is:
+  - `6ddc5c1`
+- Production parity caveat:
+  - later local changes after `6ddc5c1` are not guaranteed live until manually redeployed
 
 ## Completed Work
 
@@ -258,6 +276,37 @@ Any future substantive work on Flock should:
 ### 2026-03-02
 
 - Established `C/Flock` as the active project.
+
+### 2026-03-04
+
+- Re-baselined the live deployment status against Render.
+- Verified the current live Render deploy for `https://taurant.onrender.com` is:
+  - deploy `dep-d6jrcmklsarc73cu4nf0`
+  - commit `4af4271` (`Add test data reset script`)
+- Because `4af4271` is newer than `96f996c` (`Add shared session UX and QR proxy preload`), the currently live deployment should include:
+  - the visible `Invite others` guest action
+  - the public join route layer added in `web/app.js`
+  - the shared-bucket frontend cutover that shipped with the party-session UX bundle
+  - the app-side QR proxy route under `/api/v1/share/qr`
+- Documentation drift identified and corrected:
+  - previous docs still described Phase 6B as “no visible invite/share UI yet”
+  - that is now stale relative to the code and the currently live Render commit lineage
+- Remaining deployment uncertainty:
+  - local changes made after `4af4271` are **not** guaranteed live until manually redeployed on Render
+  - this includes later local-only UX refinements unless explicitly confirmed by a newer live deploy
+- Remaining database uncertainty:
+  - the `20260303093000_v2_feedback_hardening` migration is still not re-verified from this session
+  - Supabase MCP is currently unavailable in this session (`Auth required`)
+  - direct DB verification from this shell is blocked by network reachability to the Supabase pooler
+- Verified database fact still held from prior work:
+  - the Phase 6A `party_sessions_phase6a` schema was applied directly to the database earlier so `PartySession`, `PartyParticipant`, and `PartyBucketItem` exist for current multi-user work
+- Current recommended operating assumption:
+  - treat production as live on `4af4271`
+  - treat the share/join layer as deployed
+  - treat later local UI polish after `4af4271` as local-only until the next manual Render deploy
+
+### 2026-03-02 (continued historical log)
+
 - Added the new frontend based on `flock v2.html`.
 - Hardened queue, seating, payment, and webhook flows.
 - Connected Supabase and applied schema.
@@ -440,3 +489,177 @@ Any future substantive work on Flock should:
 - Added a developer-only local test helper:
   - `window.__flockJoinPartySession(joinToken, displayName)`
   so a second tab can join the same active party session before we build visible invite/share UI.
+
+### 2026-03-04 (UX audit pass)
+
+- Completed a browser-driven Phase 6 UX/runtime audit against the live Render deployment using Chrome DevTools MCP.
+- Runtime used for the audit:
+  - `https://taurant.onrender.com`
+  - live deploy `dep-d6jrcmklsarc73cu4nf0`
+  - live commit lineage `4af4271`
+- Device coverage completed:
+  - Pixel-sized mobile viewport
+  - iPhone-sized mobile viewport
+- Confirmed working on the live app:
+  - guest queue join
+  - waiting-state rendering
+  - visible `Invite others`
+  - share tray with QR via `/api/v1/share/qr`
+  - second-participant join via `/v/:slug/session/:joinToken`
+  - invalid join-token inline error
+  - staff/admin OTP send
+  - staff invalid-OTP error handling
+- Confirmed live runtime issue:
+  - `Pre-order now` currently routes to `/v/:slug/e/:entryId/preorder` but still renders the waiting-state screen on the current live build
+  - this is the primary UX blocker found in the live guest flow
+- Confirmed live performance issue:
+  - waiting-state guest pages repeatedly refetch the QR proxy endpoint while idle because the QR preload runs on repeated guest rerenders
+- Additional likely design consistency issue from code inspection:
+  - the branding migration is still incomplete because `web/styles.css` retains `Instrument Serif` references while `web/index.html` imports only `Fraunces` and `DM Sans`
+- Test blockers recorded:
+  - local repo runtime could not be started for browser testing because Prisma could not reach the Supabase pooler from this shell
+  - staff/admin verification could not be completed in-session because no real OTP was available through the live UI
+  - seated tray shell and shared seated-bucket sync remain unverified at runtime until staff seating can be exercised
+- Wrote the structured audit to:
+  - `docs/UX_TEST_AUDIT_PHASE6.md`
+
+### 2026-03-04 (Phase 6 UX hotfix patch, local only)
+
+- Applied a minimal frontend hotfix in the local repo to address the highest-confidence issues found in the UX audit:
+  - `web/app.js`
+    - `navigate(path)` now clears pending refresh timers before route transitions
+    - `/v/:slug/e/:entryId/preorder` route matching is now explicit (`segments.length === 5`) and is checked before the base guest entry route
+    - QR preload is now cached by invite URL so waiting/notified guest rerenders do not repeatedly refetch `/api/v1/share/qr`
+  - `web/styles.css`
+    - the share tray now stacks the link row on narrow widths and allows the invite-link preview to wrap instead of hard truncating
+- Validation completed after the patch:
+  - `node --check web/app.js`
+  - `npm run build`
+- Current deployment state after this patch:
+  - the fix is local only
+  - Render has not been manually redeployed yet
+  - the live app still needs a post-deploy browser re-test to confirm the pre-order regression is actually resolved in production
+
+### 2026-03-04 (post-deploy verification + second local fix)
+
+- Ran a focused production verification pass after the first manual Render deploy of the UX hotfix commit.
+- Verified live on `https://taurant.onrender.com`:
+  - the QR preload churn fix is working
+    - waiting-state guest pages no longer repeatedly refetch `/api/v1/share/qr` while idle
+  - the narrow-mobile share tray layout fix is working
+    - the invite-link preview now wraps
+    - the `Copy` button stacks cleanly below the link preview on iPhone-width screens
+- The guest pre-order flow is still broken in production after that deploy.
+- Root cause identified during the re-test:
+  - `closeShareSheet()` was still force-calling `renderGuestEntry(...)`
+  - `renderRoute()` invokes `closeShareSheet({ keepState: false })` at the start of every route render
+  - this means `/v/:slug/e/:entryId/preorder` gets immediately overwritten back into the guest waiting-state screen
+- Applied a second local-only frontend fix:
+  - removed the forced `renderGuestEntry(...)` side effect from `closeShareSheet()`
+- Validation completed after the second fix:
+  - `node --check web/app.js`
+  - `npm run build`
+- Current state now:
+  - QR/network fix: confirmed live
+  - share-tray narrow-width layout fix: confirmed live
+  - pre-order fix: still needs one more push + manual Render deploy before production can be re-tested
+
+### 2026-03-04 (second redeploy verification)
+
+- Ran the tight production verification again after the second manual Render deploy (commit `6ddc5c1`).
+- Confirmed live on `https://taurant.onrender.com`:
+  - `Pre-order now` from the waiting-state guest route now opens the actual pre-order UI
+  - hard-reloading the exact `/v/:slug/e/:entryId/preorder` URL keeps the app on the pre-order UI
+  - adding an item on the pre-order page updates the mobile deposit dock immediately
+  - the `Pay deposit` CTA enables correctly when the cart is non-empty
+- This clears the previously blocking guest pre-order regression found during the Phase 6 UX audit.
+- Current production result after the two redeploys:
+  - pre-order route regression: fixed
+  - QR preload churn on waiting state: fixed
+  - narrow-mobile share-tray link layout: fixed
+- Remaining larger runtime coverage still pending:
+  - authenticated staff dashboard pass
+  - authenticated admin dashboard pass
+  - seated tray shell / shared bucket / final payment end-to-end
+
+### 2026-03-04 (full production flow continuation)
+
+- Continued the live Phase 6 production test pass after the guest hotfixes were verified.
+- Confirmed the current production behavior now matches the `6ddc5c1` hotfix set in-browser:
+  - pre-order route regression is gone
+  - idle QR refetch churn is gone
+  - narrow-mobile share-tray layout is fixed
+- Completed guest persistence and recovery checks in production:
+  - reloading an active guest route preserves the waiting-state view
+  - revisiting the venue route in the same browser context shows `Active queue entry found for this device`
+  - `Continue existing entry` returns to the active queue entry
+  - opening the same guest route in a fresh isolated context shows the OTP recovery gate
+  - entering the valid seating OTP restores the guest session successfully
+- Completed another narrow-width mobile check on the live pre-order page:
+  - iPhone-width `390 x 844` rendering keeps the hero copy, category pills, quantity controls, mobile deposit dock, and `Pay deposit` CTA visible
+- Completed explicit invalid-admin-auth handling verification:
+  - invalid OTP returns a `400` on the shared OTP verify endpoint
+  - the UI surfaces `OTP expired or not found`
+- Remaining blocked production coverage is now explicit:
+  - authenticated staff dashboard flows
+  - seating flow
+  - seated tray shell
+  - shared seated-bucket sync
+  - final payment entry points
+  - authenticated admin dashboard flows
+- Reason those areas remain blocked:
+  - no valid OTP was available in-session for staff/admin verification
+  - payment mode was not re-verified as safe for live capture, so no payment capture was attempted
+
+### 2026-03-04 (mock OTP restore path, local only)
+
+- Added an explicit test-only OTP exposure path in the local repo so authenticated production-pass testing can be unblocked without relying on direct DB access.
+- New env flag:
+  - `EXPOSE_MOCK_OTP_IN_API=false` by default
+- Behavior:
+  - when both `USE_MOCK_NOTIFICATIONS=true` and `EXPOSE_MOCK_OTP_IN_API=true`, the auth send endpoints now include `mockOtp` in the JSON response:
+    - `POST /api/v1/auth/guest/otp/send`
+    - `POST /api/v1/auth/staff/otp/send`
+  - otherwise, the response remains unchanged and only returns `message: "OTP sent"`
+- Safety posture:
+  - the new path is explicit opt-in and remains off by default
+  - no OTP is exposed unless that flag is intentionally enabled
+- Files updated:
+  - `src/config/env.ts`
+  - `src/services/auth.service.ts`
+  - `src/controllers/auth.controller.ts`
+  - `.env.example`
+- Validation completed:
+  - `node --check src/controllers/auth.controller.ts`
+  - `npm run build`
+- Current deployment state:
+  - this is local only
+  - Render must be manually redeployed, and the new env var must be set explicitly, before the live app exposes mock OTPs for testing
+
+### 2026-03-04 (guarded internal verification route, local only)
+
+- Added a read-only internal verification route to avoid blocking on Supabase MCP or direct DB connectivity from this shell.
+- New route:
+  - `GET /api/v1/internal/test-state`
+- Guardrails:
+  - requires `x-flock-onboarding-token`
+  - returns `404` unless `EXPOSE_MOCK_OTP_IN_API=true`
+- Query parameters:
+  - `phone` (required)
+  - `purpose` (`STAFF_LOGIN` default, or `GUEST_QUEUE`)
+  - `migration` (optional migration name to check)
+- Response includes:
+  - latest unverified OTP row for the requested phone/purpose
+  - last 10 `_prisma_migrations` rows
+  - optional applied/matched status for the requested migration name
+- Safety posture:
+  - read-only
+  - explicit opt-in
+  - gated by the existing onboarding secret
+- File updated:
+  - `src/routes/index.ts`
+- Validation completed:
+  - `npm run build`
+- Current deployment state:
+  - this route is local only until the next push + manual Render deploy
+  - it will remain inactive on Render unless `EXPOSE_MOCK_OTP_IN_API=true` is set

@@ -39,6 +39,7 @@ const uiState = {
   shareContext: null,
   shareSheetOpen: false,
   shareQrLoading: false,
+  shareQrKey: '',
   shareQrSrc: '',
   shareLink: '',
   sessionJoinSubmitting: false,
@@ -141,6 +142,7 @@ function scheduleRefresh(fn, delayMs) {
 }
 
 function navigate(path) {
+  clearTimer();
   if (window.location.pathname === path) {
     renderRoute().catch(handleFatalError);
     return;
@@ -239,13 +241,13 @@ async function renderRoute() {
     return;
   }
 
-  if (segments[0] === 'v' && segments[1] && segments[2] === 'e' && segments[3] && segments.length === 4) {
-    await renderGuestEntry(segments[1], segments[3]);
+  if (segments[0] === 'v' && segments[1] && segments[2] === 'e' && segments[3] && segments[4] === 'preorder' && segments.length === 5) {
+    await renderPreorder(segments[1], segments[3]);
     return;
   }
 
-  if (segments[0] === 'v' && segments[1] && segments[2] === 'e' && segments[3] && segments[4] === 'preorder') {
-    await renderPreorder(segments[1], segments[3]);
+  if (segments[0] === 'v' && segments[1] && segments[2] === 'e' && segments[3] && segments.length === 4) {
+    await renderGuestEntry(segments[1], segments[3]);
     return;
   }
 
@@ -808,6 +810,12 @@ function buildInviteQrImageUrl(inviteUrl, size = 240) {
 function preloadPartyInviteQr(slug, joinToken, size = 240) {
   const inviteUrl = buildPartyInviteUrl(slug, joinToken);
   const qrUrl = buildInviteQrImageUrl(inviteUrl, size);
+
+  if (uiState.shareQrKey === inviteUrl && uiState.shareQrSrc === qrUrl) {
+    return qrUrl;
+  }
+
+  uiState.shareQrKey = inviteUrl;
   uiState.shareQrSrc = qrUrl;
 
   const image = new Image();
@@ -951,17 +959,11 @@ function closeShareSheet(options = {}) {
   uiState.shareSheetOpen = false;
   if (!keepState) {
     uiState.shareLink = '';
+    uiState.shareQrKey = '';
     uiState.shareQrSrc = '';
     uiState.shareContext = null;
   }
   document.getElementById('share-sheet-backdrop')?.remove();
-
-  if (!keepState && !uiState.activeGuestView) {
-    const guestRoute = getCurrentGuestRouteContext();
-    if (guestRoute) {
-      renderGuestEntry(guestRoute.slug, guestRoute.entryId).catch(handleFatalError);
-    }
-  }
 }
 
 async function renderPreorder(slug, entryId) {

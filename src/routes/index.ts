@@ -9,6 +9,8 @@ import paymentRoutes from './payment.routes';
 import partySessionRoutes from './partySession.routes';
 import { prisma } from '../config/database';
 import { isRedisReady } from '../config/redis';
+import { env } from '../config/env';
+import { requireOnboardingToken } from '../middleware/onboarding';
 
 const router = Router();
 
@@ -69,6 +71,86 @@ router.get('/share/qr', async (req, res) => {
   } catch {
     res.status(502).json({
       error: 'QR service unavailable.',
+    });
+  }
+});
+
+router.get('/internal/test-state', requireOnboardingToken, async (req, res) => {
+  if (!env.EXPOSE_MOCK_OTP_IN_API) {
+    res.status(404).json({
+      success: false,
+      error: {
+        code: 'NOT_FOUND',
+        message: 'Test state endpoint is disabled.',
+      },
+    });
+    return;
+  }
+
+  const phone = typeof req.query.phone === 'string' ? req.query.phone.trim() : '';
+  const purposeRaw = typeof req.query.purpose === 'string' ? req.query.purpose.trim() : 'STAFF_LOGIN';
+  const purpose = purposeRaw === 'GUEST_QUEUE' ? 'GUEST_QUEUE' : 'STAFF_LOGIN';
+  const migration = typeof req.query.migration === 'string' ? req.query.migration.trim() : '';
+
+  if (!phone) {
+    res.status(400).json({
+      success: false,
+      error: {
+        code: 'PHONE_REQUIRED',
+        message: 'phone query param is required.',
+      },
+    });
+    return;
+  }
+
+  try {
+    const latestOtp = await prisma.otpCode.findFirst({
+      where: { phone, purpose, verified: false },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        code: true,
+        purpose: true,
+        createdAt: true,
+        expiresAt: true,
+        verified: true,
+        attempts: true,
+        venueId: true,
+      },
+    });
+
+    const latestMigrations = await prisma.$queryRaw<Array<{ migration_name: string; finished_at: Date | null }>>`
+      SELECT migration_name, finished_at
+      FROM _prisma_migrations
+      ORDER BY finished_at DESC NULLS LAST
+      LIMIT 10
+    `;
+
+    const requestedMigration = migration
+      ? latestMigrations.find((row) => row.migration_name === migration)
+      : null;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        latestOtp,
+        migration: migration
+          ? {
+              name: migration,
+              applied: Boolean(requestedMigration?.finished_at),
+              matched: Boolean(requestedMigration),
+              finishedAt: requestedMigration?.finished_at ?? null,
+            }
+          : null,
+        latestMigrations,
+      },
+    });
+  } catch {
+    res.status(503).json({
+      success: false,
+      error: {
+        code: 'TEST_STATE_UNAVAILABLE',
+        message: 'Unable to read test state.',
+      },
     });
   }
 });

@@ -11,7 +11,7 @@ const MAX_OTP_ATTEMPTS = 5;
 
 // ── Guest OTP (queue join) ─────────────────────────────────────────
 
-export async function sendGuestOtp(phone: string, venueId: string): Promise<void> {
+export async function sendGuestOtp(phone: string, venueId: string): Promise<string> {
   const venue = await prisma.venue.findUnique({ where: { id: venueId } });
   if (!venue) throw new AppError('Venue not found', 404);
 
@@ -23,6 +23,7 @@ export async function sendGuestOtp(phone: string, venueId: string): Promise<void
   });
 
   await Notify.otp(venueId, phone, otp, venue.name);
+  return otp;
 }
 
 export async function verifyGuestOtp(phone: string, code: string, venueId: string): Promise<boolean> {
@@ -45,7 +46,7 @@ export async function verifyGuestOtp(phone: string, code: string, venueId: strin
 
 // ── Staff OTP login ────────────────────────────────────────────────
 
-export async function sendStaffOtp(phone: string, venueId: string): Promise<void> {
+export async function sendStaffOtp(phone: string, venueId: string): Promise<string> {
   const staff = await prisma.staff.findFirst({ where: { phone, venueId, isActive: true }, include: { venue: true } });
   if (!staff) throw new AppError('Staff not found at this venue', 404);
 
@@ -57,6 +58,7 @@ export async function sendStaffOtp(phone: string, venueId: string): Promise<void
   });
 
   await Notify.otp(venueId, phone, otp, staff.venue.name);
+  return otp;
 }
 
 export async function verifyStaffOtp(phone: string, code: string, venueId: string): Promise<{ token: string; staff: object }> {
