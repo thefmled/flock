@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Biere Club — Theme Preview v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0F0C08; --surface:#1A1410; --surface2:#221C16; --surface3:#2C241C;
+  --border:#3A2E22; --border2:#503C2A;
+  --amber:#E48400; --amber-dark:#F09A20;
+  --amber-tint:rgba(228,132,0,.12); --amber-border:rgba(228,132,0,.30);
+  --teal:#3FBFC0; --teal-dark:#5AD0D1;
+  --teal-tint:rgba(63,191,192,.12); --teal-border:rgba(63,191,192,.30);
+  --ink:#F0E8D8; --ink-mid:#A89070; --ink-light:#6A5040;
+  --green:#28A058; --green-tint:rgba(40,160,88,.12); --green-border:rgba(40,160,88,.30);
+  --red:#E03428; --red-tint:rgba(224,52,40,.12); --red-border:rgba(224,52,40,.30);
+  --blue:#3A90C0; --blue-tint:rgba(58,144,192,.12); --blue-border:rgba(58,144,192,.30);
+  --r:8px; --r-sm:5px;
+  --shadow:0 1px 6px rgba(0,0,0,.4),0 4px 20px rgba(0,0,0,.35);
+  --shadow-md:0 2px 12px rgba(0,0,0,.5),0 8px 36px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;font-family:"Lora",Georgia,serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button,input,select{font:inherit}
+
+/* preview chrome */
+.preview-header{background:var(--surface);border-bottom:1.5px solid var(--border);padding:12px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;position:sticky;top:0;z-index:9999;box-shadow:0 1px 0 var(--border)}
+.preview-title{font-family:"Oswald",sans-serif;font-weight:700;font-size:16px;letter-spacing:.06em;text-transform:uppercase;color:var(--amber);white-space:nowrap}
+.preview-nav{display:flex;gap:3px;flex-wrap:wrap}
+.preview-nav a{font-family:"Oswald",sans-serif;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);padding:4px 8px;border-radius:4px;text-decoration:none;white-space:nowrap;transition:all .15s}
+.preview-nav a:hover{color:var(--amber);background:var(--amber-tint)}
+.preview-section{padding:48px 28px 28px;border-bottom:1.5px solid var(--border);max-width:1200px;margin:0 auto}
+.preview-label{font-family:"Oswald",sans-serif;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-light);margin-bottom:20px}
+
+/* ── All app styles inlined ── */
+#landing{min-height:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;gap:48px;background:radial-gradient(ellipse 60% 40% at 20% 80%,rgba(228,132,0,.10) 0%,transparent 70%),radial-gradient(ellipse 50% 35% at 80% 20%,rgba(63,191,192,.08) 0%,transparent 70%),var(--bg)}
+.brand{text-align:center}
+.brand-name{font-family:"Oswald",sans-serif;font-size:clamp(48px,10vw,80px);font-weight:700;line-height:1;color:var(--amber);letter-spacing:.06em;text-transform:uppercase;text-shadow:0 2px 0 rgba(184,106,0,.18)}
+.brand-tag{margin-top:10px;font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--ink-light);font-weight:500}
+.role-cards{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;max-width:840px;width:100%}
+.role-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:26px 22px 34px;flex:1;min-width:220px;max-width:264px;cursor:pointer;transition:border-color .2s,transform .18s,box-shadow .2s;position:relative;box-shadow:var(--shadow)}
+.role-card:hover{border-color:var(--amber);transform:translateY(-3px);box-shadow:var(--shadow-md),0 0 0 1px var(--amber-border)}
+.role-card-icon{font-size:24px;margin-bottom:12px;display:block}
+.role-card-title{font-family:"Oswald",sans-serif;font-size:19px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-bottom:7px;color:var(--ink)}
+.role-card-desc{font-size:13px;color:var(--ink-mid);line-height:1.6}
+.role-card-cta{position:absolute;bottom:14px;right:16px;font-size:13px;color:var(--border2);transition:color .18s}
+.role-card:hover .role-card-cta{color:var(--amber)}
+.app-shell{min-height:auto;display:flex;flex-direction:column;background:var(--bg)}
+.app-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 24px;height:58px;border-bottom:1.5px solid var(--border);background:var(--surface);box-shadow:0 1px 0 var(--border)}
+.header-left,.header-right{display:flex;align-items:center;gap:10px}
+.header-logo{font-family:"Oswald",sans-serif;font-size:20px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--amber)}
+.header-pill,.pill{display:inline-flex;align-items:center;font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--teal-dark);background:var(--teal-tint);border:1.5px solid var(--teal-border);border-radius:999px;padding:3px 10px;font-family:"Oswald",sans-serif}
+.tms-indicator{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-light)}
+.tms-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2.5s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(30,140,72,.5)}60%{box-shadow:0 0 0 5px rgba(30,140,72,0)}100%{box-shadow:0 0 0 0 rgba(30,140,72,0)}}
+.app-body{flex:1;max-width:1040px;width:100%;margin:0 auto;padding:28px 24px 48px}
+.grid{display:grid;gap:14px}
+.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--shadow)}
+.card-title{font-family:"Oswald",sans-serif;font-size:17px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink);margin-bottom:5px}
+.card-sub{font-size:13px;color:var(--ink-mid);line-height:1.6;margin-bottom:16px}
+.section-head{margin-bottom:22px}
+.section-title{font-family:"Oswald",sans-serif;font-size:28px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink)}
+.section-sub{font-size:13px;color:var(--ink-mid);margin-top:5px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 18px;border-radius:var(--r-sm);font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:"Oswald",sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:var(--amber);color:#0F0C08;font-weight:700}
+.btn-primary:hover{background:var(--amber-dark);color:#0F0C08}
+.btn-secondary{background:var(--surface);border:1.5px solid var(--border2);color:var(--ink-mid)}
+.btn-secondary:hover{border-color:var(--amber);color:var(--amber)}
+.btn-success{background:var(--green);color:#fff}
+.btn-danger{background:var(--red);color:#fff}
+.btn-teal{background:var(--teal);color:#fff}
+.btn-sm{padding:7px 12px;font-size:11px}
+.btn-full{width:100%}
+.form-group{margin-bottom:14px}
+.form-row{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.form-label{display:block;margin-bottom:6px;font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-light);font-family:"Oswald",sans-serif}
+.form-input,.form-select{width:100%;padding:10px 13px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--surface);color:var(--ink);outline:none;transition:border-color .15s}
+.form-input:focus,.form-select:focus{border-color:var(--amber)}
+.form-input::placeholder{color:var(--ink-light)}
+.checkbox-row{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--ink-mid)}
+.checkbox-row input{accent-color:var(--amber)}
+.otp-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.otp-digit{text-align:center;font-size:22px;font-weight:700;padding:12px 6px}
+.steps{display:flex;align-items:flex-start;margin-bottom:24px}
+.step{flex:1;display:flex;flex-direction:column;align-items:center;position:relative}
+.step::after{content:"";position:absolute;top:11px;left:calc(50% + 12px);right:calc(-50% + 12px);height:1.5px;background:var(--border)}
+.step:last-child::after{display:none}
+.step-dot{width:22px;height:22px;border-radius:50%;background:var(--surface);border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--ink-light);font-family:"Oswald",sans-serif}
+.step-label{margin-top:5px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-light);font-weight:500;font-family:"Oswald",sans-serif}
+.step.active .step-dot{background:var(--amber);border-color:var(--amber);color:#fff}
+.step.active .step-label{color:var(--amber);font-weight:600}
+.step.done .step-dot{background:var(--teal);border-color:var(--teal);color:#fff}
+.step.done::after{background:var(--teal)}
+.step.done .step-label{color:var(--teal-dark)}
+.queue-hero{background:var(--surface2);border:1.5px solid var(--amber-border);border-top:4px solid var(--amber);border-radius:var(--r);padding:36px 24px;text-align:center;margin-bottom:12px;box-shadow:var(--shadow)}
+.queue-pos-num{font-family:"Oswald",sans-serif;font-size:clamp(80px,16vw,120px);font-weight:700;line-height:1;color:var(--amber);text-shadow:0 3px 0 rgba(184,106,0,.15)}
+.queue-pos-label{font-family:"Oswald",sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-light);margin-top:6px;font-weight:500}
+.queue-pos-sub{font-size:14px;color:var(--ink-mid);margin-top:8px}
+.wait-estimate{display:flex;align-items:center;gap:14px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:14px 18px;margin-bottom:12px;box-shadow:var(--shadow)}
+.wait-icon{font-size:20px}
+.wait-text{flex:1}
+.wait-label{font-family:"Oswald",sans-serif;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-light);margin-bottom:3px;font-weight:500}
+.wait-value{font-family:"Oswald",sans-serif;font-size:30px;font-weight:700;color:var(--amber);letter-spacing:.02em}
+.wait-value span{font-family:"Lora",serif;font-size:13px;margin-left:4px;color:var(--ink-mid)}
+.progress-ring{width:46px;height:46px;border-radius:50%;background:conic-gradient(var(--amber) var(--pct,50%),var(--border) 0);display:grid;place-items:center}
+.progress-ring::before{content:"";width:38px;height:38px;border-radius:50%;background:var(--surface)}
+.otp-block{background:var(--amber-tint);border:1.5px solid var(--amber-border);border-radius:var(--r);padding:22px;text-align:center;margin-bottom:12px}
+.otp-num{font-family:"Oswald",sans-serif;font-size:clamp(40px,8vw,54px);font-weight:700;letter-spacing:.22em;color:var(--amber)}
+.otp-label{font-family:"Oswald",sans-serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-light);margin-top:4px;font-weight:500}
+.alert{display:flex;gap:9px;align-items:flex-start;padding:11px 14px;border-radius:var(--r-sm);margin-bottom:12px;line-height:1.6;font-size:13px}
+.alert-amber{background:var(--amber-tint);border:1.5px solid var(--amber-border);color:var(--amber-dark)}
+.alert-green{background:var(--green-tint);border:1.5px solid var(--green-border);color:var(--green)}
+.alert-red{background:var(--red-tint);border:1.5px solid var(--red-border);color:var(--red)}
+.alert-blue{background:var(--blue-tint);border:1.5px solid var(--blue-border);color:var(--blue)}
+.alert-teal{background:var(--teal-tint);border:1.5px solid var(--teal-border);color:var(--teal-dark)}
+.banner{background:var(--teal);color:#fff;border-radius:var(--r);padding:12px 20px;font-size:13px;font-weight:600;margin-bottom:14px;font-family:"Oswald",sans-serif;letter-spacing:.05em;text-transform:uppercase}
+.cat-header{display:flex;align-items:center;gap:12px;margin:22px 0 10px}
+.cat-header-name{font-family:"Oswald",sans-serif;font-size:13px;font-weight:600;color:var(--amber);text-transform:uppercase;letter-spacing:.12em;white-space:nowrap}
+.cat-header-line{flex:1;height:1.5px;background:var(--border)}
+.menu-item{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:8px;transition:border-color .15s}
+.menu-item:hover{border-color:var(--amber-border)}
+.menu-item.selected{border-color:var(--amber);background:var(--amber-tint)}
+.menu-item-name{font-size:14px;font-weight:600;margin-bottom:3px;color:var(--ink)}
+.menu-item-desc{font-size:12px;color:var(--ink-mid);margin-bottom:10px}
+.menu-item-foot{display:flex;justify-content:space-between;align-items:center}
+.menu-item-price{font-family:"Oswald",sans-serif;font-size:18px;font-weight:600;color:var(--amber);letter-spacing:.02em}
+.qty-ctrl{display:flex;align-items:center;gap:8px}
+.qty-btn{width:26px;height:26px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--surface);color:var(--ink-mid);cursor:pointer;font-weight:600;transition:all .12s}
+.qty-btn:hover{border-color:var(--amber);color:var(--amber)}
+.qty-num.active{color:var(--amber);font-weight:700}
+.pre-tag{display:inline-block;padding:2px 7px;border-radius:3px;background:var(--teal-tint);border:1px solid var(--teal-border);color:var(--teal-dark);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-left:5px;font-family:"Oswald",sans-serif}
+.order-line{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1.5px solid var(--border)}
+.order-line:last-child{border-bottom:none}
+.order-line-name{font-size:13px;color:var(--ink)}
+.order-line-qty{font-size:11px;color:var(--ink-light);margin-top:2px}
+.order-line-price{font-size:14px;font-weight:500;color:var(--ink)}
+.order-total{display:flex;justify-content:space-between;align-items:baseline;padding-top:14px;gap:12px}
+.order-total-label{font-family:"Oswald",sans-serif;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mid)}
+.order-total-val{font-family:"Oswald",sans-serif;font-size:38px;font-weight:700;color:var(--amber);letter-spacing:.01em;line-height:1}
+.tabs{display:flex;gap:3px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r);padding:4px;margin-bottom:22px;flex-wrap:wrap}
+.tab{flex:1;min-width:110px;padding:8px 10px;background:none;border:none;color:var(--ink-mid);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;border-radius:var(--r-sm);cursor:pointer;transition:all .15s;font-family:"Oswald",sans-serif}
+.tab.active{background:var(--amber);color:#fff;font-weight:700}
+.tab:hover:not(.active){color:var(--amber);background:var(--amber-tint)}
+.q-row{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow)}
+.q-row.highlight{border-color:var(--amber);background:var(--amber-tint)}
+.q-row-num{font-family:"Oswald",sans-serif;font-size:44px;font-weight:700;color:var(--amber);min-width:52px;line-height:1}
+.q-row-info{flex:1;min-width:0}
+.q-row-name{font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px;flex-wrap:wrap;color:var(--ink)}
+.q-row-meta,.q-row-orders,.muted{font-size:12px;color:var(--ink-mid);margin-top:2px}
+.q-row-actions,.row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-family:"Oswald",sans-serif}
+.badge-waiting{background:var(--amber-tint);color:var(--amber-dark);border:1px solid var(--amber-border)}
+.badge-ready{background:var(--green-tint);color:var(--green);border:1px solid var(--green-border)}
+.badge-seated{background:var(--teal-tint);color:var(--teal-dark);border:1px solid var(--teal-border)}
+.badge-neutral{background:var(--surface2);color:var(--ink-light);border:1px solid var(--border2)}
+.stats-grid{display:grid;gap:10px;grid-template-columns:repeat(3,minmax(0,1fr))}
+.stat-tile{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:16px;box-shadow:var(--shadow)}
+.stat-label{font-family:"Oswald",sans-serif;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-light);margin-bottom:5px;font-weight:500}
+.stat-value{font-family:"Oswald",sans-serif;font-size:34px;font-weight:700;color:var(--amber);letter-spacing:.01em}
+.floor-plan-header{display:flex;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.floor-legend{display:flex;gap:12px;flex-wrap:wrap}
+.legend-item{display:flex;gap:5px;align-items:center;font-size:12px;color:var(--ink-mid)}
+.legend-dot{width:10px;height:10px;border-radius:2px}
+.legend-dot.free{background:var(--green)}.legend-dot.occupied{background:var(--border2)}.legend-dot.clearing{background:var(--amber)}.legend-dot.reserved{background:var(--teal)}
+.tables-grid{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.table-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:14px;box-shadow:var(--shadow)}
+.table-card.free{border-color:var(--green);background:var(--green-tint);border-top:3px solid var(--green)}
+.table-card.occupied{border-color:var(--border2);border-top:3px solid var(--border2)}
+.table-card.clearing{border-color:var(--amber);background:var(--amber-tint);border-top:3px solid var(--amber)}
+.table-card.reserved{border-color:var(--teal);background:var(--teal-tint);border-top:3px solid var(--teal)}
+.table-num{font-family:"Oswald",sans-serif;font-size:30px;font-weight:700;line-height:1;color:var(--ink);letter-spacing:.02em}
+.table-cap{font-size:11px;color:var(--ink-light);margin-top:3px}
+.table-status-label{font-family:"Oswald",sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin:8px 0 10px}
+.table-actions{display:grid;gap:6px}
+.empty-state{border:1.5px dashed var(--border2);border-radius:var(--r);padding:20px;color:var(--ink-mid);text-align:center}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.category-pills{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}
+.category-pill{padding:7px 16px;border-radius:999px;font-size:11px;font-weight:600;border:1.5px solid var(--border);background:var(--surface);color:var(--ink-mid);cursor:pointer;transition:all .15s;font-family:"Oswald",sans-serif;letter-spacing:.06em;text-transform:uppercase}
+.category-pill.active{background:var(--amber);border-color:var(--amber);color:#fff;font-weight:700}
+.category-pill:hover:not(.active){border-color:var(--amber-border);color:var(--amber)}
+.guest-shell-eyebrow{font-family:"Oswald",sans-serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-light);margin-bottom:4px;font-weight:500}
+.guest-shell-title{font-family:"Oswald",sans-serif;font-size:84px;font-weight:700;line-height:.9;color:var(--amber);letter-spacing:.02em;text-shadow:0 3px 0 rgba(184,106,0,.12)}
+.guest-bottom-nav{display:flex;gap:4px;padding:6px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);margin-top:20px}
+.guest-bottom-nav-btn{flex:1;padding:11px 8px;min-height:48px;border-radius:var(--r-sm);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:var(--surface2);border:1.5px solid var(--border);color:var(--ink-mid);cursor:pointer;transition:all .15s;font-family:"Oswald",sans-serif}
+.guest-bottom-nav-btn.active{background:var(--amber);border-color:var(--amber);color:#fff;font-weight:700}
+</style>
+</head>
+<body>
+
+<div class="preview-header">
+  <div class="preview-title">The Biere Club — v3</div>
+  <nav class="preview-nav">
+    <a href="#s1">Landing</a><a href="#s2">Venue</a><a href="#s3">Waiting</a>
+    <a href="#s4">Notified</a><a href="#s5">Pre-order</a><a href="#s6">Seated</a>
+    <a href="#s7">Done</a><a href="#s8">Staff Login</a><a href="#s9">Queue</a>
+    <a href="#s10">Seated tab</a><a href="#s11">Tables</a><a href="#s12">Seat OTP</a>
+    <a href="#s13">Manager</a><a href="#s14">Admin Login</a><a href="#s15">Menu</a>
+    <a href="#s16">Add Item</a><a href="#s17">Share</a>
+  </nav>
+</div>
+
+<!-- 1 · Landing -->
+<section id="s1" class="preview-section">
+  <div class="preview-label">01 — renderHome() → /</div>
+  <main id="landing">
+    <div class="brand">
+      <div class="brand-name">The Biere Club</div>
+      <div class="brand-tag">Craft Brewery · Bengaluru</div>
+    </div>
+    <div class="role-cards">
+      <a class="role-card"><span class="role-card-icon">🍺</span><div class="role-card-title">Guest Flow</div><div class="role-card-desc">Join the queue, pre-order craft brews and food, track your table, and settle your bill.</div><div class="role-card-cta">→</div></a>
+      <a class="role-card"><span class="role-card-icon">🍽</span><div class="role-card-title">Staff Console</div><div class="role-card-desc">Manage the live queue, seat guests, verify OTPs, and run the floor.</div><div class="role-card-cta">→</div></a>
+      <a class="role-card"><span class="role-card-icon">✦</span><div class="role-card-title">Admin Console</div><div class="role-card-desc">Manage the tap list, food menu, categories, and venue settings.</div><div class="role-card-cta">→</div></a>
+    </div>
+  </main>
+</section>
+
+<!-- 2 · Venue landing -->
+<section id="s2" class="preview-section">
+  <div class="preview-label">02 — renderVenueLanding() → /v/:slug</div>
+  <div class="app-shell">
+    <div class="app-body" style="padding-top:40px">
+      <main id="landing" style="min-height:auto;padding:0 0 28px">
+        <div class="brand" style="margin-bottom:32px">
+          <div class="brand-name" style="font-size:clamp(40px,8vw,60px)">The Biere Club</div>
+          <div class="brand-tag">Lavelle Road, Bengaluru</div>
+        </div>
+        <div class="role-cards" style="max-width:660px">
+          <div class="role-card" style="cursor:default;min-width:200px"><span class="role-card-icon">📍</span><div class="role-card-title">Lavelle Road</div><div class="role-card-desc">20/2 Vittal Mallya Road, Bengaluru. Deposit: 30%.</div><div class="role-card-cta" style="color:var(--green)">Open ✓</div></div>
+          <div class="role-card" style="cursor:default;max-width:360px;min-width:260px">
+            <div class="role-card-title" style="margin-bottom:12px">Join the queue</div>
+            <div class="form-group"><label class="form-label">Your name</label><input class="form-input" placeholder="Arjun K."></div>
+            <div class="form-group"><label class="form-label">Phone</label><input class="form-input" type="tel" placeholder="+91 98765 43210"></div>
+            <div class="form-group"><label class="form-label">Party size</label><select class="form-select"><option>1</option><option selected>2</option><option>3</option><option>4+</option></select></div>
+            <button class="btn btn-primary btn-full">Join queue</button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · Waiting -->
+<section id="s3" class="preview-section">
+  <div class="preview-label">03 — renderGuestEntry() → WAITING</div>
+  <div class="app-shell">
+    <div class="app-header"><div class="header-left"><div class="header-logo">The Biere Club</div><span class="pill">Guest</span></div><div class="header-right"><button class="btn btn-secondary btn-sm">Invite others</button><a class="btn btn-secondary btn-sm">Exit</a></div></div>
+    <div class="app-body">
+      <div class="steps"><div class="step done"><div class="step-dot">✓</div><div class="step-label">Join</div></div><div class="step active"><div class="step-dot">2</div><div class="step-label">Wait</div></div><div class="step"><div class="step-dot">3</div><div class="step-label">Pre-order</div></div><div class="step"><div class="step-dot">4</div><div class="step-label">Seated</div></div><div class="step"><div class="step-dot">5</div><div class="step-label">Pay</div></div></div>
+      <div class="queue-hero"><div class="queue-pos-num">3</div><div class="queue-pos-label">Queue position</div><div class="queue-pos-sub">We'll notify you when a table for 2 is ready.</div></div>
+      <div class="wait-estimate"><div class="wait-icon">⏱</div><div class="wait-text"><div class="wait-label">Estimated wait</div><div class="wait-value">22<span>mins</span></div></div><div class="progress-ring" style="--pct:60%"></div></div>
+      <div class="otp-block"><div class="otp-num">738 241</div><div class="otp-label">Show this OTP when called</div></div>
+      <div class="grid grid-2">
+        <div class="card"><div class="card-title">Waiting</div><div class="card-sub">Your OTP is active — present it to staff when called.</div><div class="alert alert-blue"><div>You'll get an SMS and WhatsApp when your table is ready.</div></div><button class="btn btn-primary">Pre-order from tap list</button></div>
+        <div class="card"><div class="card-title">Venue</div><div class="card-sub">The Biere Club — Lavelle Road, Bengaluru</div><div class="muted">Deposit policy: 30%</div><div class="muted" style="margin-top:4px">Queue: Open · Craft brews always flowing</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · Notified -->
+<section id="s4" class="preview-section">
+  <div class="preview-label">04 — renderGuestEntry() → NOTIFIED</div>
+  <div class="app-shell">
+    <div class="app-header"><div class="header-left"><div class="header-logo">The Biere Club</div><span class="pill">Guest</span></div><div class="header-right"><a class="btn btn-secondary btn-sm">Exit</a></div></div>
+    <div class="app-body">
+      <div class="banner">🍺 Table T4 is ready — show your OTP to the host now</div>
+      <div class="steps"><div class="step done"><div class="step-dot">✓</div><div class="step-label">Join</div></div><div class="step done"><div class="step-dot">✓</div><div class="step-label">Wait</div></div><div class="step done"><div class="step-dot">✓</div><div class="step-label">Pre-order</div></div><div class="step active"><div class="step-dot">4</div><div class="step-label">Seated</div></div><div class="step"><div class="step-dot">5</div><div class="step-label">Pay</div></div></div>
+      <div class="queue-hero"><div class="queue-pos-num">T4</div><div class="queue-pos-label">Your table is ready</div><div class="queue-pos-sub">Head to the host stand and present your OTP.</div></div>
+      <div class="otp-block"><div class="otp-num">738 241</div><div class="otp-label">Table reserved — show to staff</div></div>
+      <div class="grid grid-2">
+        <div class="card"><div class="card-title">Notified</div><div class="card-sub">Your table is matched and held.</div><div class="alert alert-green"><div>Deposit captured: ₹384. Pre-order total: ₹1,280.</div></div></div>
+        <div class="card"><div class="card-title">Venue</div><div class="card-sub">The Biere Club — Lavelle Road</div><div class="muted">Deposit: 30% · T4 (2 covers)</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · Pre-order -->
+<section id="s5" class="preview-section">
+  <div class="preview-label">05 — renderPreorder() → /v/:slug/e/:id/preorder</div>
+  <div class="app-shell">
+    <div class="app-header"><div class="header-left"><div class="header-logo">The Biere Club</div><span class="pill">Pre-order</span></div><div class="header-right"><a class="btn btn-secondary btn-sm">Exit</a></div></div>
+    <div class="app-body">
+      <div class="section-head"><div class="section-title">Pre-order while waiting</div><div class="section-sub">Pick craft brews and food — hits the bar and kitchen the moment you're seated.</div></div>
+      <div class="grid" style="grid-template-columns:1fr 310px;gap:18px;align-items:start">
+        <div>
+          <div class="category-pills"><div class="category-pill active">On Tap</div><div class="category-pill">Bottles</div><div class="category-pill">Starters</div><div class="category-pill">Mains</div><div class="category-pill">Desserts</div></div>
+          <div class="cat-header"><div class="cat-header-name">On Tap</div><div class="cat-header-line"></div></div>
+          <div class="menu-item selected"><div class="menu-item-name">Wheat Beer <span class="pre-tag">pre-ordered</span></div><div class="menu-item-desc">Cloudy unfiltered wheat ale — banana and clove esters, soft carbonation. 500 ml pint.</div><div class="menu-item-foot"><div class="menu-item-price">₹380</div><div class="qty-ctrl"><button class="qty-btn">−</button><span class="qty-num active">2</span><button class="qty-btn">+</button></div></div></div>
+          <div class="menu-item"><div class="menu-item-name">Stout</div><div class="menu-item-desc">Rich dark roast, espresso and chocolate notes, smooth dry finish. 500 ml pint.</div><div class="menu-item-foot"><div class="menu-item-price">₹380</div><div class="qty-ctrl"><button class="qty-btn">−</button><span class="qty-num">0</span><button class="qty-btn">+</button></div></div></div>
+          <div class="menu-item"><div class="menu-item-name">Ale</div><div class="menu-item-desc">Balanced copper ale — mild caramel malt, subtle hop bitterness. 500 ml pint.</div><div class="menu-item-foot"><div class="menu-item-price">₹360</div><div class="qty-ctrl"><button class="qty-btn">−</button><span class="qty-num">0</span><button class="qty-btn">+</button></div></div></div>
+          <div class="cat-header"><div class="cat-header-name">Starters</div><div class="cat-header-line"></div></div>
+          <div class="menu-item"><div class="menu-item-name">Korean Dip Wings</div><div class="menu-item-desc">Tossed in gochujang glaze, sesame, spring onion</div><div class="menu-item-foot"><div class="menu-item-price">₹420</div><div class="qty-ctrl"><button class="qty-btn">−</button><span class="qty-num">0</span><button class="qty-btn">+</button></div></div></div>
+        </div>
+        <div class="card" style="position:sticky;top:20px">
+          <div class="card-title">Summary</div>
+          <div class="card-sub">30% deposit locks your order in.</div>
+          <div class="order-line"><div><div class="order-line-name">Wheat Beer × 2</div><div class="order-line-qty">2 × ₹380</div></div><div class="order-line-price">₹760</div></div>
+          <div class="order-total"><div class="order-total-label">Total incl. GST</div><div class="order-total-val">₹894</div></div>
+          <div class="row" style="margin-top:14px"><a class="btn btn-secondary btn-sm">Back</a><button class="btn btn-primary">Lock in →</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · Seated -->
+<section id="s6" class="preview-section">
+  <div class="preview-label">06 — renderGuestEntry() → SEATED</div>
+  <div class="app-shell">
+    <div class="app-header"><div class="header-left"><div class="header-logo">The Biere Club</div><span class="pill">Guest</span></div><div class="header-right"><button class="btn btn-secondary btn-sm">Invite others</button><a class="btn btn-secondary btn-sm">Exit</a></div></div>
+    <div class="app-body">
+      <div class="steps"><div class="step done"><div class="step-dot">✓</div><div class="step-label">Join</div></div><div class="step done"><div class="step-dot">✓</div><div class="step-label">Wait</div></div><div class="step done"><div class="step-dot">✓</div><div class="step-label">Pre-order</div></div><div class="step active"><div class="step-dot">4</div><div class="step-label">Seated</div></div><div class="step"><div class="step-dot">5</div><div class="step-label">Pay</div></div></div>
+      <div class="card" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:14px;border-top:4px solid var(--teal)">
+        <div><div class="guest-shell-eyebrow">Table T4 · The Biere Club, Lavelle Road</div><div class="guest-shell-title">T4</div></div>
+        <div><div class="muted" style="margin-bottom:6px">2 guests · 1 participant</div><span class="badge badge-seated">Seated</span></div>
+      </div>
+      <div class="guest-bottom-nav"><button class="guest-bottom-nav-btn">Menu</button><button class="guest-bottom-nav-btn active">Ordered</button><button class="guest-bottom-nav-btn">Bucket</button></div>
+      <div class="grid grid-2" style="margin-top:16px">
+        <div class="card"><div class="card-title">Ordered so far</div><div class="card-sub">Pre-order and table rounds.</div><div style="font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--teal-dark);margin-bottom:6px">Pre-order · Locked</div><div class="order-line"><div><div class="order-line-name">Wheat Beer × 2</div></div><div class="order-line-price">₹760</div></div><div class="order-line" style="border:none"><div><div class="order-line-name">Korean Wings × 1</div></div><div class="order-line-price">₹420</div></div></div>
+        <div class="card"><div class="card-title">Bill</div><div class="card-sub">Live total for this session.</div><div class="order-line"><div class="order-line-name">Subtotal</div><div class="order-line-price">₹1,060</div></div><div class="order-line"><div class="order-line-name">GST</div><div class="order-line-price">₹106</div></div><div class="order-line"><div class="order-line-name">Deposit paid</div><div class="order-line-price">−₹349</div></div><div class="order-total"><div class="order-total-label">Balance due</div><div class="order-total-val">₹817</div></div><button class="btn btn-primary btn-full" style="margin-top:14px">Pay balance</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · Completed -->
+<section id="s7" class="preview-section">
+  <div class="preview-label">07 — renderGuestEntry() → COMPLETED</div>
+  <div class="app-shell">
+    <div class="app-header"><div class="header-left"><div class="header-logo">The Biere Club</div><span class="pill">Guest</span></div><div class="header-right"><a class="btn btn-secondary btn-sm">Exit</a></div></div>
+    <div class="app-body">
+      <div class="steps"><div class="step done"><div class="step-dot">✓</div><div class="step-label">Join</div></div><div class="step done"><div class="step-dot">✓</div><div class="step-label">Wait</div></div><div class="step done"><div class="step-dot">✓</div><div class="step-label">Pre-order</div></div><div class="step done"><div class="step-dot">✓</div><div class="step-label">Seated</div></div><div class="step active"><div class="step-dot">5</div><div class="step-label">Pay</div></div></div>
+      <div class="queue-hero"><div class="queue-pos-num" style="font-size:72px">Cheers!</div><div class="queue-pos-label">Service complete</div><div class="queue-pos-sub">Invoice TBC/2026-27/00088 issued. Come back soon!</div></div>
+      <div class="grid grid-2" style="margin-top:12px">
+        <div class="card"><div class="card-title">Completed</div><div class="card-sub">Session ended. Invoice generated.</div><div class="alert alert-green"><div>Payment captured. Great brewing with you tonight!</div></div><a class="btn btn-secondary">Return to venue</a></div>
+        <div class="card"><div class="card-title">Summary</div><div class="order-line"><div class="order-line-name">Total charged</div><div class="order-line-price">₹1,166</div></div><div class="order-line"><div class="order-line-name">Deposit used</div><div class="order-line-price">₹349</div></div><div class="order-total"><div class="order-total-label">Balance paid</div><div class="order-total-val">₹817</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · Staff Login -->
+<section id="s8" class="preview-section">
+  <div class="preview-label">08 — renderStaffLogin() → /staff/login</div>
+  <div class="app-shell">
+    <div class="app-header"><div class="header-left"><div class="header-logo">The Biere Club</div><span class="pill">Staff</span></div><div class="header-right"><a class="btn btn-secondary btn-sm">Exit</a></div></div>
+    <div class="app-body">
+      <div class="section-head"><div class="section-title">Staff login</div><div class="section-sub">The Biere Club, Lavelle Road — pilot console.</div></div>
+      <div class="grid grid-2">
+        <div class="card"><div class="card-title">Send OTP</div><div class="card-sub">Use a seeded pilot staff number.</div><div class="form-group"><label class="form-label">Phone</label><input class="form-input" placeholder="9000000002"></div><button class="btn btn-primary btn-full">Send OTP</button></div>
+        <div class="card"><div class="card-title">Verify OTP</div><div class="card-sub">Enter the 6-digit code from SMS.</div><div class="form-group"><label class="form-label">OTP code</label><input class="form-input" maxlength="6" placeholder="123456"></div><button class="btn btn-secondary btn-full">Verify & enter</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 · Staff Queue -->
+<section id="s9" class="preview-section">
+  <div class="preview-label">09 — renderStaffDashboard() → Queue tab</div>
+  <div class="app-shell">
+    <div class="app-header"><div class="header-left"><div class="header-logo">The Biere Club</div><span class="pill">Staff</span></div><div class="header-right"><div class="tms-indicator"><span class="tms-dot"></span>Manual floor</div><button class="btn btn-secondary btn-sm">Logout</button></div></div>
+    <div class="app-body">
+      <div class="section-head"><div class="section-title">Staff console</div><div class="section-sub">Ravi S. · SERVER · The Biere Club, Lavelle Road</div></div>
+      <div class="stats-grid" style="margin-bottom:18px">
+        <div class="stat-tile"><div class="stat-label">Seated today</div><div class="stat-value">31</div></div>
+        <div class="stat-tile"><div class="stat-label">Revenue</div><div class="stat-value">₹46k</div></div>
+        <div class="stat-tile"><div class="stat-label">In queue</div><div class="stat-value">7</div></div>
+      </div>
+      <div class="tabs"><button class="tab active">Queue</button><button class="tab">Seated</button><button class="tab">Tables</button><button class="tab">Seat OTP</button><button class="tab">Manager</button></div>
+      <div class="q-row highlight"><div class="q-row-num">1</div><div class="q-row-info"><div class="q-row-name">Arjun K. <span class="badge badge-ready">Notified</span> <span class="badge badge-neutral">Deposit</span> <span class="badge badge-neutral">Pre-order</span></div><div class="q-row-meta">+91 98765 43210 · 2 pax · OTP <span class="mono">738241</span></div><div class="q-row-orders">Reserved T4 · Wheat Beer × 2, Wings × 1</div></div><div class="q-row-actions"><button class="btn btn-teal btn-sm">Seat</button><button class="btn btn-danger btn-sm">Cancel</button></div></div>
+      <div class="q-row"><div class="q-row-num">2</div><div class="q-row-info"><div class="q-row-name">Meera P. <span class="badge badge-waiting">Waiting</span></div><div class="q-row-meta">+91 87654 32109 · 4 pax · OTP <span class="mono">512089</span></div><div class="q-row-orders">ETA ~10 mins</div></div><div class="q-row-actions"><button class="btn btn-secondary btn-sm">Seat</button><button class="btn btn-danger btn-sm">Cancel</button></div></div>
+      <div class="q-row"><div class="q-row-num">3</div><div class="q-row-info"><div class="q-row-name">Dev R. <span class="badge badge-waiting">Waiting</span> <span class="badge badge-neutral">Deposit</span></div><div class="q-row-meta">+91 76543 21098 · 6 pax · OTP <span class="mono">903417</span></div><div class="q-row-orders">ETA ~25 mins</div></div><div class="q-row-actions"><button class="btn btn-secondary btn-sm">Seat</button><button class="btn btn-danger btn-sm">Cancel</button></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 · Seated tab -->
+<section id="s10" class="preview-section">
+  <div class="preview-label">10 — Staff dashboard → Seated tab</div>
+  <div class="app-shell">
+    <div class="app-header"><div class="header-left"><div class="header-logo">The Biere Club</div><span class="pill">Staff</span></div><div class="header-right"><div class="tms-indicator"><span class="tms-dot"></span>Manual floor</div><button class="btn btn-secondary btn-sm">Logout</button></div></div>
+    <div class="app-body">
+      <div class="tabs"><button class="tab">Queue</button><button class="tab active">Seated</button><button class="tab">Tables</button><button class="tab">Seat OTP</button><button class="tab">Manager</button></div>
+      <div class="q-row"><div class="q-row-num">T2</div><div class="q-row-info"><div class="q-row-name">Arjun K. <span class="badge badge-seated">Seated</span></div><div class="q-row-meta">+91 98765 43210 · 2 pax · 18 min ago</div><div class="q-row-orders">Pre-order + table round · <strong>₹1,640</strong> · Deposit paid</div></div><div class="q-row-actions"><button class="btn btn-secondary btn-sm">View bill</button><button class="btn btn-secondary btn-sm">Settle offline</button></div></div>
+      <div class="q-row"><div class="q-row-num">T5</div><div class="q-row-info"><div class="q-row-name">Meera P. <span class="badge badge-seated">Seated</span></div><div class="q-row-meta">+91 87654 32109 · 4 pax · 8 min ago</div><div class="q-row-orders">Table order only · <strong>₹2,380</strong> · No deposit</div></div><div class="q-row-actions"><button class="btn btn-secondary btn-sm">View bill</button><button class="btn btn-secondary btn-sm">Settle offline</button></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 11 · Tables -->
+<section id="s11" class="preview-section">
+  <div class="preview-label">11 — Staff dashboard → Tables tab</div>
+  <div class="app-shell">
+    <div class="app-header"><div class="header-left"><div class="header-logo">The Biere Club</div><span class="pill">Staff</span></div><div class="header-right"><div class="tms-indicator"><span class="tms-dot"></span>Manual floor</div><button class="btn btn-secondary btn-sm">Logout</button></div></div>
+    <div class="app-body">
+      <div class="tabs"><button class="tab">Queue</button><button class="tab">Seated</button><button class="tab active">Tables</button><button class="tab">Seat OTP</button><button class="tab">Manager</button></div>
+      <div class="floor-plan-header"><div class="section-title" style="font-size:20px">Floor plan</div><div class="floor-legend"><div class="legend-item"><div class="legend-dot free"></div>Free</div><div class="legend-item"><div class="legend-dot occupied"></div>Occupied</div><div class="legend-item"><div class="legend-dot clearing"></div>Clearing</div><div class="legend-item"><div class="legend-dot reserved"></div>Reserved</div></div></div>
+      <div class="tables-grid">
+        <div class="table-card free"><div class="table-num">T1</div><div class="table-cap">2 covers</div><div class="table-status-label" style="color:var(--green)">Free</div><div class="table-actions"><button class="btn btn-secondary btn-sm">Mark occupied</button></div></div>
+        <div class="table-card occupied"><div class="table-num">T2</div><div class="table-cap">4 covers</div><div class="table-status-label" style="color:var(--ink-mid)">Occupied</div><div class="table-actions"><button class="btn btn-secondary btn-sm">Mark clearing</button></div></div>
+        <div class="table-card occupied"><div class="table-num">T3</div><div class="table-cap">2 covers</div><div class="table-status-label" style="color:var(--ink-mid)">Occupied</div><div class="table-actions"><button class="btn btn-secondary btn-sm">Mark clearing</button></div></div>
+        <div class="table-card clearing"><div class="table-num">T4</div><div class="table-cap">4 covers</div><div class="table-status-label" style="color:var(--amber)">Clearing</div><div class="table-actions"><button class="btn btn-success btn-sm">Mark free</button></div></div>
+        <div class="table-card occupied"><div class="table-num">T5</div><div class="table-cap">6 covers</div><div class="table-status-label" style="color:var(--ink-mid)">Occupied</div><div class="table-actions"><button class="btn btn-secondary btn-sm">Mark clearing</button></div></div>
+        <div class="table-card free"><div class="table-num">T6</div><div class="table-cap">2 covers</div><div class="table-status-label" style="color:var(--green)">Free</div><div class="table-actions"><button class="btn btn-secondary btn-sm">Mark occupied</button></div></div>
+        <div class="table-card reserved"><div class="table-num">T7</div><div class="table-cap">8 covers</div><div class="table-status-label" style="color:var(--teal-dark)">Reserved</div><div class="table-actions"><button class="btn btn-success btn-sm">Mark free</button></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 12 · Seat OTP -->
+<section id="s12" class="preview-section">
+  <div class="preview-label">12 — Staff dashboard → Seat OTP tab</div>
+  <div class="app-shell">
+    <div class="app-header"><div class="header-left"><div class="header-logo">The Biere Club</div><span class="pill">Staff</span></div><div class="header-right"><div class="tms-indicator"><span class="tms-dot"></span>Manual floor</div><button class="btn btn-secondary btn-sm">Logout</button></div></div>
+    <div class="app-body">
+      <div class="tabs"><button class="tab">Queue</button><button class="tab">Seated</button><button class="tab">Tables</button><button class="tab active">Seat OTP</button><button class="tab">Manager</button></div>
+      <div class="grid grid-2">
+        <div class="card"><div class="card-title">Seat a guest</div><div class="card-sub">Enter the 6-digit OTP from the guest's phone.</div><div class="alert alert-amber"><div>Prefilled from queue row — Arjun K. · T4 suggested</div></div><div class="form-group"><label class="form-label">Guest OTP</label><div class="otp-grid"><input class="form-input otp-digit" value="7" maxlength="1"><input class="form-input otp-digit" value="3" maxlength="1"><input class="form-input otp-digit" value="8" maxlength="1"><input class="form-input otp-digit" value="2" maxlength="1"><input class="form-input otp-digit" value="4" maxlength="1"><input class="form-input otp-digit" value="1" maxlength="1"></div></div><div class="form-group"><label class="form-label">Table</label><select class="form-select"><option>Select a free or reserved table</option><option selected>T4 · FREE (4 covers)</option></select></div><button class="btn btn-primary btn-full">Seat guest</button></div>
+        <div class="card"><div class="card-title">Note</div><div class="card-sub">Quick seat preloads the OTP and best-fit table. Verification always required.</div><div class="alert alert-teal"><div>All pilot flows are deposit-backed. OTP cannot be bypassed.</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 13 · Manager -->
+<section id="s13" class="preview-section">
+  <div class="preview-label">13 — Staff dashboard → Manager tab</div>
+  <div class="app-shell">
+    <div class="app-header"><div class="header-left"><div class="header-logo">The Biere Club</div><span class="pill">Staff</span></div><div class="header-right"><div class="tms-indicator"><span class="tms-dot"></span>Manual floor</div><button class="btn btn-secondary btn-sm">Logout</button></div></div>
+    <div class="app-body">
+      <div class="tabs"><button class="tab">Queue</button><button class="tab">Seated</button><button class="tab">Tables</button><button class="tab">Seat OTP</button><button class="tab active">Manager</button></div>
+      <div class="grid grid-2">
+        <div class="card"><div class="card-title">Queue control</div><div class="card-sub">Toggle access and deposit rate.</div><div class="row" style="margin-bottom:14px"><span class="badge badge-ready">Queue open</span><button class="btn btn-secondary btn-sm">Close queue</button></div><div class="form-group"><label class="form-label">Deposit %</label><input class="form-input" type="number" value="30"></div><div class="form-group"><label class="form-label">Table ready window (min)</label><input class="form-input" type="number" value="15"></div><button class="btn btn-primary btn-full">Save settings</button></div>
+        <div class="card"><div class="card-title">Fallbacks</div><div class="card-sub">Pilot-safe escape hatches.</div><div class="form-group"><label class="form-label">Queue entry ID</label><input class="form-input mono" placeholder="Queue entry UUID"></div><button class="btn btn-secondary btn-full" style="margin-bottom:10px">Mark settled offline</button><div class="form-group"><label class="form-label">Deposit payment ID</label><input class="form-input mono" placeholder="Payment UUID"></div><button class="btn btn-danger btn-full">Refund deposit</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 14 · Admin Login -->
+<section id="s14" class="preview-section">
+  <div class="preview-label">14 — renderAdminLogin() → /admin/login</div>
+  <div class="app-shell">
+    <div class="app-header"><div class="header-left"><div class="header-logo">The Biere Club</div><span class="pill">Admin</span></div><div class="header-right"><a class="btn btn-secondary btn-sm">Exit</a></div></div>
+    <div class="app-body">
+      <div class="section-head"><div class="section-title">Admin login</div><div class="section-sub">Owner & manager only.</div></div>
+      <div class="grid grid-2">
+        <div class="card"><div class="card-title">Send OTP</div><div class="card-sub">Owner or manager numbers only.</div><div class="form-group"><label class="form-label">Phone</label><input class="form-input" placeholder="9000000001"></div><button class="btn btn-primary btn-full">Send OTP</button></div>
+        <div class="card"><div class="card-title">Verify OTP</div><div class="card-sub">Enter the code sent to your number.</div><div class="form-group"><label class="form-label">OTP code</label><input class="form-input" maxlength="6" placeholder="123456"></div><button class="btn btn-secondary btn-full">Verify & enter</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 15 · Admin Menu -->
+<section id="s15" class="preview-section">
+  <div class="preview-label">15 — renderAdminDashboard() → Menu tab</div>
+  <div class="app-shell">
+    <div class="app-header"><div class="header-left"><div class="header-logo">The Biere Club</div><span class="pill">Admin</span></div><div class="header-right"><button class="btn btn-secondary btn-sm">Logout</button></div></div>
+    <div class="app-body">
+      <div class="section-head"><div class="section-title">Admin console</div><div class="section-sub">Meenakshi A. · OWNER · The Biere Club, Lavelle Road</div></div>
+      <div class="tabs"><button class="tab active">Menu</button><button class="tab">Add item</button></div>
+      <div class="card">
+        <div class="card-title">Live menu</div>
+        <div class="card-sub">Toggle tap availability and food items in real time.</div>
+        <div class="cat-header"><div class="cat-header-name">On Tap</div><div class="cat-header-line"></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1.5px solid var(--border)"><div><div class="order-line-name">Wheat Beer</div><div class="order-line-qty">₹340 ex-GST · Available</div></div><div class="row"><button class="btn btn-secondary btn-sm">Disable</button><button class="btn btn-danger btn-sm">✕</button></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1.5px solid var(--border)"><div><div class="order-line-name">Ale</div><div class="order-line-qty">₹320 ex-GST · Available</div></div><div class="row"><button class="btn btn-secondary btn-sm">Disable</button><button class="btn btn-danger btn-sm">✕</button></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1.5px solid var(--border);opacity:.5"><div><div class="order-line-name" style="text-decoration:line-through">Seasonal</div><div class="order-line-qty" style="color:var(--red)">₹380 ex-GST · Unavailable (tapped out)</div></div><div class="row"><button class="btn btn-success btn-sm">Enable</button><button class="btn btn-danger btn-sm">✕</button></div></div>
+        <div class="cat-header"><div class="cat-header-name">Starters</div><div class="cat-header-line"></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1.5px solid var(--border)"><div><div class="order-line-name">Korean Dip Wings</div><div class="order-line-qty">₹375 ex-GST · Available</div></div><div class="row"><button class="btn btn-secondary btn-sm">Disable</button><button class="btn btn-danger btn-sm">✕</button></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0"><div><div class="order-line-name">Pepperoni Pizza</div><div class="order-line-qty">₹420 ex-GST · Available</div></div><div class="row"><button class="btn btn-secondary btn-sm">Disable</button><button class="btn btn-danger btn-sm">✕</button></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 16 · Admin Add item -->
+<section id="s16" class="preview-section">
+  <div class="preview-label">16 — renderAdminDashboard() → Add item tab</div>
+  <div class="app-shell">
+    <div class="app-header"><div class="header-left"><div class="header-logo">The Biere Club</div><span class="pill">Admin</span></div><div class="header-right"><button class="btn btn-secondary btn-sm">Logout</button></div></div>
+    <div class="app-body">
+      <div class="section-head"><div class="section-title">Admin console</div><div class="section-sub">Meenakshi A. · OWNER · The Biere Club, Lavelle Road</div></div>
+      <div class="tabs"><button class="tab">Menu</button><button class="tab active">Add item</button></div>
+      <div class="grid grid-2">
+        <div class="card"><div class="card-title">Add category</div><div class="card-sub">Create a new category before adding items to it.</div><div class="form-group"><label class="form-label">Category name</label><input class="form-input" placeholder="e.g. Club Special"></div><button class="btn btn-secondary btn-full">Create category</button></div>
+        <div class="card"><div class="card-title">Add menu item</div><div class="card-sub">Item goes live immediately on the tap list.</div><div class="form-group"><label class="form-label">Category</label><select class="form-select"><option selected>On Tap</option><option>Bottles</option><option>Starters</option><option>Mains</option></select></div><div class="form-group"><label class="form-label">Item name</label><input class="form-input" placeholder="e.g. Lager"></div><div class="form-group"><label class="form-label">Description</label><input class="form-input" placeholder="Short description"></div><div class="form-row"><div class="form-group"><label class="form-label">Price ex-GST</label><input class="form-input" type="number" placeholder="320"></div><div class="form-group"><label class="form-label">GST %</label><input class="form-input" type="number" placeholder="18"></div></div><div class="row" style="margin-bottom:14px;gap:18px"><label class="checkbox-row"><input type="checkbox"> Veg</label><label class="checkbox-row"><input type="checkbox" checked> Alcohol</label></div><button class="btn btn-primary btn-full">Add to menu →</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 17 · Share sheet -->
+<section id="s17" class="preview-section" style="padding-bottom:60px">
+  <div class="preview-label">17 — openShareSheet() — party invite</div>
+  <div class="app-shell">
+    <div class="app-header"><div class="header-left"><div class="header-logo">The Biere Club</div><span class="pill">Guest</span></div><div class="header-right"><button class="btn btn-secondary btn-sm">Invite others</button></div></div>
+    <div class="app-body">
+      <div style="max-width:460px">
+        <div class="card">
+          <div class="card-title">Invite your party</div>
+          <div class="card-sub">Share the link so everyone can browse the tap list and add to the shared order before sitting down.</div>
+          <div style="background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:20px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;min-height:88px;color:var(--ink-light);font-size:13px">[ QR code renders here ]</div>
+          <div class="form-group"><label class="form-label">Invite link</label><input class="form-input mono" value="https://taurant.onrender.com/v/biere-club-lavelle/session/def456" readonly></div>
+          <div class="row"><button class="btn btn-secondary btn-sm">Copy link</button><button class="btn btn-primary btn-sm">Share</button><button class="btn btn-secondary btn-sm">Close</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
