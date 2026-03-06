@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>flock — Paris Panini pitch</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600;12..96,700;12..96,800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Paris Panini exact brand palette */
+  --blue:         #2838A0;
+  --blue-light:   #3A4CC0;
+  --blue-tint:    rgba(40, 56, 160, 0.08);
+  --blue-border:  rgba(40, 56, 160, 0.22);
+
+  --red:          #E82020;
+  --red-tint:     rgba(232, 32, 32, 0.08);
+
+  --green:        #1E7A4A;
+  --green-tint:   rgba(30, 122, 74, 0.10);
+
+  /* Light backgrounds */
+  --bg:       #F7F5F2;
+  --surface:  #FFFFFF;
+  --surface2: #F0EEE9;
+  --border:   #E0DDD7;
+  --border2:  #C8C4BC;
+
+  /* Text */
+  --ink:      #1A1A1A;
+  --ink-mid:  #5A5750;
+  --ink-dim:  #9B9790;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+  color: var(--ink);
+}
+
+/* ── SCENE SYSTEM ─────────────────────────────────────────────── */
+.scene {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.5s ease;
+  padding: 48px 32px;
+  text-align: center;
+}
+.scene.active { opacity: 1; pointer-events: all; }
+
+/* ── SUBTLE GRAIN ─────────────────────────────────────────────── */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 999; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity: 0.35;
+}
+
+/* ── PROGRESS BAR ─────────────────────────────────────────────── */
+.progress-bar {
+  position: fixed; bottom: 0; left: 0; height: 3px;
+  background: var(--blue); z-index: 100;
+  width: 0%; transition: width linear;
+}
+
+/* ── SCENE DOTS ───────────────────────────────────────────────── */
+.scene-dots {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 6px; z-index: 200;
+}
+.dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(40, 56, 160, 0.18); transition: all 0.3s;
+}
+.dot.active { background: var(--blue); width: 18px; border-radius: 3px; }
+
+/* ── CONTROLS ─────────────────────────────────────────────────── */
+.controls {
+  position: fixed; bottom: 20px; right: 20px; z-index: 200;
+  display: flex; gap: 8px; align-items: center;
+}
+.ctrl-btn {
+  padding: 7px 14px; font-size: 11px; font-weight: 600;
+  border-radius: 4px; cursor: pointer; letter-spacing: 0.08em; text-transform: uppercase;
+  border: 1.5px solid var(--border2);
+  background: var(--surface); color: var(--ink-mid);
+  transition: all 0.2s; font-family: 'Bricolage Grotesque', sans-serif;
+  opacity: 0.7;
+}
+.ctrl-btn:hover { border-color: var(--blue); color: var(--blue); opacity: 1; }
+
+/* ── ANIMATIONS ───────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeScale {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes growLine {
+  from { width: 0; }
+  to   { width: 80px; }
+}
+@keyframes pulse-line {
+  0%,100% { opacity: 0.3; width: 48px; }
+  50%     { opacity: 1; width: 88px; }
+}
+@keyframes drawUnderline {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+
+/* ══════════════════════════════════════════════════════════════ */
+/* SCENE 1 — OPENING                                             */
+/* ══════════════════════════════════════════════════════════════ */
+#s1 { background: var(--surface); }
+.s1-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 55% 35% at 10% 90%, rgba(40,56,160,0.06) 0%, transparent 65%),
+    radial-gradient(ellipse 40% 30% at 90% 10%, rgba(40,56,160,0.04) 0%, transparent 55%);
+}
+/* Decorative moustache pattern dots — PP packaging motif */
+.s1-dots {
+  position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+}
+.s1-dots::before, .s1-dots::after {
+  content: '—— ——';
+  position: absolute; font-size: 48px; letter-spacing: -0.1em;
+  color: rgba(40,56,160,0.05); font-weight: 800;
+  font-family: 'Bricolage Grotesque', sans-serif;
+}
+.s1-dots::before { top: 18%; left: 6%; transform: rotate(-8deg); }
+.s1-dots::after  { bottom: 20%; right: 8%; transform: rotate(6deg); }
+
+.s1-eyebrow {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase;
+  font-weight: 600; color: var(--blue);
+  opacity: 0; animation: fadeDown 0.6s 0.3s forwards;
+  margin-bottom: 22px;
+}
+.s1-headline {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800; font-size: clamp(52px, 11vw, 100px);
+  line-height: 0.92; letter-spacing: -0.03em;
+  color: var(--ink);
+  opacity: 0; animation: fadeScale 0.8s 0.6s forwards;
+}
+.s1-headline em { color: var(--blue); font-style: normal; }
+.s1-sub {
+  margin-top: 28px; font-size: clamp(14px, 2.2vw, 18px);
+  color: var(--ink-mid); font-weight: 400; line-height: 1.65;
+  max-width: 460px;
+  opacity: 0; animation: fadeUp 0.7s 1.2s forwards;
+}
+.s1-sub em { color: var(--blue); font-style: normal; font-weight: 600; }
+.s1-rule {
+  height: 3px; background: var(--blue); border-radius: 2px;
+  margin: 30px auto 0; width: 0;
+  animation: growLine 0.8s 1.8s forwards;
+}
+
+/* ══════════════════════════════════════════════════════════════ */
+/* SCENE 2 — THE NUMBER                                          */
+/* ══════════════════════════════════════════════════════════════ */
+#s2 { background: var(--bg); }
+.s2-bg {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 50% 40% at 50% 55%, rgba(232,32,32,0.04) 0%, transparent 60%);
+}
+.problem-count {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800; font-size: clamp(96px, 20vw, 180px);
+  color: var(--red); line-height: 1; letter-spacing: -0.04em;
+  opacity: 0; animation: fadeScale 0.7s 0.2s forwards;
+}
+.problem-label {
+  font-size: clamp(14px, 2.2vw, 18px);
+  color: var(--ink-mid); margin-top: 10px; line-height: 1.65; max-width: 440px;
+  opacity: 0; animation: fadeUp 0.6s 0.8s forwards;
+}
+.problem-label strong { color: var(--ink); font-weight: 600; }
+.problem-source {
+  margin-top: 16px; font-size: 12px; color: var(--ink-dim); letter-spacing: 0.05em;
+  opacity: 0; animation: fadeUp 0.5s 1.3s forwards;
+  font-style: italic;
+}
+
+/* ══════════════════════════════════════════════════════════════ */
+/* SCENE 3 — THE PAIN                                            */
+/* ══════════════════════════════════════════════════════════════ */
+#s3 { background: var(--surface); }
+.s3-headline {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700; font-size: clamp(18px, 3vw, 26px);
+  color: var(--ink-mid); margin-bottom: 28px;
+  opacity: 0; animation: fadeUp 0.6s 0.1s forwards;
+  letter-spacing: -0.01em;
+}
+.pain-items { display: flex; flex-direction: column; gap: 10px; max-width: 500px; width: 100%; }
+.pain-item {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 20px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 10px;
+  opacity: 0; transform: translateX(-20px);
+  transition: opacity 0.45s, transform 0.45s;
+  text-align: left;
+}
+.pain-item.visible { opacity: 1; transform: translateX(0); }
+.pain-item.visible .pain-icon-wrap { background: var(--blue-tint); border-color: var(--blue-border); }
+.pain-icon-wrap {
+  width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0;
+  background: var(--surface2); border: 1.5px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; transition: all 0.4s;
+}
+.pain-text { font-size: clamp(13px, 2.2vw, 15px); color: var(--ink-mid); line-height: 1.5; }
+.pain-text strong { color: var(--ink); font-weight: 600; }
+
+/* ══════════════════════════════════════════════════════════════ */
+/* SCENE 4 — THE SOLUTION                                        */
+/* ══════════════════════════════════════════════════════════════ */
+#s4 { background: var(--blue); }
+.s4-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 50% 50% at 20% 80%, rgba(255,255,255,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 80% 20%, rgba(255,255,255,0.04) 0%, transparent 55%);
+}
+/* on the blue scene, text needs to flip */
+#s4 .solution-word,
+#s4 .solution-desc,
+#s4 .solution-desc strong { color: #fff; }
+#s4 .solution-desc { color: rgba(255,255,255,0.75); }
+#s4 .solution-word em { color: #fff; position: relative; }
+#s4 .solution-word em::after {
+  content: '';
+  position: absolute; bottom: 4px; left: 0;
+  height: 4px; background: rgba(255,255,255,0.4); border-radius: 2px;
+  width: 0; animation: drawUnderline 0.6s 1.2s forwards;
+}
+
+.solution-word {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800; font-size: clamp(52px, 12vw, 110px);
+  line-height: 0.92; letter-spacing: -0.03em; color: var(--ink);
+  opacity: 0; animation: fadeScale 0.9s 0.2s forwards;
+}
+.solution-word em { color: var(--blue); font-style: normal; }
+.solution-desc {
+  margin-top: 28px; font-size: clamp(14px, 2.4vw, 19px);
+  color: var(--ink-mid); font-weight: 400; max-width: 480px; line-height: 1.7;
+  opacity: 0; animation: fadeUp 0.7s 0.9s forwards;
+}
+.solution-desc strong { color: var(--ink); font-weight: 600; }
+
+/* ══════════════════════════════════════════════════════════════ */
+/* SCENE 5 — HOW IT WORKS                                        */
+/* ══════════════════════════════════════════════════════════════ */
+#s5 { background: var(--bg); }
+.steps-eyebrow {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 11px; letter-spacing: 0.26em; text-transform: uppercase; font-weight: 700;
+  color: var(--blue); margin-bottom: 28px;
+  opacity: 0; animation: fadeUp 0.5s 0.1s forwards;
+}
+.steps { display: flex; flex-direction: column; gap: 0; max-width: 460px; width: 100%; }
+.step {
+  display: flex; align-items: flex-start; gap: 18px;
+  padding: 18px 0; border-bottom: 1.5px solid var(--border);
+  opacity: 0; transform: translateY(14px);
+  transition: opacity 0.45s, transform 0.45s;
+  text-align: left;
+}
+.step:last-child { border-bottom: none; }
+.step.visible { opacity: 1; transform: translateY(0); }
+.step-num {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800; font-size: 28px; color: var(--blue);
+  line-height: 1; min-width: 32px; letter-spacing: -0.02em;
+}
+.step-title {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 3px;
+  letter-spacing: -0.01em;
+}
+.step-desc { font-size: 13px; color: var(--ink-mid); line-height: 1.6; }
+
+/* ══════════════════════════════════════════════════════════════ */
+/* SCENE 6 — THE MONEY                                           */
+/* ══════════════════════════════════════════════════════════════ */
+#s6 { background: var(--surface); }
+.s6-bg {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 55% 40% at 50% 45%, rgba(40,56,160,0.05) 0%, transparent 65%);
+}
+.money-label {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 600;
+  color: var(--ink-dim); margin-bottom: 8px;
+  opacity: 0; animation: fadeUp 0.5s 0.2s forwards;
+}
+.money-stat {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800; font-size: clamp(64px, 14vw, 128px);
+  color: var(--blue); line-height: 1; letter-spacing: -0.04em;
+  opacity: 0; animation: fadeScale 1s 0.5s forwards;
+}
+.money-context {
+  font-size: clamp(15px, 2.6vw, 20px); color: var(--ink-mid);
+  margin-top: 18px; max-width: 460px; line-height: 1.7;
+  opacity: 0; animation: fadeUp 0.7s 1.2s forwards;
+}
+.money-context strong { color: var(--ink); font-weight: 600; }
+.money-context b { color: var(--blue); font-weight: 700; }
+.money-pills {
+  display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+  margin-top: 24px; opacity: 0; animation: fadeUp 0.6s 1.8s forwards;
+}
+.pill {
+  padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: 600;
+  border: 1.5px solid var(--blue-border); color: var(--blue);
+  background: var(--blue-tint); font-family: 'Bricolage Grotesque', sans-serif;
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+
+/* ══════════════════════════════════════════════════════════════ */
+/* SCENE 7 — SOCIAL PROOF                                        */
+/* ══════════════════════════════════════════════════════════════ */
+#s7 { background: var(--bg); }
+.s7-bg {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 50% 40% at 50% 50%, rgba(232,32,32,0.04) 0%, transparent 60%);
+}
+.quote-mark {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800; font-size: 72px; color: var(--blue);
+  line-height: 0.7; opacity: 0; animation: fadeUp 0.5s 0.1s forwards;
+  margin-bottom: 12px;
+}
+.quote-text {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700; font-size: clamp(22px, 4.5vw, 42px); line-height: 1.2;
+  color: var(--ink); max-width: 540px; letter-spacing: -0.02em;
+  opacity: 0; animation: fadeUp 0.8s 0.4s forwards;
+}
+.quote-text em { color: var(--red); font-style: normal; }
+.quote-body {
+  margin-top: 22px; font-size: clamp(14px, 2.4vw, 18px);
+  color: var(--ink-mid); line-height: 1.8; max-width: 420px;
+  opacity: 0; animation: fadeUp 0.7s 1s forwards;
+}
+.quote-body b { color: var(--blue); font-weight: 600; }
+.s7-chips {
+  display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+  margin-top: 24px; opacity: 0; animation: fadeUp 0.6s 1.5s forwards;
+}
+.venue-chip {
+  font-size: 11px; color: var(--ink-dim);
+  padding: 3px 10px; border: 1.5px solid var(--border2);
+  border-radius: 4px; font-family: 'Bricolage Grotesque', sans-serif;
+  letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600;
+}
+
+/* ══════════════════════════════════════════════════════════════ */
+/* SCENE 8 — THE OFFER                                           */
+/* ══════════════════════════════════════════════════════════════ */
+#s8 { background: var(--surface); }
+.s8-bg {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 50% 55% at 50% 60%, rgba(40,56,160,0.06) 0%, transparent 60%);
+}
+.offer-eyebrow {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; font-weight: 700;
+  color: var(--blue); margin-bottom: 18px;
+  opacity: 0; animation: fadeUp 0.5s 0.1s forwards;
+}
+.offer-headline {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800; font-size: clamp(40px, 8.5vw, 78px);
+  line-height: 0.95; color: var(--ink); letter-spacing: -0.03em;
+  opacity: 0; animation: fadeScale 0.9s 0.4s forwards;
+}
+.offer-headline em { color: var(--blue); font-style: normal; }
+.offer-details {
+  margin-top: 26px; font-size: clamp(14px, 2.3vw, 18px);
+  color: var(--ink-mid); max-width: 460px; line-height: 1.8;
+  opacity: 0; animation: fadeUp 0.7s 1.1s forwards;
+}
+.offer-details strong { color: var(--ink); font-weight: 600; }
+.offer-details b { color: var(--blue); font-weight: 700; }
+.offer-cta {
+  margin-top: 32px;
+  display: inline-block; padding: 14px 36px;
+  background: var(--blue); color: #fff;
+  font-size: 13px; font-weight: 700; border-radius: 6px;
+  letter-spacing: 0.10em; text-transform: uppercase;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  opacity: 0; animation: fadeUp 0.6s 1.6s forwards;
+  text-decoration: none; cursor: default;
+}
+.offer-note {
+  margin-top: 12px; font-size: 12px; color: var(--ink-dim); font-style: italic;
+  opacity: 0; animation: fadeUp 0.5s 2s forwards;
+}
+
+/* ══════════════════════════════════════════════════════════════ */
+/* SCENE 9 — CLOSER                                              */
+/* ══════════════════════════════════════════════════════════════ */
+#s9 { background: var(--blue); }
+.s9-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 55% 45% at 15% 85%, rgba(255,255,255,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 35% at 85% 15%, rgba(255,255,255,0.05) 0%, transparent 55%);
+}
+.closer-logo {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800; font-size: clamp(80px, 17vw, 148px);
+  line-height: 0.9; color: #fff;
+  letter-spacing: -0.04em;
+  opacity: 0; animation: fadeScale 1.1s 0.2s forwards;
+}
+.closer-logo em { color: rgba(255,255,255,0.5); font-style: normal; }
+.closer-tag {
+  margin-top: 20px; font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: clamp(11px, 1.8vw, 14px); font-weight: 600;
+  color: rgba(255,255,255,0.5); letter-spacing: 0.22em;
+  text-transform: uppercase;
+  opacity: 0; animation: fadeUp 0.6s 1.1s forwards;
+}
+.closer-contact {
+  margin-top: 40px; font-size: clamp(16px, 2.8vw, 22px);
+  color: rgba(255,255,255,0.9); font-weight: 400; line-height: 1.6;
+  opacity: 0; animation: fadeUp 0.7s 1.6s forwards;
+}
+.closer-pulse {
+  width: 48px; height: 3px; background: #fff;
+  margin: 22px auto 0; border-radius: 2px;
+  opacity: 0; animation: pulse-line 2s 2.2s infinite;
+}
+</style>
+</head>
+<body>
+
+<!-- Progress bar -->
+<div class="progress-bar" id="progress"></div>
+
+<!-- Scene dots -->
+<div class="scene-dots" id="dots"></div>
+
+<!-- Controls -->
+<div class="controls">
+  <button class="ctrl-btn" onclick="prevScene()">← prev</button>
+  <button class="ctrl-btn" onclick="nextScene()">next →</button>
+  <button class="ctrl-btn" onclick="restart()">↺ replay</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCENE 1: Opening                                        -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="scene" id="s1">
+  <div class="s1-bg"></div>
+  <div class="s1-dots"></div>
+  <div class="s1-eyebrow">for Paris Panini — Bengaluru</div>
+  <div class="s1-headline">your lunch rush,<br><em>fully seated</em></div>
+  <div class="s1-sub">Every day, people queue for you.<br>flock makes sure <em>more of them actually sit down.</em></div>
+  <div class="s1-rule"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCENE 2: The number                                     -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="scene" id="s2">
+  <div class="s2-bg"></div>
+  <div class="problem-count" id="countNum">₹0</div>
+  <div class="problem-label">
+    lost for every <strong>₹100</strong> you make on a busy lunch shift<br>
+    because guests in the queue gave up and left
+  </div>
+  <div class="problem-source">
+    Peer-reviewed · 94,404 real restaurant guests tracked over one full year<br>
+    Journal of Operations Management, De Vries et al., 2018
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCENE 3: The pain                                       -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="scene" id="s3">
+  <div class="s3-headline">sound familiar?</div>
+  <div class="pain-items">
+    <div class="pain-item" id="p1">
+      <div class="pain-icon-wrap">😤</div>
+      <div class="pain-text"><strong>A busy queue is a great sign.</strong> But without updates, groups drift off before they reach a table.</div>
+    </div>
+    <div class="pain-item" id="p2">
+      <div class="pain-icon-wrap">📋</div>
+      <div class="pain-text"><strong>Staff juggle paper lists.</strong> People get missed. The line gets messy.</div>
+    </div>
+    <div class="pain-item" id="p3">
+      <div class="pain-icon-wrap">🥪</div>
+      <div class="pain-text"><strong>Order prep timing is guesswork.</strong> A panini made too early goes cold before the guest is seated.</div>
+    </div>
+    <div class="pain-item" id="p4">
+      <div class="pain-icon-wrap">💸</div>
+      <div class="pain-text"><strong>Guests ghost.</strong> Table sits empty. The next group already left.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCENE 4: Introduce flock                               -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="scene" id="s4">
+  <div class="s4-bg"></div>
+  <div class="solution-word">meet <em>flock</em></div>
+  <div class="solution-desc">
+    A <strong>digital queue</strong> — no app, 10 seconds to join.<br>
+    WhatsApp alert when their table's ready.<br>
+    <strong>Entrance clear. Every seat filled.</strong>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCENE 5: How it works                                  -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="scene" id="s5">
+  <div class="steps-eyebrow">how it works</div>
+  <div class="steps">
+    <div class="step" id="st1">
+      <div class="step-num">1</div>
+      <div>
+        <div class="step-title">Guest scans your QR code</div>
+        <div class="step-desc">10 seconds. Name, phone, party size. No app needed.</div>
+      </div>
+    </div>
+    <div class="step" id="st2">
+      <div class="step-num">2</div>
+      <div>
+        <div class="step-title">Small deposit holds their spot</div>
+        <div class="step-desc">UPI, GPay, PhonePe. Counted against their bill. They won't ghost.</div>
+      </div>
+    </div>
+    <div class="step" id="st3">
+      <div class="step-num">3</div>
+      <div>
+        <div class="step-title">WhatsApp alert when their table's ready</div>
+        <div class="step-desc">flock pings them. They show an OTP and sit down.</div>
+      </div>
+    </div>
+    <div class="step" id="st4">
+      <div class="step-num">4</div>
+      <div>
+        <div class="step-title">Pay the balance, leave happy</div>
+        <div class="step-desc">Deposit deducted. Clean checkout.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCENE 6: The money                                      -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="scene" id="s6">
+  <div class="s6-bg"></div>
+  <div class="money-label">revenue increase · peer-reviewed · verified</div>
+  <div class="money-stat">+15%</div>
+  <div class="money-context">
+    Seated guests spend <b>15% more.</b><br>
+    At Paris Panini, that's <b>₹8,000–₹12,000 extra per busy shift.</b>
+  </div>
+  <div class="money-pills">
+    <span class="pill">Journal of Operations Management, 2018</span>
+    <span class="pill">94,404 guests · peer-reviewed</span>
+    <span class="pill">₹900 avg spend · Zomato, Paris Panini</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCENE 7: Social proof                                   -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="scene" id="s7">
+  <div class="s7-bg"></div>
+  <div class="quote-mark">"</div>
+  <div class="quote-text">
+    waited too long?<br>they leave <em>sooner.</em>
+  </div>
+  <div class="quote-body">
+    Longer wait = shorter stay, smaller order.<br>
+    <b>One panini instead of two.</b><br>₹300 you never plated.
+  </div>
+  <div class="s7-chips">
+    <span class="venue-chip">same study · same 94,404 guests</span>
+    <span class="venue-chip">Journal of Operations Management, 2018</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCENE 8: The offer                                      -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="scene" id="s8">
+  <div class="s8-bg"></div>
+  <div class="offer-eyebrow">for Paris Panini — Bengaluru pilot</div>
+  <div class="offer-headline">we show up<br><em>first</em></div>
+  <div class="offer-details">
+    <strong>Free for the first month.</strong><br>
+    We set up, train staff, and show up your <strong>first two lunch rushes.</strong><br><br>
+    <b>No contract. No commitment.</b>
+  </div>
+  <div class="offer-cta">Let's talk</div>
+  <div class="offer-note">No setup fee. Cancel any time.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCENE 9: Closer                                         -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="scene" id="s9">
+  <div class="s9-bg"></div>
+  <div class="closer-logo">fl<em>o</em>ck</div>
+  <div class="closer-tag">arrive · queue · sit · <em style="font-style:normal;color:rgba(255,255,255,0.85)">savour</em></div>
+  <div class="closer-contact">Every panini deserves a full lunch hour.<br>Not a short one.</div>
+  <div class="closer-pulse"></div>
+</div>
+
+<script>
+const SCENES = ['s1','s2','s3','s4','s5','s6','s7','s8','s9'];
+const DURATIONS = [8500, 8500, 8000, 11500, 27500, 8000, 11500, 14500, 9999];
+let current = 0;
+let timer = null;
+let effectTimers = [];
+
+/* ── DOTS ─────────────────────────────────────────────────────── */
+function buildDots() {
+  const c = document.getElementById('dots');
+  SCENES.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i===0?' active':'');
+    d.onclick = () => goTo(i);
+    d.style.cursor = 'pointer';
+    c.appendChild(d);
+  });
+}
+
+function updateDots() {
+  document.querySelectorAll('.dot').forEach((d, i) => {
+    d.className = 'dot' + (i===current?' active':'');
+  });
+}
+
+/* ── PROGRESS ─────────────────────────────────────────────────── */
+function startProgress(dur) {
+  const bar = document.getElementById('progress');
+  bar.style.transition = 'none';
+  bar.style.width = '0%';
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      bar.style.transition = `width ${dur}ms linear`;
+      bar.style.width = '100%';
+    });
+  });
+}
+
+/* ── SCENE LOGIC ──────────────────────────────────────────────── */
+function clearEffectTimers() {
+  effectTimers.forEach(t => clearTimeout(t));
+  effectTimers = [];
+}
+
+function scheduleEffect(fn, delay) {
+  effectTimers.push(setTimeout(fn, delay));
+}
+
+function goTo(idx) {
+  clearTimeout(timer);
+  clearEffectTimers();
+  document.getElementById(SCENES[current])?.classList.remove('active');
+  current = Math.max(0, Math.min(SCENES.length-1, idx));
+  const el = document.getElementById(SCENES[current]);
+  el.classList.add('active');
+  updateDots();
+  runSceneEffects(current);
+  const dur = DURATIONS[current];
+  startProgress(dur);
+  if (dur !== 9999) {
+    timer = setTimeout(() => goTo(current + 1), dur);
+  }
+}
+
+function nextScene() { if (current < SCENES.length-1) goTo(current+1); }
+function prevScene() { if (current > 0) goTo(current-1); }
+function restart()   { goTo(0); }
+
+/* ── PER-SCENE EFFECTS ────────────────────────────────────────── */
+function runSceneEffects(idx) {
+  clearEffectTimers();
+
+  // Reset staggered elements
+  ['p1','p2','p3','p4'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('visible');
+  });
+  ['st1','st2','st3','st4'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('visible');
+  });
+
+  // Scene 2: count up ₹0 → ₹15
+  if (idx === 1) {
+    const el = document.getElementById('countNum');
+    if (!el) return;
+    el.style.opacity = '0'; el.style.animation = 'none';
+    let v = 0;
+    scheduleEffect(() => {
+      el.style.animation = 'fadeScale 0.7s 0.2s forwards';
+      el.textContent = '₹0';
+      const iv = setInterval(() => {
+        v = Math.min(15, v + 1);
+        el.textContent = '₹' + v;
+        if (v >= 15) clearInterval(iv);
+      }, 180);
+      effectTimers.push(iv);
+    }, 300);
+  }
+
+  // Scene 3: stagger pain items
+  if (idx === 2) {
+    ['p1','p2','p3','p4'].forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (el) scheduleEffect(() => el.classList.add('visible'), 450 + i * 340);
+    });
+  }
+
+  // Scene 5: stagger steps
+  if (idx === 4) {
+    ['st1','st2','st3','st4'].forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (el) scheduleEffect(() => el.classList.add('visible'), 400 + i * 400);
+    });
+  }
+}
+
+/* ── KEYBOARD ─────────────────────────────────────────────────── */
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextScene(); }
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); prevScene(); }
+  if (e.key === 'r' || e.key === 'R') restart();
+});
+
+/* ── TOUCH ────────────────────────────────────────────────────── */
+let touchX = 0;
+document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; });
+document.addEventListener('touchend',   e => {
+  const dx = e.changedTouches[0].clientX - touchX;
+  if (Math.abs(dx) > 40) dx < 0 ? nextScene() : prevScene();
+});
+
+/* ── INIT ─────────────────────────────────────────────────────── */
+buildDots();
+goTo(0);
+</script>
+</body>
+</html>
