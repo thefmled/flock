@@ -2,3 +2,6 @@
 .env.local
 dist
 node_modules
+tests/results
+tests/**/*-snapshots
+playwright-report

@@ -1499,6 +1499,8 @@ async function renderStaffDashboard() {
     });
   });
 
+  scrollActiveTabIntoView();
+
   document.getElementById('staff-logout')?.addEventListener('click', () => {
     clearStaffAuth();
     navigate('/staff/login');
@@ -1792,6 +1794,8 @@ async function renderAdminDashboard() {
       renderAdminDashboard().catch(handleFatalError);
     });
   });
+
+  scrollActiveTabIntoView();
 
   document.getElementById('admin-logout')?.addEventListener('click', () => {
     clearStaffAuth();
@@ -2945,6 +2949,13 @@ function renderMenuSections(categories, cart) {
 
 function renderTabButton(key, label, currentTab) {
   return `<button class="tab ${currentTab === key ? 'active' : ''}" data-tab="${key}">${label}</button>`;
+}
+
+function scrollActiveTabIntoView() {
+  const activeTab = document.querySelector('.tabs .tab.active');
+  if (activeTab) {
+    activeTab.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' });
+  }
 }
 
 function renderTableActions(table) {

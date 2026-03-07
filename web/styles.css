@@ -35,6 +35,7 @@
 
 html, body {
   min-height: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -289,7 +290,7 @@ button, input, select {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r);
-  padding: 22px;
+  padding: clamp(14px, 4vw, 22px);
   box-shadow: var(--shadow);
 }
 
@@ -304,6 +305,18 @@ button, input, select {
   color: var(--cream-dim);
   line-height: 1.5;
   margin-bottom: 18px;
+}
+
+.card-title,
+.card-sub,
+.menu-item-name,
+.order-line-name,
+.section-title,
+.section-sub,
+.q-row-name,
+.alert div {
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .section-head {
