@@ -2260,12 +2260,14 @@ function renderBucketMenuSections(categories, cart) {
           const selected = qty > 0 ? 'selected' : '';
           return `
             <div class="menu-item ${selected}">
-              <div class="menu-item-name">${escapeHtml(item.name)}</div>
-              <div class="menu-item-desc">${escapeHtml(item.description || 'No description')}</div>
-              <div class="menu-item-foot">
+              <div class="menu-item-body">
+                <div class="menu-item-name">${escapeHtml(item.name)}</div>
+                <div class="menu-item-desc">${escapeHtml(item.description || 'No description')}</div>
                 <div class="menu-item-price">${formatMoney(menuItemTotal(item))}</div>
+              </div>
+              <div class="menu-item-foot">
                 <div class="qty-ctrl">
-                  <button class="qty-btn" type="button" data-bucket-item data-item-id="${item.id}" data-delta="-1">-</button>
+                  <button class="qty-btn" type="button" data-bucket-item data-item-id="${item.id}" data-delta="-1">−</button>
                   <span class="qty-num ${qty > 0 ? 'active' : ''}">${qty}</span>
                   <button class="qty-btn" type="button" data-bucket-item data-item-id="${item.id}" data-delta="1">+</button>
                 </div>
@@ -2468,16 +2470,21 @@ function mountSeatedGuestExperience({ slug, entry, venue, bill, guestSession }) 
 
     if (toastHost) {
       const showToast = uiState.guestTray === 'menu' && bucketCount > 0;
-      toastHost.innerHTML = showToast ? `
-        <div class="bucket-toast">
-          <span class="bucket-toast-text">${bucketCount} item${bucketCount === 1 ? '' : 's'} in your bucket</span>
-          <button class="btn btn-primary btn-sm bucket-toast-btn" type="button" data-toast-go-bucket>View Bucket</button>
-        </div>
-      ` : '';
-      toastHost.querySelector('[data-toast-go-bucket]')?.addEventListener('click', () => {
-        uiState.guestTray = 'bucket';
-        renderTrayShell();
-      });
+      const prevKey = toastHost.dataset.toastKey || '';
+      const nextKey = showToast ? `show:${bucketCount}` : 'hide';
+      if (prevKey !== nextKey) {
+        toastHost.dataset.toastKey = nextKey;
+        toastHost.innerHTML = showToast ? `
+          <div class="bucket-toast">
+            <span class="bucket-toast-text">${bucketCount} item${bucketCount === 1 ? '' : 's'} in your bucket</span>
+            <button class="btn btn-primary btn-sm bucket-toast-btn" type="button" data-toast-go-bucket>View Bucket</button>
+          </div>
+        ` : '';
+        toastHost.querySelector('[data-toast-go-bucket]')?.addEventListener('click', () => {
+          uiState.guestTray = 'bucket';
+          renderTrayShell();
+        });
+      }
     }
 
     if (uiState.guestTray === 'menu') {
@@ -2898,12 +2905,14 @@ function renderTableMenuSections(categories, cart, isLocked = false) {
           const selected = qty > 0 ? 'selected' : '';
           return `
             <div class="menu-item ${selected} ${isLocked ? 'locked' : ''}">
-              <div class="menu-item-name">${escapeHtml(item.name)}</div>
-              <div class="menu-item-desc">${escapeHtml(item.description || 'No description')}</div>
-              <div class="menu-item-foot">
+              <div class="menu-item-body">
+                <div class="menu-item-name">${escapeHtml(item.name)}</div>
+                <div class="menu-item-desc">${escapeHtml(item.description || 'No description')}</div>
                 <div class="menu-item-price">${formatMoney(menuItemTotal(item))}</div>
+              </div>
+              <div class="menu-item-foot">
                 <div class="qty-ctrl">
-                  <button class="qty-btn" type="button" data-table-cart-item data-item-id="${item.id}" data-delta="-1" ${isLocked ? 'disabled' : ''}>-</button>
+                  <button class="qty-btn" type="button" data-table-cart-item data-item-id="${item.id}" data-delta="-1" ${isLocked ? 'disabled' : ''}>−</button>
                   <span class="qty-num ${qty > 0 ? 'active' : ''}">${qty}</span>
                   <button class="qty-btn" type="button" data-table-cart-item data-item-id="${item.id}" data-delta="1" ${isLocked ? 'disabled' : ''}>+</button>
                 </div>
@@ -2929,12 +2938,14 @@ function renderMenuSections(categories, cart) {
           const selected = qty > 0 ? 'selected' : '';
           return `
             <div class="menu-item ${selected}">
-              <div class="menu-item-name">${escapeHtml(item.name)}</div>
-              <div class="menu-item-desc">${escapeHtml(item.description || 'No description')}</div>
-              <div class="menu-item-foot">
+              <div class="menu-item-body">
+                <div class="menu-item-name">${escapeHtml(item.name)}</div>
+                <div class="menu-item-desc">${escapeHtml(item.description || 'No description')}</div>
                 <div class="menu-item-price">${formatMoney(menuItemTotal(item))}</div>
+              </div>
+              <div class="menu-item-foot">
                 <div class="qty-ctrl">
-                  <button class="qty-btn" type="button" data-cart-item data-item-id="${item.id}" data-delta="-1">-</button>
+                  <button class="qty-btn" type="button" data-cart-item data-item-id="${item.id}" data-delta="-1">−</button>
                   <span class="qty-num ${qty > 0 ? 'active' : ''}">${qty}</span>
                   <button class="qty-btn" type="button" data-cart-item data-item-id="${item.id}" data-delta="1">+</button>
                 </div>

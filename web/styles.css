@@ -1079,18 +1079,22 @@ button, input, select {
   margin-top: 2px;
 }
 
+/* Menu — always single-column rows (like Swiggy/Zomato) */
 .menu-grid {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .menu-item {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r);
-  padding: 16px;
+  padding: 14px 16px;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 
 .menu-item.selected {
@@ -1105,55 +1109,73 @@ button, input, select {
   position: relative;
 }
 
+/* Left side: text content grows to fill available space */
+.menu-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
 .menu-item-name {
   font-size: 15px;
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .menu-item-desc {
   font-size: 12px;
   color: var(--cream-dim);
-  margin-bottom: 13px;
-  line-height: 1.5;
-}
-
-.menu-item-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  overflow: hidden;
+  margin-bottom: 6px;
+  line-height: 1.45;
 }
 
 .menu-item-price {
   font-family: "DM Sans", sans-serif;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
   color: var(--amber);
+}
+
+/* Right side: qty control always pinned, never squished */
+.menu-item-foot {
+  flex-shrink: 0;
 }
 
 .qty-ctrl {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-shrink: 0;
 }
 
 .qty-btn {
-  min-width: 36px;
-  min-height: 36px;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
   border-radius: var(--r-sm);
   border: 1px solid var(--border2);
   background: var(--surface2);
-  color: var(--cream-dim);
+  color: var(--cream);
   cursor: pointer;
   flex-shrink: 0;
   display: grid;
   place-items: center;
-  font-size: 16px;
+  font-size: 18px;
+  font-weight: 500;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.qty-btn:active {
+  background: var(--amber);
+  color: #141210;
+  border-color: var(--amber);
+}
+
+.qty-num {
+  font-size: 15px;
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
 }
 
 .qty-num.active {
@@ -1596,8 +1618,3 @@ button, input, select {
   }
 }
 
-@media (max-width: 400px) {
-  .menu-grid {
-    grid-template-columns: 1fr;
-  }
-}
