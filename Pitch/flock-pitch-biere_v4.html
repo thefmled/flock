@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>flock — pitch</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --amber:        #E48400;
+  --amber-light:  #F09A20;
+  --amber-tint:   rgba(228, 132, 0, 0.12);
+  --amber-border: rgba(228, 132, 0, 0.30);
+  --teal:         #3FBFC0;
+  --teal-light:   #5AD0D1;
+  --teal-tint:    rgba(63, 191, 192, 0.12);
+  --teal-border:  rgba(63, 191, 192, 0.30);
+  --cream:        #F0E8D8;
+  --dark:         #0F0C08;
+  --surface:      #1A1410;
+  --surface2:     #221C16;
+  --border:       #3A2E22;
+  --border2:      #503C2A;
+  --green:        #28A058;
+  --red:          #E03428;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--dark);
+  font-family: 'Lora', Georgia, serif;
+  overflow: hidden;
+  color: var(--cream);
+}
+
+/* ── SCENE SYSTEM ─────────────────────────────────────────────── */
+.scene {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.6s ease;
+  padding: 48px 32px;
+  text-align: center;
+}
+.scene.active { opacity: 1; pointer-events: all; }
+
+/* ── GRAIN OVERLAY ────────────────────────────────────────────── */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 999; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity: 0.6;
+}
+
+/* ── PROGRESS BAR ─────────────────────────────────────────────── */
+.progress-bar {
+  position: fixed; bottom: 0; left: 0; height: 2px;
+  background: var(--amber); z-index: 100;
+  width: 0%; transition: width linear;
+}
+
+/* ── SCENE 1: OPENING ─────────────────────────────────────────── */
+#s1 {
+  background: var(--dark);
+}
+.s1-bg {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 30% 70%, rgba(232,168,48,0.08) 0%, transparent 60%),
+              radial-gradient(ellipse at 75% 25%, rgba(232,168,48,0.04) 0%, transparent 50%);
+}
+.s1-eyebrow {
+  font-family: 'Oswald', sans-serif; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; font-weight: 600;
+  color: var(--amber); opacity: 0; margin-bottom: 20px;
+  animation: fadeUp 0.7s 0.3s forwards;
+}
+.s1-headline {
+  font-family: 'Oswald', sans-serif; font-weight: 700; font-style: normal; text-transform: uppercase; letter-spacing: 0.03em;
+  font-size: clamp(52px, 12vw, 110px); line-height: 0.9;
+  color: var(--cream); letter-spacing: -0.02em;
+  opacity: 0; animation: fadeUp 0.9s 0.6s forwards;
+}
+.s1-headline em { color: var(--amber); }
+.s1-sub {
+  margin-top: 24px; font-size: clamp(14px, 2.5vw, 18px);
+  color: rgba(240,232,216,0.55); font-weight: 300; line-height: 1.6;
+  max-width: 480px; opacity: 0; animation: fadeUp 0.7s 1.1s forwards;
+}
+.s1-line {
+  width: 1px; height: 0; background: var(--teal);
+  margin: 32px auto 0; opacity: 0.5;
+  animation: growLine 1.2s 1.6s forwards;
+}
+
+/* ── SCENE 2: THE PROBLEM ─────────────────────────────────────── */
+#s2 { background: var(--dark); }
+.s2-bg {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 80% 80%, rgba(192,90,74,0.06) 0%, transparent 60%);
+}
+.problem-count {
+  font-family: 'Oswald', sans-serif; font-weight: 700; font-style: normal;
+  font-size: clamp(80px, 18vw, 160px); color: var(--red);
+  line-height: 1; letter-spacing: -0.03em;
+  opacity: 0; animation: fadeUp 0.8s 0.2s forwards;
+}
+.problem-label {
+  font-size: clamp(13px, 2vw, 16px); letter-spacing: 0.2em;
+  text-transform: uppercase; color: rgba(240,232,216,0.4);
+  margin-top: 8px; opacity: 0; animation: fadeUp 0.6s 0.7s forwards;
+}
+.problem-desc {
+  font-family: 'Lora', Georgia, serif; font-style: italic; font-weight: 400;
+  font-size: clamp(22px, 4.5vw, 42px); line-height: 1.25;
+  color: var(--cream); max-width: 560px; margin-top: 32px;
+  opacity: 0; animation: fadeUp 0.8s 1s forwards;
+}
+.problem-desc em { color: var(--amber); }
+
+/* ── SCENE 3: THE PAIN ────────────────────────────────────────── */
+#s3 { background: var(--dark); }
+.pain-items { display: flex; flex-direction: column; gap: 20px; max-width: 480px; width: 100%; }
+.pain-item {
+  display: flex; align-items: center; gap: 18px;
+  padding: 18px 22px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  opacity: 0; transform: translateX(-24px);
+  transition: opacity 0.5s, transform 0.5s;
+  text-align: left;
+}
+.pain-item.visible { opacity: 1; transform: translateX(0); }
+.pain-icon { font-size: 22px; flex-shrink: 0; }
+.pain-text { font-size: clamp(14px, 2.4vw, 18px); color: rgba(240,232,216,0.85); line-height: 1.5; }
+.pain-text strong { color: var(--cream); font-weight: 600; }
+.s3-headline {
+  font-family: 'Oswald', sans-serif; font-style: italic; font-weight: 300;
+  font-size: clamp(20px, 3.5vw, 30px); color: rgba(240,232,216,0.45);
+  margin-bottom: 28px; opacity: 0; animation: fadeUp 0.7s 0.1s forwards;
+}
+
+/* ── SCENE 4: THE SOLUTION ────────────────────────────────────── */
+#s4 {
+  background: var(--dark);
+}
+.s4-bg {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, rgba(90,158,114,0.08) 0%, transparent 65%);
+}
+.solution-word {
+  font-family: 'Oswald', sans-serif; font-weight: 700; font-style: normal; text-transform: uppercase; letter-spacing: 0.03em;
+  font-size: clamp(56px, 13vw, 120px); line-height: 0.9;
+  letter-spacing: -0.02em; color: var(--cream);
+  opacity: 0; animation: fadeScale 1s 0.2s forwards;
+}
+.solution-word em { color: var(--amber); }
+.solution-desc {
+  margin-top: 28px; font-size: clamp(15px, 2.5vw, 20px);
+  color: rgba(240,232,216,0.6); font-weight: 300;
+  max-width: 500px; line-height: 1.65;
+  opacity: 0; animation: fadeUp 0.7s 0.9s forwards;
+}
+.solution-desc strong { color: var(--cream); font-weight: 400; }
+
+/* ── SCENE 5: HOW IT WORKS ────────────────────────────────────── */
+#s5 { background: var(--dark); }
+.steps-headline {
+  font-family: 'Oswald', sans-serif; font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--amber); margin-bottom: 32px; font-weight: 600;
+  opacity: 0; animation: fadeUp 0.5s 0.1s forwards;
+}
+.steps { display: flex; flex-direction: column; gap: 0; max-width: 440px; width: 100%; }
+.step {
+  display: flex; align-items: flex-start; gap: 20px;
+  padding: 20px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+  opacity: 0; transform: translateY(16px);
+  transition: opacity 0.5s, transform 0.5s;
+  text-align: left;
+}
+.step:last-child { border-bottom: none; }
+.step.visible { opacity: 1; transform: translateY(0); }
+.step-num {
+  font-family: 'Oswald', sans-serif; font-style: normal; font-weight: 700;
+  font-size: 32px; color: var(--amber); line-height: 1; min-width: 36px;
+}
+.step-body {}
+.step-title { font-family: 'Oswald', sans-serif; font-size: 16px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--cream); margin-bottom: 4px; }
+.step-desc { font-family: 'Lora', serif; font-size: 14px; color: rgba(240,232,216,0.65); line-height: 1.6; }
+
+/* ── SCENE 6: THE MONEY ───────────────────────────────────────── */
+#s6 { background: var(--dark); }
+.s6-bg {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 40%, rgba(232,168,48,0.07) 0%, transparent 60%);
+}
+.money-label {
+  font-family: 'Oswald', sans-serif; font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase; font-weight: 600;
+  color: rgba(240,232,216,0.4); margin-bottom: 8px;
+  opacity: 0; animation: fadeUp 0.5s 0.2s forwards;
+}
+.money-stat {
+  font-family: 'Oswald', sans-serif; font-weight: 700; font-style: normal; text-transform: uppercase; letter-spacing: 0.03em;
+  font-size: clamp(54px, 12vw, 110px); color: var(--amber); line-height: 1;
+  letter-spacing: -0.02em;
+  opacity: 0; animation: countUp 1.2s 0.5s forwards;
+}
+.money-context {
+  font-size: clamp(17px, 3vw, 22px); color: rgba(240,232,216,0.85);
+  margin-top: 16px; max-width: 460px; line-height: 1.7;
+  opacity: 0; animation: fadeUp 0.7s 1.2s forwards;
+}
+.money-context strong { color: var(--cream); font-weight: 400; }
+.money-pills {
+  display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+  margin-top: 28px; opacity: 0; animation: fadeUp 0.6s 1.7s forwards;
+}
+.pill {
+  padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: 600;
+  border: 1.5px solid var(--amber-border); color: var(--amber);
+  background: var(--amber-tint); font-family: 'Oswald', sans-serif; letter-spacing: 0.08em; text-transform: uppercase;
+}
+
+/* ── SCENE 7: SOCIAL PROOF ────────────────────────────────────── */
+#s7 { background: var(--dark); }
+.quote-mark {
+  font-family: 'Oswald', sans-serif; font-style: italic;
+  font-size: 80px; color: var(--amber); line-height: 0.5;
+  opacity: 0.3; margin-bottom: 16px;
+  opacity: 0; animation: fadeUp 0.5s 0.1s forwards;
+}
+.quote-text {
+  font-family: 'Lora', Georgia, serif; font-style: italic; font-weight: 400;
+  font-size: clamp(20px, 4vw, 36px); line-height: 1.3;
+  color: var(--cream); max-width: 540px;
+  opacity: 0; animation: fadeUp 0.9s 0.4s forwards;
+}
+.quote-text em { color: var(--amber); }
+.quote-attr {
+  margin-top: 24px; font-size: 13px; color: rgba(240,232,216,0.4);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  opacity: 0; animation: fadeUp 0.6s 1.1s forwards;
+}
+.s7-logos {
+  display: flex; gap: 24px; align-items: center; margin-top: 36px;
+  opacity: 0; animation: fadeUp 0.6s 1.5s forwards; flex-wrap: wrap; justify-content: center;
+}
+.venue-chip {
+  font-size: 11px; color: var(--cream); opacity: 0.5;
+  padding: 3px 10px; border: 1.5px solid var(--border2);
+  border-radius: 4px; font-family: 'Oswald', sans-serif; letter-spacing: 0.08em; text-transform: uppercase;
+}
+
+/* ── SCENE 8: THE OFFER ───────────────────────────────────────── */
+#s8 { background: var(--dark); }
+.s8-bg {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 60%, rgba(232,168,48,0.1) 0%, transparent 55%);
+}
+.offer-eyebrow {
+  font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+  color: rgba(240,232,216,0.4); margin-bottom: 16px;
+  opacity: 0; animation: fadeUp 0.5s 0.1s forwards;
+}
+.offer-headline {
+  font-family: 'Oswald', sans-serif; font-style: italic; font-weight: 300;
+  font-size: clamp(36px, 8vw, 72px); line-height: 1; color: var(--cream);
+  opacity: 0; animation: fadeUp 0.9s 0.4s forwards; letter-spacing: -0.02em;
+}
+.offer-headline em { color: var(--amber); }
+.offer-details {
+  margin-top: 24px; font-size: clamp(14px, 2.2vw, 18px);
+  color: rgba(240,232,216,0.55); max-width: 460px; line-height: 1.7;
+  opacity: 0; animation: fadeUp 0.7s 1s forwards;
+}
+.offer-cta {
+  margin-top: 36px;
+  display: inline-block; padding: 16px 40px;
+  background: var(--amber); color: #0F0C08;
+  font-size: 13px; font-weight: 700; border-radius: 5px;
+  letter-spacing: 0.10em; text-transform: uppercase; font-family: 'Oswald', sans-serif;
+  opacity: 0; animation: fadeUp 0.6s 1.5s forwards;
+  text-decoration: none;
+}
+.offer-note {
+  margin-top: 14px; font-size: 12px; color: rgba(240,232,216,0.25);
+  opacity: 0; animation: fadeUp 0.5s 1.9s forwards;
+}
+
+/* ── SCENE 9: CLOSER ──────────────────────────────────────────── */
+#s9 { background: var(--dark); }
+.s9-bg {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, rgba(232,168,48,0.06) 0%, transparent 65%);
+}
+.closer-logo {
+  font-family: 'Oswald', sans-serif; font-style: italic; font-weight: 300;
+  font-size: clamp(72px, 16vw, 140px); line-height: 0.9; color: var(--cream);
+  letter-spacing: -0.02em; opacity: 0; animation: fadeScale 1.2s 0.2s forwards;
+}
+.closer-logo em { color: var(--amber); }
+.closer-tag {
+  margin-top: 20px; font-size: clamp(13px, 2vw, 16px);
+  color: rgba(240,232,216,0.4); letter-spacing: 0.15em;
+  text-transform: uppercase;
+  opacity: 0; animation: fadeUp 0.6s 1s forwards;
+}
+.closer-contact {
+  margin-top: 40px; font-size: clamp(16px, 3vw, 24px);
+  color: var(--amber); font-weight: 300;
+  opacity: 0; animation: fadeUp 0.7s 1.5s forwards;
+}
+.closer-pulse {
+  width: 48px; height: 2px; background: var(--amber);
+  margin: 24px auto 0; border-radius: 1px;
+  opacity: 0; animation: pulse-line 2s 2s infinite;
+}
+
+/* ── ANIMATIONS ───────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeScale {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes growLine {
+  from { height: 0; opacity: 0; }
+  to   { height: 60px; opacity: 0.4; }
+}
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(30px) scale(0.85); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes pulse-line {
+  0%,100% { opacity: 0.3; width: 48px; }
+  50% { opacity: 1; width: 80px; }
+}
+
+/* ── SKIP / REPLAY ────────────────────────────────────────────── */
+.controls {
+  position: fixed; bottom: 24px; right: 24px; z-index: 200;
+  display: flex; gap: 10px; align-items: center;
+}
+.ctrl-btn {
+  padding: 8px 16px; font-size: 11px; font-weight: 600;
+  border-radius: 4px; cursor: pointer; letter-spacing: 0.10em; text-transform: uppercase;
+  border: 1.5px solid var(--border2);
+  background: var(--surface); color: var(--cream);
+  backdrop-filter: blur(8px); transition: all 0.2s;
+  font-family: 'Oswald', sans-serif; opacity: 0.7;
+}
+.ctrl-btn:hover { color: var(--cream); border-color: var(--amber); opacity: 1; }
+
+/* ── SCENE COUNTER ────────────────────────────────────────────── */
+.scene-dots {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 6px; z-index: 200;
+}
+.dot {
+  width: 4px; height: 4px; border-radius: 50%;
+  background: rgba(240,232,216,0.2); transition: all 0.3s;
+}
+.dot.active { background: var(--amber); width: 16px; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- Progress bar -->
+<div class="progress-bar" id="progress"></div>
+
+<!-- Scene dots -->
+<div class="scene-dots" id="dots"></div>
+
+<!-- Controls -->
+<div class="controls">
+  <button class="ctrl-btn" onclick="prevScene()">← prev</button>
+  <button class="ctrl-btn" onclick="nextScene()">next →</button>
+  <button class="ctrl-btn" onclick="restart()">↺ replay</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCENE 1: Opening -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="scene" id="s1">
+  <div class="s1-bg"></div>
+  <div class="s1-eyebrow">for The Biere Club</div>
+  <div class="s1-headline">your Fridays,<br><em>even bigger</em></div>
+  <div class="s1-sub">People queue up for you.<br>flock makes sure more of them <em>get a table.</em></div>
+  <div class="s1-line"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCENE 2: The number -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="scene" id="s2">
+  <div class="s2-bg"></div>
+  <div class="problem-count" id="countNum">₹0</div>
+  <div class="problem-label" style="font-size:clamp(15px,2.8vw,20px);color:var(--cream);font-weight:400;letter-spacing:0.05em">lost for every <strong>₹100</strong> you make on a busy night<br><span style="font-size:0.75em;color:rgba(240,232,216,0.45);font-weight:300">because guests in the queue gave up and left</span></div>
+  <div class="problem-desc" style="font-size:clamp(13px,2vw,16px);margin-top:16px">Peer-reviewed · 94,404 real restaurant guests tracked over one full year<br><em style="color:rgba(240,232,216,0.4);font-style:normal">Journal of Operations Management, De Vries et al., 2018</em></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCENE 3: The pain points -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="scene" id="s3">
+  <div class="s3-headline">sound familiar?</div>
+  <div class="pain-items">
+    <div class="pain-item" id="p1">
+      <span class="pain-icon">😤</span>
+      <div class="pain-text"><strong>A busy queue is a great sign.</strong> But without updates, groups drift off before they reach a table.</div>
+    </div>
+    <div class="pain-item" id="p2">
+      <span class="pain-icon">📋</span>
+      <div class="pain-text"><strong>Staff juggle paper lists.</strong> People get missed.</div>
+    </div>
+    <div class="pain-item" id="p3">
+      <span class="pain-icon">🍺</span>
+      <div class="pain-text"><strong>A pint poured too early goes flat.</strong> Timing matters more at a microbrewery.</div>
+    </div>
+    <div class="pain-item" id="p4">
+      <span class="pain-icon">💸</span>
+      <div class="pain-text"><strong>Guests ghost.</strong> Table sits empty all night.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCENE 4: Introduce flock -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="scene" id="s4">
+  <div class="s4-bg"></div>
+  <div class="solution-word">meet <em>flock</em></div>
+  <div class="solution-desc">
+    A <strong>digital queue</strong> — no app, 10 seconds to join.<br>WhatsApp when their table's ready.<br><strong>Entrance clear. More tables filled.</strong>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCENE 5: How it works -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="scene" id="s5">
+  <div class="steps-headline">how it works</div>
+  <div class="steps">
+    <div class="step" id="st1">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">Guest scans your QR code</div>
+        <div class="step-desc">10 seconds. Name, phone, party size.</div>
+      </div>
+    </div>
+    <div class="step" id="st2">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">They pay a small deposit to hold their spot</div>
+        <div class="step-desc">UPI, GPay, PhonePe. Counted against their final bill. They won't ghost.</div>
+      </div>
+    </div>
+    <div class="step" id="st3">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">WhatsApp alert when ready</div>
+        <div class="step-desc">flock pings them. They show OTP and sit down.</div>
+      </div>
+    </div>
+    <div class="step" id="st4">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <div class="step-title">Pay the balance, leave happy</div>
+        <div class="step-desc">Deposit deducted. Clean checkout.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCENE 6: The money -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="scene" id="s6">
+  <div class="s6-bg"></div>
+  <div class="money-label">revenue increase. peer-reviewed. verified.</div>
+  <div class="money-stat">+15%</div>
+  <div class="money-context">
+    Seated guests spend <strong style="color:var(--amber)">15% more.</strong><br>
+    At The Biere Club, that's <strong style="color:var(--amber);font-size:1.1em">₹17,000–₹22,000 extra per night.</strong>
+  </div>
+  <div class="money-pills" style="margin-top:28px">
+    <span class="pill">Journal of Operations Management, 2018</span>
+    <span class="pill">94,404 guests · peer-reviewed</span>
+    <span class="pill">₹2,600 for two · Zomato, The Biere Club</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCENE 7: Proof / trust -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="scene" id="s7">
+  <div class="s7-bg" style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(192,90,74,0.07) 0%,transparent 60%)"></div>
+  <div class="quote-mark" style="opacity:0;animation:fadeUp 0.5s 0.1s forwards">"</div>
+  <div class="quote-text">
+    waited too long?<br>they leave <em>sooner.</em>
+  </div>
+  <div class="quote-attr" style="margin-top:24px;font-size:clamp(16px,2.8vw,22px);color:rgba(240,232,216,0.85);line-height:1.8;max-width:440px">
+    Longer wait = shorter stay, lower spend.<br>
+    <span style="color:var(--amber)">Two pints instead of four.</span><br>₹700 you never poured.
+  </div>
+  <div class="s7-logos" style="margin-top:28px">
+    <span class="venue-chip">same study · same 94,404 guests</span>
+    <span class="venue-chip">Journal of Operations Management, 2018</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCENE 8: The offer -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="scene" id="s8">
+  <div class="s8-bg"></div>
+  <div class="offer-eyebrow">for The Biere Club — Bangalore pilot</div>
+  <div class="offer-headline">we show up<br><em>first</em></div>
+  <div class="offer-details" style="font-size:clamp(15px,2.6vw,20px);line-height:1.9;color:rgba(240,232,216,0.7)">
+    <strong style="color:var(--cream)">Free for the first month.</strong><br>
+    We set up, train staff, and show up<br>your <strong style="color:var(--cream)">first two Friday nights.</strong><br><br>
+    <strong style="color:var(--amber)">No contract. No commitment.</strong>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCENE 9: Closer -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="scene" id="s9">
+  <div class="s9-bg"></div>
+  <div class="closer-logo">fl<em>o</em>ck</div>
+  <div class="closer-tag">arrive · queue · sit · <em>celebrate</em></div>
+  <div class="closer-contact">Every pint deserves a full session.<br>Not a short one.</div>
+  <div class="closer-pulse"></div>
+</div>
+
+<script>
+const SCENES = ['s1','s2','s3','s4','s5','s6','s7','s8','s9'];
+const DURATIONS = [8500, 8500, 8000, 11500, 27500, 8000, 11500, 14500, 9999];
+let current = 0;
+let timer = null;
+
+/* ── DOTS ─────────────────────────────────────────────────────── */
+function buildDots() {
+  const c = document.getElementById('dots');
+  SCENES.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i===0?' active':'');
+    d.onclick = () => goTo(i);
+    d.style.cursor = 'pointer';
+    c.appendChild(d);
+  });
+}
+
+function updateDots() {
+  document.querySelectorAll('.dot').forEach((d, i) => {
+    d.className = 'dot' + (i===current?' active':'');
+  });
+}
+
+/* ── PROGRESS ─────────────────────────────────────────────────── */
+function startProgress(dur) {
+  const bar = document.getElementById('progress');
+  bar.style.transition = 'none';
+  bar.style.width = '0%';
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      bar.style.transition = `width ${dur}ms linear`;
+      bar.style.width = dur === 9999 ? '100%' : '100%';
+    });
+  });
+}
+
+/* ── SCENE LOGIC ──────────────────────────────────────────────── */
+function goTo(idx) {
+  clearTimeout(timer);
+  clearEffectTimers();
+  // hide current
+  document.getElementById(SCENES[current])?.classList.remove('active');
+  current = Math.max(0, Math.min(SCENES.length-1, idx));
+  // show new
+  const el = document.getElementById(SCENES[current]);
+  el.classList.add('active');
+  updateDots();
+  runSceneEffects(current);
+  const dur = DURATIONS[current];
+  startProgress(dur);
+  if (dur !== 9999) {
+    timer = setTimeout(() => goTo(current + 1), dur);
+  }
+}
+
+function nextScene() { if (current < SCENES.length-1) goTo(current+1); }
+function prevScene() { if (current > 0) goTo(current-1); }
+function restart()   { goTo(0); }
+
+/* ── PER-SCENE EFFECTS ────────────────────────────────────────── */
+// Track all pending effect timeouts so we can cancel them on scene change
+let effectTimers = [];
+
+function clearEffectTimers() {
+  effectTimers.forEach(t => clearTimeout(t));
+  effectTimers = [];
+}
+
+function scheduleEffect(fn, delay) {
+  effectTimers.push(setTimeout(fn, delay));
+}
+
+function runSceneEffects(idx) {
+  // Always clear any pending effect timers from the previous scene first
+  clearEffectTimers();
+
+  // Reset ALL staggered elements to hidden immediately on every scene change
+  ['p1','p2','p3','p4'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('visible');
+  });
+  ['st1','st2','st3','st4'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('visible');
+  });
+
+  // Scene 2: count up ₹0 → ₹15
+  if (idx === 1) {
+    const el = document.getElementById('countNum');
+    if (!el) return;
+    el.style.opacity = '0'; el.style.animation = 'none';
+    let v = 0;
+    let countInterval = null;
+    scheduleEffect(() => {
+      el.style.animation = 'fadeUp 0.8s 0.2s forwards';
+      el.textContent = '₹0';
+      countInterval = setInterval(() => {
+        v = Math.min(15, v + 1);
+        el.textContent = '₹' + v;
+        if (v >= 15) clearInterval(countInterval);
+      }, 180);
+      effectTimers.push(countInterval);
+    }, 300);
+  }
+
+  // Scene 3: stagger pain items
+  if (idx === 2) {
+    ['p1','p2','p3','p4'].forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      scheduleEffect(() => el.classList.add('visible'), 500 + i * 350);
+    });
+  }
+
+  // Scene 5: stagger steps
+  if (idx === 4) {
+    ['st1','st2','st3','st4'].forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      scheduleEffect(() => el.classList.add('visible'), 400 + i * 400);
+    });
+  }
+}
+
+/* ── KEYBOARD NAV ─────────────────────────────────────────────── */
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextScene(); }
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); prevScene(); }
+  if (e.key === 'r' || e.key === 'R') restart();
+});
+
+/* ── TOUCH SWIPE ──────────────────────────────────────────────── */
+let touchX = 0;
+document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; });
+document.addEventListener('touchend',   e => {
+  const dx = e.changedTouches[0].clientX - touchX;
+  if (Math.abs(dx) > 40) dx < 0 ? nextScene() : prevScene();
+});
+
+/* ── INIT ─────────────────────────────────────────────────────── */
+buildDots();
+goTo(0);
+</script>
+</body>
+</html>

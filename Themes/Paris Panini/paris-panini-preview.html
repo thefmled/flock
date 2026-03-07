@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paris Panini — Theme Preview v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#F7F5F2; --surface:#FFFFFF; --surface2:#F0EEE9; --surface3:#E8E5DF;
+  --border:#E0DDD7; --border2:#C8C4BC;
+  --amber:#2838A0; --amber-light:#3A4CC0;
+  --amber-dim:rgba(40,56,160,.08); --amber-border:rgba(40,56,160,.22);
+  --cream:#1A1A1A; --cream-dim:#5A5750; --cream-dimmer:#9B9790;
+  --green:#1E7A4A; --green-dim:rgba(30,122,74,.10); --green-border:rgba(30,122,74,.25);
+  --red:#E82020; --red-dim:rgba(232,32,32,.08); --red-border:rgba(232,32,32,.22);
+  --blue:#1A5FA8; --blue-dim:rgba(26,95,168,.08); --blue-border:rgba(26,95,168,.22);
+  --r:10px; --r-sm:6px; --shadow:0 2px 16px rgba(40,56,160,.08),0 1px 4px rgba(0,0,0,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;font-family:"Inter",sans-serif;color:var(--cream);background:var(--bg);-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button,input,select{font:inherit}
+
+/* preview chrome */
+.preview-header{background:var(--amber);color:#fff;padding:12px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;position:sticky;top:0;z-index:9999}
+.preview-title{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:16px;white-space:nowrap;letter-spacing:-.01em}
+.preview-nav{display:flex;gap:3px;flex-wrap:wrap}
+.preview-nav a{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.7);padding:4px 8px;border-radius:4px;text-decoration:none;white-space:nowrap;transition:all .15s}
+.preview-nav a:hover{color:#fff;background:rgba(255,255,255,.15)}
+.preview-section{padding:56px 28px 28px;border-bottom:1px solid var(--border);max-width:1200px;margin:0 auto}
+.preview-label{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--cream-dimmer);margin-bottom:24px}
+
+/* App styles */
+#landing{min-height:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;gap:48px}
+.brand{text-align:center}
+.brand-name{font-family:"Bricolage Grotesque",sans-serif;font-size:clamp(56px,12vw,96px);font-weight:800;line-height:.95;color:var(--amber);letter-spacing:-.03em}
+.brand-tag{margin-top:12px;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--cream-dimmer);font-weight:500}
+.role-cards{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:840px;width:100%}
+.role-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:24px 22px 32px;flex:1;min-width:220px;max-width:264px;cursor:pointer;transition:border-color .18s,transform .18s,box-shadow .18s;position:relative;box-shadow:var(--shadow)}
+.role-card:hover{border-color:var(--amber);transform:translateY(-2px);box-shadow:0 8px 32px rgba(40,56,160,.14)}
+.role-card-icon{font-size:22px;margin-bottom:12px;display:block}
+.role-card-title{font-family:"Bricolage Grotesque",sans-serif;font-size:17px;font-weight:700;margin-bottom:5px;color:var(--amber)}
+.role-card-desc{font-size:13px;color:var(--cream-dim);line-height:1.5}
+.role-card-cta{position:absolute;bottom:14px;right:16px;font-size:14px;color:var(--border2);transition:color .18s}
+.role-card:hover .role-card-cta{color:var(--amber)}
+.app-shell{min-height:auto;display:flex;flex-direction:column;background:var(--bg)}
+.app-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 24px;height:58px;border-bottom:1.5px solid var(--border);background:var(--surface)}
+.header-left,.header-right{display:flex;align-items:center;gap:10px}
+.header-logo{font-family:"Bricolage Grotesque",sans-serif;font-size:20px;font-weight:800;color:var(--amber);letter-spacing:-.02em}
+.header-pill,.pill{display:inline-flex;align-items:center;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);background:var(--amber-dim);border:1.5px solid var(--amber-border);border-radius:999px;padding:3px 10px}
+.tms-indicator{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--cream-dimmer)}
+.tms-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2.5s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(30,122,74,.45)}60%{box-shadow:0 0 0 5px rgba(30,122,74,0)}100%{box-shadow:0 0 0 0 rgba(30,122,74,0)}}
+.app-body{flex:1;max-width:1040px;width:100%;margin:0 auto;padding:28px 24px 48px}
+.grid{display:grid;gap:14px}
+.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--shadow)}
+.card-title{font-family:"Bricolage Grotesque",sans-serif;font-size:18px;font-weight:700;color:var(--amber);margin-bottom:4px;letter-spacing:-.01em}
+.card-sub{font-size:13px;color:var(--cream-dim);line-height:1.5;margin-bottom:16px}
+.section-head{margin-bottom:20px}
+.section-title{font-family:"Bricolage Grotesque",sans-serif;font-size:26px;font-weight:800;color:var(--cream);letter-spacing:-.02em}
+.section-sub{font-size:13px;color:var(--cream-dim);margin-top:4px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 18px;border-radius:var(--r-sm);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:var(--amber);color:#fff}
+.btn-primary:hover{background:var(--amber-light)}
+.btn-secondary{background:var(--surface);border:1.5px solid var(--border);color:var(--cream)}
+.btn-secondary:hover{border-color:var(--amber);color:var(--amber)}
+.btn-success{background:var(--green);color:#fff}
+.btn-danger{background:var(--red);color:#fff}
+.btn-sm{padding:7px 12px;font-size:12px}
+.btn-full{width:100%}
+.form-group{margin-bottom:14px}
+.form-row{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.form-label{display:block;margin-bottom:6px;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--cream-dimmer)}
+.form-input,.form-select{width:100%;padding:10px 13px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--surface);color:var(--cream);outline:none}
+.form-input:focus,.form-select:focus{border-color:var(--amber)}
+.checkbox-row{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--cream-dim)}
+.checkbox-row input{accent-color:var(--amber)}
+.otp-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.otp-digit{text-align:center;font-size:22px;font-weight:700;padding:12px 6px}
+.steps{display:flex;align-items:flex-start;margin-bottom:24px}
+.step{flex:1;display:flex;flex-direction:column;align-items:center;position:relative}
+.step::after{content:"";position:absolute;top:11px;left:calc(50% + 12px);right:calc(-50% + 12px);height:1.5px;background:var(--border)}
+.step:last-child::after{display:none}
+.step-dot{width:22px;height:22px;border-radius:50%;background:var(--surface);border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--cream-dimmer)}
+.step-label{margin-top:5px;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--cream-dimmer);font-weight:500}
+.step.active .step-dot{background:var(--amber);border-color:var(--amber);color:#fff}
+.step.active .step-label{color:var(--amber);font-weight:600}
+.step.done .step-dot{background:var(--green);border-color:var(--green);color:#fff}
+.step.done::after{background:var(--green)}
+.step.done .step-label{color:var(--green)}
+.queue-hero{background:var(--amber);border-radius:var(--r);padding:36px 24px;text-align:center;margin-bottom:12px;color:#fff}
+.queue-pos-num{font-family:"Bricolage Grotesque",sans-serif;font-size:clamp(72px,14vw,108px);font-weight:800;line-height:1;letter-spacing:-.04em;color:#fff}
+.queue-pos-label{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.7);margin-top:4px;font-weight:500}
+.queue-pos-sub{font-size:14px;color:rgba(255,255,255,.8);margin-top:8px}
+.wait-estimate{display:flex;align-items:center;gap:14px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:14px 18px;margin-bottom:12px}
+.wait-icon{font-size:20px}
+.wait-text{flex:1}
+.wait-label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--cream-dimmer);margin-bottom:3px;font-weight:500}
+.wait-value{font-family:"Bricolage Grotesque",sans-serif;font-size:28px;font-weight:800;color:var(--amber);letter-spacing:-.02em}
+.wait-value span{font-family:"Inter",sans-serif;font-size:13px;margin-left:4px;color:var(--cream-dim)}
+.progress-ring{width:46px;height:46px;border-radius:50%;background:conic-gradient(var(--amber) var(--pct,50%),var(--border) 0);display:grid;place-items:center}
+.progress-ring::before{content:"";width:38px;height:38px;border-radius:50%;background:var(--surface)}
+.otp-block{background:var(--amber-dim);border:1.5px solid var(--amber-border);border-radius:var(--r);padding:20px;text-align:center;margin-bottom:12px}
+.otp-num{font-family:"Bricolage Grotesque",sans-serif;font-size:clamp(40px,8vw,52px);font-weight:800;letter-spacing:.14em;color:var(--amber)}
+.otp-label{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--cream-dimmer);margin-top:4px;font-weight:500}
+.alert{display:flex;gap:9px;align-items:flex-start;padding:11px 14px;border-radius:var(--r-sm);margin-bottom:12px;line-height:1.5;font-size:13px}
+.alert-amber{background:var(--amber-dim);border:1.5px solid var(--amber-border);color:#1E2870}
+.alert-green{background:var(--green-dim);border:1.5px solid var(--green-border);color:#145232}
+.alert-red{background:var(--red-dim);border:1.5px solid var(--red-border);color:#8B0000}
+.alert-blue{background:var(--blue-dim);border:1.5px solid var(--blue-border);color:#0A2F58}
+.banner{background:var(--green);color:#fff;border-radius:var(--r);padding:12px 20px;font-size:14px;font-weight:600;margin-bottom:14px}
+.cat-header{display:flex;align-items:center;gap:12px;margin:22px 0 10px}
+.cat-header-name{font-family:"Bricolage Grotesque",sans-serif;font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+.cat-header-line{flex:1;height:1.5px;background:var(--border)}
+.menu-item{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:8px;transition:border-color .15s}
+.menu-item.selected{border-color:var(--amber);background:var(--amber-dim)}
+.menu-item-name{font-size:14px;font-weight:600;margin-bottom:3px}
+.menu-item-desc{font-size:12px;color:var(--cream-dim);margin-bottom:10px}
+.menu-item-foot{display:flex;justify-content:space-between;align-items:center}
+.menu-item-price{font-family:"Bricolage Grotesque",sans-serif;font-size:16px;font-weight:700;color:var(--amber)}
+.qty-ctrl{display:flex;align-items:center;gap:8px}
+.qty-btn{width:26px;height:26px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--surface);color:var(--cream-dim);cursor:pointer;font-weight:600}
+.qty-num.active{color:var(--amber);font-weight:700}
+.pre-tag{display:inline-block;padding:2px 6px;border-radius:3px;background:var(--amber-dim);border:1px solid var(--amber-border);color:var(--amber);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-left:5px}
+.order-line{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}
+.order-line:last-child{border-bottom:none}
+.order-line-name{font-size:13px}
+.order-line-qty{font-size:11px;color:var(--cream-dimmer);margin-top:2px}
+.order-line-price{font-size:14px;font-weight:500}
+.order-total{display:flex;justify-content:space-between;align-items:baseline;padding-top:14px;gap:12px}
+.order-total-label{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--cream-dim)}
+.order-total-val{font-family:"Bricolage Grotesque",sans-serif;font-size:36px;font-weight:800;color:var(--amber);letter-spacing:-.02em;line-height:1}
+.tabs{display:flex;gap:4px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r);padding:4px;margin-bottom:22px;flex-wrap:wrap}
+.tab{flex:1;min-width:110px;padding:8px 10px;background:none;border:none;color:var(--cream-dim);font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;border-radius:var(--r-sm);cursor:pointer;transition:all .15s}
+.tab.active{background:var(--amber);color:#fff}
+.tab:hover:not(.active){color:var(--amber);background:var(--surface)}
+.q-row{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:14px}
+.q-row.highlight{border-color:var(--amber);background:var(--amber-dim)}
+.q-row-num{font-family:"Bricolage Grotesque",sans-serif;font-size:40px;font-weight:800;color:var(--amber);min-width:48px;line-height:1;letter-spacing:-.03em}
+.q-row-info{flex:1;min-width:0}
+.q-row-name{font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.q-row-meta,.q-row-orders,.muted{font-size:12px;color:var(--cream-dim);margin-top:2px}
+.q-row-actions,.row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.badge-waiting{background:#FFF3CD;color:#856404;border:1px solid #FFE082}
+.badge-ready{background:var(--green-dim);color:var(--green);border:1px solid var(--green-border)}
+.badge-seated{background:var(--amber-dim);color:var(--amber);border:1px solid var(--amber-border)}
+.badge-neutral{background:var(--surface2);color:var(--cream-dimmer);border:1px solid var(--border)}
+.stats-grid{display:grid;gap:10px;grid-template-columns:repeat(3,minmax(0,1fr))}
+.stat-tile{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:14px}
+.stat-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--cream-dimmer);margin-bottom:5px;font-weight:500}
+.stat-value{font-family:"Bricolage Grotesque",sans-serif;font-size:32px;font-weight:800;color:var(--amber);letter-spacing:-.03em}
+.floor-plan-header{display:flex;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.floor-legend{display:flex;gap:12px;flex-wrap:wrap}
+.legend-item{display:flex;gap:5px;align-items:center;font-size:12px;color:var(--cream-dim)}
+.legend-dot{width:10px;height:10px;border-radius:2px}
+.legend-dot.free{background:var(--green)}.legend-dot.occupied{background:var(--surface3);border:1px solid var(--border2)}.legend-dot.clearing{background:#F59E0B}.legend-dot.reserved{background:var(--amber)}
+.tables-grid{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.table-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:14px}
+.table-card.free{border-color:var(--green);background:var(--green-dim)}
+.table-card.occupied{border-color:var(--border2)}
+.table-card.clearing{border-color:#F59E0B;background:rgba(245,158,11,.08)}
+.table-card.reserved{border-color:var(--amber);background:var(--amber-dim)}
+.table-num{font-family:"Bricolage Grotesque",sans-serif;font-size:28px;font-weight:800;line-height:1;color:var(--cream);letter-spacing:-.02em}
+.table-cap{font-size:11px;color:var(--cream-dimmer);margin-top:3px}
+.table-status-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin:8px 0 10px}
+.table-actions{display:grid;gap:6px}
+.empty-state{border:1.5px dashed var(--border2);border-radius:var(--r);padding:20px;color:var(--cream-dim);text-align:center}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.category-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.category-pill{padding:6px 14px;border-radius:999px;font-size:12px;font-weight:600;border:1.5px solid var(--border);background:var(--surface);color:var(--cream-dim);cursor:pointer;transition:all .15s}
+.category-pill.active{background:var(--amber);border-color:var(--amber);color:#fff}
+.guest-shell-eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--cream-dimmer);margin-bottom:3px;font-weight:500}
+.guest-shell-title{font-family:"Bricolage Grotesque",sans-serif;font-size:80px;font-weight:800;line-height:.9;color:var(--amber);letter-spacing:-.04em}
+.guest-bottom-nav{display:flex;gap:6px;padding:6px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);margin-top:20px}
+.guest-bottom-nav-btn{flex:1;padding:11px 8px;min-height:48px;border-radius:var(--r-sm);font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;background:var(--surface2);border:1.5px solid var(--border);color:var(--cream-dim);cursor:pointer;transition:all .15s}
+.guest-bottom-nav-btn.active{background:var(--amber);border-color:var(--amber);color:#fff}
+.share-qr-host{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:20px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;min-height:88px;color:var(--cream-dimmer);font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="preview-header">
+  <div class="preview-title">Paris Panini — v3</div>
+  <nav class="preview-nav">
+    <a href="#s1">Landing</a><a href="#s2">Venue</a><a href="#s3">Waiting</a>
+    <a href="#s4">Notified</a><a href="#s5">Pre-order</a><a href="#s6">Seated</a>
+    <a href="#s7">Completed</a><a href="#s8">Staff Login</a><a href="#s9">Queue</a>
+    <a href="#s10">Seated tab</a><a href="#s11">Tables</a><a href="#s12">Seat OTP</a>
+    <a href="#s13">Manager</a><a href="#s14">Admin Login</a><a href="#s15">Menu</a>
+    <a href="#s16">Add Item</a><a href="#s17">Share</a>
+  </nav>
+</div>
+
+<!-- 1 · Landing -->
+<section id="s1" class="preview-section">
+  <div class="preview-label">01 — renderHome() → /</div>
+  <main id="landing">
+    <div class="brand">
+      <div class="brand-name">Paris Panini</div>
+      <div class="brand-tag">Queue · Pre-order · Pay</div>
+    </div>
+    <div class="role-cards">
+      <a class="role-card">
+        <span class="role-card-icon">🥐</span>
+        <div class="role-card-title">Guest Flow</div>
+        <div class="role-card-desc">Join the queue, pre-order, track your table, and settle the final bill.</div>
+        <div class="role-card-cta">→</div>
+      </a>
+      <a class="role-card">
+        <span class="role-card-icon">🍽</span>
+        <div class="role-card-title">Staff Console</div>
+        <div class="role-card-desc">Run live queue ops, free tables, verify OTPs, and manage the floor.</div>
+        <div class="role-card-cta">→</div>
+      </a>
+      <a class="role-card">
+        <span class="role-card-icon">✦</span>
+        <div class="role-card-title">Admin Console</div>
+        <div class="role-card-desc">Manage menu items, enable categories, and configure venue settings.</div>
+        <div class="role-card-cta">→</div>
+      </a>
+    </div>
+  </main>
+</section>
+
+<!-- 2 · Venue landing -->
+<section id="s2" class="preview-section">
+  <div class="preview-label">02 — renderVenueLanding() → /v/:slug</div>
+  <div class="app-shell">
+    <div class="app-body" style="padding-top:40px">
+      <main id="landing" style="min-height:auto;padding:0 0 28px">
+        <div class="brand" style="margin-bottom:32px">
+          <div class="brand-name" style="font-size:clamp(40px,8vw,64px)">Paris Panini</div>
+          <div class="brand-tag">Indiranagar, Bangalore</div>
+        </div>
+        <div class="role-cards" style="max-width:660px">
+          <div class="role-card" style="cursor:default;min-width:220px">
+            <span class="role-card-icon">📍</span>
+            <div class="role-card-title">Paris Panini — Indiranagar</div>
+            <div class="role-card-desc">12th Main Road, HAL 2nd Stage. Deposit: 30%.</div>
+            <div class="role-card-cta" style="color:var(--green)">Open ✓</div>
+          </div>
+          <div class="role-card" style="cursor:default;max-width:340px;min-width:260px">
+            <div class="role-card-title" style="margin-bottom:12px">Join the queue</div>
+            <div class="form-group"><label class="form-label">Your name</label><input class="form-input" placeholder="Ananya S."></div>
+            <div class="form-group"><label class="form-label">Phone</label><input class="form-input" type="tel" placeholder="+91 98765 43210"></div>
+            <div class="form-group"><label class="form-label">Party size</label><select class="form-select"><option>1 person</option><option selected>2 people</option><option>3</option><option>4+</option></select></div>
+            <button class="btn btn-primary btn-full">Join queue</button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · Guest WAITING -->
+<section id="s3" class="preview-section">
+  <div class="preview-label">03 — renderGuestEntry() → WAITING</div>
+  <div class="app-shell">
+    <div class="app-header">
+      <div class="header-left"><div class="header-logo">Paris Panini</div><span class="pill">Guest</span></div>
+      <div class="header-right"><button class="btn btn-secondary btn-sm">Invite others</button><a class="btn btn-secondary btn-sm">Exit</a></div>
+    </div>
+    <div class="app-body">
+      <div class="steps">
+        <div class="step done"><div class="step-dot">✓</div><div class="step-label">Join</div></div>
+        <div class="step active"><div class="step-dot">2</div><div class="step-label">Wait</div></div>
+        <div class="step"><div class="step-dot">3</div><div class="step-label">Pre-order</div></div>
+        <div class="step"><div class="step-dot">4</div><div class="step-label">Seated</div></div>
+        <div class="step"><div class="step-dot">5</div><div class="step-label">Pay</div></div>
+      </div>
+      <div class="queue-hero">
+        <div class="queue-pos-num">3</div>
+        <div class="queue-pos-label">Queue position</div>
+        <div class="queue-pos-sub">We'll notify you when a matching table is ready.</div>
+      </div>
+      <div class="wait-estimate">
+        <div class="wait-icon">⏱</div>
+        <div class="wait-text"><div class="wait-label">Estimated wait</div><div class="wait-value">18<span>mins</span></div></div>
+        <div class="progress-ring" style="--pct:76%"></div>
+      </div>
+      <div class="otp-block">
+        <div class="otp-num">482 917</div>
+        <div class="otp-label">Show this OTP when called</div>
+      </div>
+      <div class="grid grid-2">
+        <div class="card"><div class="card-title">Waiting</div><div class="card-sub">Your OTP is active — present it to staff when called.</div><div class="alert alert-blue"><div>Notifications via SMS and WhatsApp when your table is ready.</div></div><button class="btn btn-primary">Pre-order now</button></div>
+        <div class="card"><div class="card-title">Venue</div><div class="card-sub">Paris Panini — Indiranagar, Bangalore</div><div class="muted">Deposit policy: 30%</div><div class="muted" style="margin-top:4px">Queue: Open</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · Guest NOTIFIED -->
+<section id="s4" class="preview-section">
+  <div class="preview-label">04 — renderGuestEntry() → NOTIFIED</div>
+  <div class="app-shell">
+    <div class="app-header">
+      <div class="header-left"><div class="header-logo">Paris Panini</div><span class="pill">Guest</span></div>
+      <div class="header-right"><a class="btn btn-secondary btn-sm">Exit</a></div>
+    </div>
+    <div class="app-body">
+      <div class="banner">Table T6 is ready — show your OTP to staff now</div>
+      <div class="steps">
+        <div class="step done"><div class="step-dot">✓</div><div class="step-label">Join</div></div>
+        <div class="step done"><div class="step-dot">✓</div><div class="step-label">Wait</div></div>
+        <div class="step done"><div class="step-dot">✓</div><div class="step-label">Pre-order</div></div>
+        <div class="step active"><div class="step-dot">4</div><div class="step-label">Seated</div></div>
+        <div class="step"><div class="step-dot">5</div><div class="step-label">Pay</div></div>
+      </div>
+      <div class="queue-hero"><div class="queue-pos-num">T6</div><div class="queue-pos-label">Your table is ready</div><div class="queue-pos-sub">Head to the entrance and present your OTP.</div></div>
+      <div class="otp-block"><div class="otp-num">482 917</div><div class="otp-label">Table reserved — show to staff</div></div>
+      <div class="grid grid-2">
+        <div class="card"><div class="card-title">Notified</div><div class="card-sub">Your table is matched and reserved.</div><div class="alert alert-green"><div>Deposit captured: ₹324. Pre-order total: ₹1,080.</div></div></div>
+        <div class="card"><div class="card-title">Venue</div><div class="card-sub">Paris Panini — Indiranagar</div><div class="muted">Deposit: 30% · T6 (4 covers)</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · Pre-order -->
+<section id="s5" class="preview-section">
+  <div class="preview-label">05 — renderPreorder() → /v/:slug/e/:id/preorder</div>
+  <div class="app-shell">
+    <div class="app-header">
+      <div class="header-left"><div class="header-logo">Paris Panini</div><span class="pill">Pre-order</span></div>
+      <div class="header-right"><a class="btn btn-secondary btn-sm">Exit</a></div>
+    </div>
+    <div class="app-body">
+      <div class="section-head"><div class="section-title">Pre-order while waiting</div><div class="section-sub">Build your order now — deposit taken on lock-in.</div></div>
+      <div class="grid" style="grid-template-columns:1fr 310px;gap:18px;align-items:start">
+        <div>
+          <div class="category-pills"><div class="category-pill active">Panini</div><div class="category-pill">Wraps</div><div class="category-pill">Sides</div><div class="category-pill">Crêpes</div><div class="category-pill">Drinks</div></div>
+          <div class="cat-header"><div class="cat-header-name">Panini</div><div class="cat-header-line"></div></div>
+          <div class="menu-item selected"><div class="menu-item-name">Michel <span class="pre-tag">pre</span></div><div class="menu-item-desc">Grilled chicken, pesto, sundried tomato, mozzarella on daily-baked panini bread</div><div class="menu-item-foot"><div class="menu-item-price">₹346</div><div class="qty-ctrl"><button class="qty-btn">−</button><span class="qty-num active">2</span><button class="qty-btn">+</button></div></div></div>
+          <div class="menu-item"><div class="menu-item-name">Sophie</div><div class="menu-item-desc">Roasted vegetables, hummus, rocket, balsamic on multigrain</div><div class="menu-item-foot"><div class="menu-item-price">₹312</div><div class="qty-ctrl"><button class="qty-btn">−</button><span class="qty-num">0</span><button class="qty-btn">+</button></div></div></div>
+          <div class="menu-item"><div class="menu-item-name">Laura</div><div class="menu-item-desc">Roasted mushrooms, ratatouille, basil pesto on daily-baked panini bread</div><div class="menu-item-foot"><div class="menu-item-price">₹328</div><div class="qty-ctrl"><button class="qty-btn">−</button><span class="qty-num">0</span><button class="qty-btn">+</button></div></div></div>
+          <div class="cat-header"><div class="cat-header-name">Sides</div><div class="cat-header-line"></div></div>
+          <div class="menu-item"><div class="menu-item-name">Signature French Fries</div><div class="menu-item-desc">Double-fried, hand-cut, served with house aioli</div><div class="menu-item-foot"><div class="menu-item-price">₹165</div><div class="qty-ctrl"><button class="qty-btn">−</button><span class="qty-num">0</span><button class="qty-btn">+</button></div></div></div>
+        </div>
+        <div class="card" style="position:sticky;top:20px">
+          <div class="card-title">Summary</div>
+          <div class="card-sub">30% deposit on lock-in.</div>
+          <div class="order-line"><div><div class="order-line-name">Michel × 2</div><div class="order-line-qty">2 × ₹346</div></div><div class="order-line-price">₹692</div></div>
+          <div class="order-total"><div class="order-total-label">Total incl. GST</div><div class="order-total-val">₹815</div></div>
+          <div class="row" style="margin-top:14px"><a class="btn btn-secondary btn-sm">Back</a><button class="btn btn-primary">Lock in →</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · Guest SEATED -->
+<section id="s6" class="preview-section">
+  <div class="preview-label">06 — renderGuestEntry() → SEATED → renderSeatedGuestShell()</div>
+  <div class="app-shell">
+    <div class="app-header">
+      <div class="header-left"><div class="header-logo">Paris Panini</div><span class="pill">Guest</span></div>
+      <div class="header-right"><button class="btn btn-secondary btn-sm">Invite others</button><a class="btn btn-secondary btn-sm">Exit</a></div>
+    </div>
+    <div class="app-body">
+      <div class="steps">
+        <div class="step done"><div class="step-dot">✓</div><div class="step-label">Join</div></div>
+        <div class="step done"><div class="step-dot">✓</div><div class="step-label">Wait</div></div>
+        <div class="step done"><div class="step-dot">✓</div><div class="step-label">Pre-order</div></div>
+        <div class="step active"><div class="step-dot">4</div><div class="step-label">Seated</div></div>
+        <div class="step"><div class="step-dot">5</div><div class="step-label">Pay</div></div>
+      </div>
+      <div class="card" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:14px">
+        <div><div class="guest-shell-eyebrow">Table T6 · Paris Panini, Indiranagar</div><div class="guest-shell-title">T6</div></div>
+        <div><div class="muted" style="margin-bottom:6px">2 guests · 1 participant</div><span class="badge badge-seated">Seated</span></div>
+      </div>
+      <div class="guest-bottom-nav"><button class="guest-bottom-nav-btn">Menu</button><button class="guest-bottom-nav-btn active">Ordered</button><button class="guest-bottom-nav-btn">Bucket</button></div>
+      <div class="grid grid-2" style="margin-top:16px">
+        <div class="card"><div class="card-title">Ordered so far</div><div class="card-sub">Pre-order and table rounds here.</div><div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--cream-dimmer);margin-bottom:6px">Pre-order · Locked</div><div class="order-line"><div><div class="order-line-name">Michel × 2</div></div><div class="order-line-price">₹692</div></div><div class="order-line" style="border:none"><div><div class="order-line-name">Signature Fries × 1</div></div><div class="order-line-price">₹165</div></div></div>
+        <div class="card"><div class="card-title">Bill</div><div class="card-sub">Live total for this session.</div><div class="order-line"><div class="order-line-name">Subtotal</div><div class="order-line-price">₹733</div></div><div class="order-line"><div class="order-line-name">GST (5%)</div><div class="order-line-price">₹37</div></div><div class="order-line"><div class="order-line-name">Deposit paid</div><div class="order-line-price">−₹245</div></div><div class="order-total"><div class="order-total-label">Balance due</div><div class="order-total-val">₹525</div></div><button class="btn btn-primary btn-full" style="margin-top:14px">Pay balance</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · Guest COMPLETED -->
+<section id="s7" class="preview-section">
+  <div class="preview-label">07 — renderGuestEntry() → COMPLETED</div>
+  <div class="app-shell">
+    <div class="app-header">
+      <div class="header-left"><div class="header-logo">Paris Panini</div><span class="pill">Guest</span></div>
+      <div class="header-right"><a class="btn btn-secondary btn-sm">Exit</a></div>
+    </div>
+    <div class="app-body">
+      <div class="steps">
+        <div class="step done"><div class="step-dot">✓</div><div class="step-label">Join</div></div>
+        <div class="step done"><div class="step-dot">✓</div><div class="step-label">Wait</div></div>
+        <div class="step done"><div class="step-dot">✓</div><div class="step-label">Pre-order</div></div>
+        <div class="step done"><div class="step-dot">✓</div><div class="step-label">Seated</div></div>
+        <div class="step active"><div class="step-dot">5</div><div class="step-label">Pay</div></div>
+      </div>
+      <div class="queue-hero"><div class="queue-pos-num">Done</div><div class="queue-pos-label">Service complete</div><div class="queue-pos-sub">Invoice PPANI/2026-27/00042 issued</div></div>
+      <div class="grid grid-2" style="margin-top:12px">
+        <div class="card"><div class="card-title">Completed</div><div class="card-sub">Session ended. Invoice generated.</div><div class="alert alert-green"><div>Payment captured. Thank you for dining with us!</div></div><a class="btn btn-secondary">Return to venue</a></div>
+        <div class="card"><div class="card-title">Summary</div><div class="order-line"><div class="order-line-name">Total charged</div><div class="order-line-price">₹770</div></div><div class="order-line"><div class="order-line-name">Deposit used</div><div class="order-line-price">₹245</div></div><div class="order-total"><div class="order-total-label">Balance paid</div><div class="order-total-val">₹525</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · Staff Login -->
+<section id="s8" class="preview-section">
+  <div class="preview-label">08 — renderStaffLogin() → /staff/login</div>
+  <div class="app-shell">
+    <div class="app-header">
+      <div class="header-left"><div class="header-logo">Paris Panini</div><span class="pill">Staff</span></div>
+      <div class="header-right"><a class="btn btn-secondary btn-sm">Exit</a></div>
+    </div>
+    <div class="app-body">
+      <div class="section-head"><div class="section-title">Staff login</div><div class="section-sub">Paris Panini, Indiranagar — pilot console.</div></div>
+      <div class="grid grid-2">
+        <div class="card"><div class="card-title">Send OTP</div><div class="card-sub">Use a seeded pilot staff number.</div><div class="form-group"><label class="form-label">Phone</label><input class="form-input" placeholder="9000000002"></div><button class="btn btn-primary btn-full">Send OTP</button></div>
+        <div class="card"><div class="card-title">Verify OTP</div><div class="card-sub">Enter the 6-digit code from SMS.</div><div class="form-group"><label class="form-label">OTP code</label><input class="form-input" maxlength="6" placeholder="123456"></div><button class="btn btn-secondary btn-full">Verify & enter</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 · Staff Queue tab -->
+<section id="s9" class="preview-section">
+  <div class="preview-label">09 — renderStaffDashboard() → Queue tab</div>
+  <div class="app-shell">
+    <div class="app-header">
+      <div class="header-left"><div class="header-logo">Paris Panini</div><span class="pill">Staff</span></div>
+      <div class="header-right"><div class="tms-indicator"><span class="tms-dot"></span>Manual floor</div><button class="btn btn-secondary btn-sm">Logout</button></div>
+    </div>
+    <div class="app-body">
+      <div class="section-head"><div class="section-title">Staff console</div><div class="section-sub">Riya M. · SERVER · Paris Panini, Indiranagar</div></div>
+      <div class="stats-grid" style="margin-bottom:18px">
+        <div class="stat-tile"><div class="stat-label">Seated today</div><div class="stat-value">14</div></div>
+        <div class="stat-tile"><div class="stat-label">Revenue</div><div class="stat-value">₹18k</div></div>
+        <div class="stat-tile"><div class="stat-label">In queue</div><div class="stat-value">4</div></div>
+      </div>
+      <div class="tabs"><button class="tab active">Queue</button><button class="tab">Seated</button><button class="tab">Tables</button><button class="tab">Seat OTP</button><button class="tab">Manager</button></div>
+      <div class="q-row highlight"><div class="q-row-num">1</div><div class="q-row-info"><div class="q-row-name">Ananya S. <span class="badge badge-ready">Notified</span> <span class="badge badge-neutral">Deposit</span> <span class="badge badge-neutral">Pre-order</span></div><div class="q-row-meta">+91 98765 43210 · 2 pax · OTP <span class="mono">482917</span></div><div class="q-row-orders">Reserved T6 · Michel × 2, Fries × 1</div></div><div class="q-row-actions"><button class="btn btn-secondary btn-sm">Seat</button><button class="btn btn-danger btn-sm">Cancel</button></div></div>
+      <div class="q-row"><div class="q-row-num">2</div><div class="q-row-info"><div class="q-row-name">Rohan M. <span class="badge badge-waiting">Waiting</span></div><div class="q-row-meta">+91 87654 32109 · 4 pax · OTP <span class="mono">319042</span></div><div class="q-row-orders">ETA ~12 mins</div></div><div class="q-row-actions"><button class="btn btn-secondary btn-sm">Seat</button><button class="btn btn-danger btn-sm">Cancel</button></div></div>
+      <div class="q-row"><div class="q-row-num">3</div><div class="q-row-info"><div class="q-row-name">Priya K. <span class="badge badge-waiting">Waiting</span> <span class="badge badge-neutral">Deposit</span></div><div class="q-row-meta">+91 76543 21098 · 2 pax · OTP <span class="mono">657803</span></div><div class="q-row-orders">ETA ~22 mins</div></div><div class="q-row-actions"><button class="btn btn-secondary btn-sm">Seat</button><button class="btn btn-danger btn-sm">Cancel</button></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 · Staff Seated tab -->
+<section id="s10" class="preview-section">
+  <div class="preview-label">10 — Staff dashboard → Seated tab</div>
+  <div class="app-shell">
+    <div class="app-header">
+      <div class="header-left"><div class="header-logo">Paris Panini</div><span class="pill">Staff</span></div>
+      <div class="header-right"><div class="tms-indicator"><span class="tms-dot"></span>Manual floor</div><button class="btn btn-secondary btn-sm">Logout</button></div>
+    </div>
+    <div class="app-body">
+      <div class="tabs"><button class="tab">Queue</button><button class="tab active">Seated</button><button class="tab">Tables</button><button class="tab">Seat OTP</button><button class="tab">Manager</button></div>
+      <div class="q-row"><div class="q-row-num">T4</div><div class="q-row-info"><div class="q-row-name">Ananya S. <span class="badge badge-seated">Seated</span></div><div class="q-row-meta">+91 98765 43210 · 2 pax · 14 min ago</div><div class="q-row-orders">Pre-order + table round · <strong>₹757</strong> · Deposit paid</div></div><div class="q-row-actions"><button class="btn btn-secondary btn-sm">View bill</button><button class="btn btn-secondary btn-sm">Settle offline</button></div></div>
+      <div class="q-row"><div class="q-row-num">T2</div><div class="q-row-info"><div class="q-row-name">Rohan M. <span class="badge badge-seated">Seated</span></div><div class="q-row-meta">+91 87654 32109 · 4 pax · 6 min ago</div><div class="q-row-orders">Table order only · <strong>₹1,240</strong> · No deposit</div></div><div class="q-row-actions"><button class="btn btn-secondary btn-sm">View bill</button><button class="btn btn-secondary btn-sm">Settle offline</button></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 11 · Staff Tables tab -->
+<section id="s11" class="preview-section">
+  <div class="preview-label">11 — Staff dashboard → Tables tab</div>
+  <div class="app-shell">
+    <div class="app-header">
+      <div class="header-left"><div class="header-logo">Paris Panini</div><span class="pill">Staff</span></div>
+      <div class="header-right"><div class="tms-indicator"><span class="tms-dot"></span>Manual floor</div><button class="btn btn-secondary btn-sm">Logout</button></div>
+    </div>
+    <div class="app-body">
+      <div class="tabs"><button class="tab">Queue</button><button class="tab">Seated</button><button class="tab active">Tables</button><button class="tab">Seat OTP</button><button class="tab">Manager</button></div>
+      <div class="floor-plan-header"><div style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;font-weight:700">Floor plan</div><div class="floor-legend"><div class="legend-item"><div class="legend-dot free"></div>Free</div><div class="legend-item"><div class="legend-dot occupied"></div>Occupied</div><div class="legend-item"><div class="legend-dot clearing"></div>Clearing</div><div class="legend-item"><div class="legend-dot reserved"></div>Reserved</div></div></div>
+      <div class="tables-grid">
+        <div class="table-card free"><div class="table-num">T1</div><div class="table-cap">2 covers</div><div class="table-status-label" style="color:var(--green)">Free</div><div class="table-actions"><button class="btn btn-secondary btn-sm">Mark occupied</button></div></div>
+        <div class="table-card occupied"><div class="table-num">T2</div><div class="table-cap">4 covers</div><div class="table-status-label" style="color:var(--cream-dim)">Occupied</div><div class="table-actions"><button class="btn btn-secondary btn-sm">Mark clearing</button></div></div>
+        <div class="table-card occupied"><div class="table-num">T3</div><div class="table-cap">2 covers</div><div class="table-status-label" style="color:var(--cream-dim)">Occupied</div><div class="table-actions"><button class="btn btn-secondary btn-sm">Mark clearing</button></div></div>
+        <div class="table-card occupied"><div class="table-num">T4</div><div class="table-cap">4 covers</div><div class="table-status-label" style="color:var(--cream-dim)">Occupied</div><div class="table-actions"><button class="btn btn-secondary btn-sm">Mark clearing</button></div></div>
+        <div class="table-card clearing"><div class="table-num">T5</div><div class="table-cap">2 covers</div><div class="table-status-label" style="color:#B45309">Clearing</div><div class="table-actions"><button class="btn btn-success btn-sm">Mark free</button></div></div>
+        <div class="table-card free"><div class="table-num">T6</div><div class="table-cap">4 covers</div><div class="table-status-label" style="color:var(--green)">Free</div><div class="table-actions"><button class="btn btn-secondary btn-sm">Mark occupied</button></div></div>
+        <div class="table-card reserved"><div class="table-num">T7</div><div class="table-cap">6 covers</div><div class="table-status-label" style="color:var(--amber)">Reserved</div><div class="table-actions"><button class="btn btn-success btn-sm">Mark free</button></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 12 · Staff Seat OTP tab -->
+<section id="s12" class="preview-section">
+  <div class="preview-label">12 — Staff dashboard → Seat OTP tab</div>
+  <div class="app-shell">
+    <div class="app-header">
+      <div class="header-left"><div class="header-logo">Paris Panini</div><span class="pill">Staff</span></div>
+      <div class="header-right"><div class="tms-indicator"><span class="tms-dot"></span>Manual floor</div><button class="btn btn-secondary btn-sm">Logout</button></div>
+    </div>
+    <div class="app-body">
+      <div class="tabs"><button class="tab">Queue</button><button class="tab">Seated</button><button class="tab">Tables</button><button class="tab active">Seat OTP</button><button class="tab">Manager</button></div>
+      <div class="grid grid-2">
+        <div class="card"><div class="card-title">Seat a guest</div><div class="card-sub">Enter the 6-digit OTP from the guest's phone.</div><div class="alert alert-amber"><div>Prefilled from queue row — Ananya S. · T6 suggested</div></div><div class="form-group"><label class="form-label">Guest OTP</label><div class="otp-grid"><input class="form-input otp-digit" value="4" maxlength="1"><input class="form-input otp-digit" value="8" maxlength="1"><input class="form-input otp-digit" value="2" maxlength="1"><input class="form-input otp-digit" value="9" maxlength="1"><input class="form-input otp-digit" value="1" maxlength="1"><input class="form-input otp-digit" value="7" maxlength="1"></div></div><div class="form-group"><label class="form-label">Table</label><select class="form-select"><option>Select a free or reserved table</option><option selected>T6 · FREE (4 covers)</option></select></div><button class="btn btn-primary btn-full">Seat guest</button></div>
+        <div class="card"><div class="card-title">Operator note</div><div class="card-sub">Quick seat preloads the OTP and best-fit table. It never bypasses verification.</div><div class="alert alert-blue"><div>All pilot flows remain deposit-backed. Staff cannot skip the OTP step.</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 13 · Staff Manager tab -->
+<section id="s13" class="preview-section">
+  <div class="preview-label">13 — Staff dashboard → Manager tab</div>
+  <div class="app-shell">
+    <div class="app-header">
+      <div class="header-left"><div class="header-logo">Paris Panini</div><span class="pill">Staff</span></div>
+      <div class="header-right"><div class="tms-indicator"><span class="tms-dot"></span>Manual floor</div><button class="btn btn-secondary btn-sm">Logout</button></div>
+    </div>
+    <div class="app-body">
+      <div class="tabs"><button class="tab">Queue</button><button class="tab">Seated</button><button class="tab">Tables</button><button class="tab">Seat OTP</button><button class="tab active">Manager</button></div>
+      <div class="grid grid-2">
+        <div class="card"><div class="card-title">Queue control</div><div class="card-sub">Toggle access and set deposit rate.</div><div class="row" style="margin-bottom:14px"><span class="badge badge-ready">Queue open</span><button class="btn btn-secondary btn-sm">Close queue</button></div><div class="form-group"><label class="form-label">Deposit %</label><input class="form-input" type="number" value="30"></div><div class="form-group"><label class="form-label">Table ready window (min)</label><input class="form-input" type="number" value="15"></div><button class="btn btn-primary btn-full">Save settings</button></div>
+        <div class="card"><div class="card-title">Fallbacks</div><div class="card-sub">Pilot-safe escape hatches for edge cases.</div><div class="form-group"><label class="form-label">Queue entry ID</label><input class="form-input mono" placeholder="Queue entry UUID"></div><button class="btn btn-secondary btn-full" style="margin-bottom:10px">Mark settled offline</button><div class="form-group"><label class="form-label">Deposit payment ID</label><input class="form-input mono" placeholder="Payment UUID"></div><button class="btn btn-danger btn-full">Refund deposit</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 14 · Admin Login -->
+<section id="s14" class="preview-section">
+  <div class="preview-label">14 — renderAdminLogin() → /admin/login</div>
+  <div class="app-shell">
+    <div class="app-header">
+      <div class="header-left"><div class="header-logo">Paris Panini</div><span class="pill">Admin</span></div>
+      <div class="header-right"><a class="btn btn-secondary btn-sm">Exit</a></div>
+    </div>
+    <div class="app-body">
+      <div class="section-head"><div class="section-title">Admin login</div><div class="section-sub">Owner & manager only.</div></div>
+      <div class="grid grid-2">
+        <div class="card"><div class="card-title">Send OTP</div><div class="card-sub">Owner or manager numbers only.</div><div class="form-group"><label class="form-label">Phone</label><input class="form-input" placeholder="9000000001"></div><button class="btn btn-primary btn-full">Send OTP</button></div>
+        <div class="card"><div class="card-title">Verify OTP</div><div class="card-sub">Enter the code sent to your phone.</div><div class="form-group"><label class="form-label">OTP code</label><input class="form-input" maxlength="6" placeholder="123456"></div><button class="btn btn-secondary btn-full">Verify & enter</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 15 · Admin Menu tab -->
+<section id="s15" class="preview-section">
+  <div class="preview-label">15 — renderAdminDashboard() → Menu tab</div>
+  <div class="app-shell">
+    <div class="app-header">
+      <div class="header-left"><div class="header-logo">Paris Panini</div><span class="pill">Admin</span></div>
+      <div class="header-right"><button class="btn btn-secondary btn-sm">Logout</button></div>
+    </div>
+    <div class="app-body">
+      <div class="section-head"><div class="section-title">Admin console</div><div class="section-sub">Nicolas G. · OWNER · Paris Panini, Indiranagar</div></div>
+      <div class="tabs"><button class="tab active">Menu</button><button class="tab">Add item</button></div>
+      <div class="card">
+        <div class="card-title">Live menu</div>
+        <div class="card-sub">Toggle availability without leaving the service shell.</div>
+        <div class="cat-header"><div class="cat-header-name">Panini</div><div class="cat-header-line"></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><div><div class="order-line-name">Michel (Non-Veg)</div><div class="order-line-qty">₹310 ex-GST · Available</div></div><div class="row"><button class="btn btn-secondary btn-sm">Disable</button><button class="btn btn-danger btn-sm">✕</button></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><div><div class="order-line-name">Sophie (Veg)</div><div class="order-line-qty">₹280 ex-GST · Available</div></div><div class="row"><button class="btn btn-secondary btn-sm">Disable</button><button class="btn btn-danger btn-sm">✕</button></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);opacity:.5"><div><div class="order-line-name" style="text-decoration:line-through">Jacques</div><div class="order-line-qty" style="color:var(--red)">₹295 ex-GST · Unavailable</div></div><div class="row"><button class="btn btn-success btn-sm">Enable</button><button class="btn btn-danger btn-sm">✕</button></div></div>
+        <div class="cat-header"><div class="cat-header-name">Sides &amp; Starters</div><div class="cat-header-line"></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><div><div class="order-line-name">Signature French Fries</div><div class="order-line-qty">₹140 ex-GST · Available</div></div><div class="row"><button class="btn btn-secondary btn-sm">Disable</button><button class="btn btn-danger btn-sm">✕</button></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0"><div><div class="order-line-name">Onion Rings</div><div class="order-line-qty">₹155 ex-GST · Available</div></div><div class="row"><button class="btn btn-secondary btn-sm">Disable</button><button class="btn btn-danger btn-sm">✕</button></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 16 · Admin Add item tab -->
+<section id="s16" class="preview-section">
+  <div class="preview-label">16 — renderAdminDashboard() → Add item tab</div>
+  <div class="app-shell">
+    <div class="app-header">
+      <div class="header-left"><div class="header-logo">Paris Panini</div><span class="pill">Admin</span></div>
+      <div class="header-right"><button class="btn btn-secondary btn-sm">Logout</button></div>
+    </div>
+    <div class="app-body">
+      <div class="section-head"><div class="section-title">Admin console</div><div class="section-sub">Nicolas G. · OWNER · Paris Panini, Indiranagar</div></div>
+      <div class="tabs"><button class="tab">Menu</button><button class="tab active">Add item</button></div>
+      <div class="grid grid-2">
+        <div class="card"><div class="card-title">Add category</div><div class="card-sub">Create a new category before adding items.</div><div class="form-group"><label class="form-label">Category name</label><input class="form-input" placeholder="e.g. Mac &amp; Cheese"></div><button class="btn btn-secondary btn-full">Create category</button></div>
+        <div class="card"><div class="card-title">Add menu item</div><div class="card-sub">Item goes live immediately on creation.</div><div class="form-group"><label class="form-label">Category</label><select class="form-select"><option>Panini</option><option>Sides &amp; Starters</option><option selected>Drinks</option></select></div><div class="form-group"><label class="form-label">Item name</label><input class="form-input" placeholder="e.g. Mannheim Coffee"></div><div class="form-group"><label class="form-label">Description</label><input class="form-input" placeholder="Short description"></div><div class="form-row"><div class="form-group"><label class="form-label">Price ex-GST</label><input class="form-input" type="number" placeholder="200"></div><div class="form-group"><label class="form-label">GST %</label><input class="form-input" type="number" placeholder="5"></div></div><div class="row" style="margin-bottom:14px;gap:18px"><label class="checkbox-row"><input type="checkbox" checked> Veg</label><label class="checkbox-row"><input type="checkbox"> Alcohol</label></div><button class="btn btn-primary btn-full">Add to menu →</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 17 · Share sheet -->
+<section id="s17" class="preview-section" style="padding-bottom:60px">
+  <div class="preview-label">17 — openShareSheet() — party invite</div>
+  <div class="app-shell">
+    <div class="app-header">
+      <div class="header-left"><div class="header-logo">Paris Panini</div><span class="pill">Guest</span></div>
+      <div class="header-right"><button class="btn btn-secondary btn-sm">Invite others</button></div>
+    </div>
+    <div class="app-body">
+      <div style="max-width:460px">
+        <div class="card">
+          <div class="card-title">Invite your party</div>
+          <div class="card-sub">Share the link so everyone can browse the menu and add to the shared bucket.</div>
+          <div style="background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:20px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;min-height:88px;color:var(--cream-dimmer);font-size:13px">[ QR code renders here ]</div>
+          <div class="form-group"><label class="form-label">Invite link</label><input class="form-input mono" value="https://taurant.onrender.com/v/paris-panini-indiranagar/session/abc123" readonly></div>
+          <div class="row"><button class="btn btn-secondary btn-sm">Copy link</button><button class="btn btn-primary btn-sm">Share</button><button class="btn btn-secondary btn-sm">Close</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
