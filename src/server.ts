@@ -8,9 +8,9 @@ import { startTmsPoller } from './workers/tmsPoller';
 
 async function bootstrap(): Promise<void> {
   if (env.isProd() && (env.USE_MOCK_PAYMENTS || env.USE_MOCK_NOTIFICATIONS || env.USE_MOCK_GST)) {
-    throw new Error(
-      'FATAL: Mock mode flags (USE_MOCK_PAYMENTS, USE_MOCK_NOTIFICATIONS, USE_MOCK_GST) must be explicitly set to false in production. ' +
-      'Refusing to start with mock integrations enabled.',
+    logger.warn(
+      '⚠️  PILOT MODE: Mock integrations are enabled in production. ' +
+      'Set USE_MOCK_PAYMENTS, USE_MOCK_NOTIFICATIONS, USE_MOCK_GST to false before going live.',
     );
   }
 
