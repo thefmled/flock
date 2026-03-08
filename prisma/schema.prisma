@@ -96,6 +96,23 @@ enum TmsProvider {
   MANUAL
 }
 
+enum OrderFlowEventType {
+  QUEUE_JOINED
+  PREORDER_CREATED
+  PREORDER_REPLACED
+  DEPOSIT_INITIATED
+  DEPOSIT_CAPTURED
+  TABLE_NOTIFIED
+  GUEST_SEATED
+  TABLE_ORDER_CREATED
+  FINAL_PAYMENT_INITIATED
+  FINAL_PAYMENT_CAPTURED
+  OFFLINE_SETTLED
+  ENTRY_COMPLETED
+  ENTRY_CANCELLED
+  DEPOSIT_REFUNDED
+}
+
 enum PartySessionStatus {
   ACTIVE
   LOCKED
@@ -145,6 +162,7 @@ model Venue {
   invoices            Invoice[]
   otpCodes            OtpCode[]
   partySessions       PartySession[]
+  orderFlowEvents     OrderFlowEvent[]
   @@index([slug])
   @@index([city])
 }
@@ -274,6 +292,7 @@ model QueueEntry {
   orders           Order[]
   notifications    Notification[]
   partySession     PartySession?
+  orderFlowEvents  OrderFlowEvent[]
   @@index([venueId, status])
   @@index([venueId, position])
   @@index([status, tableReadyDeadlineAt])
@@ -389,6 +408,21 @@ model Notification {
   queueEntry   QueueEntry?         @relation(fields: [queueEntryId], references: [id])
   @@index([venueId])
   @@index([queueEntryId])
+}
+
+model OrderFlowEvent {
+  id           String             @id @default(uuid())
+  queueEntryId String
+  venueId      String
+  type         OrderFlowEventType
+  orderId      String?
+  paymentId    String?
+  snapshot     Json?
+  createdAt    DateTime           @default(now())
+  queueEntry   QueueEntry         @relation(fields: [queueEntryId], references: [id], onDelete: Cascade)
+  venue        Venue              @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  @@index([queueEntryId])
+  @@index([venueId, createdAt])
 }
 
 model PartySession {

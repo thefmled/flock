@@ -3,6 +3,7 @@ import { aggregateGst, calcGstBreakdown } from '../utils/gst';
 import { pushOrderToPos } from '../integrations/urbanpiper';
 import { AppError } from '../middleware/errorHandler';
 import { OrderType, PaymentStatus, PaymentType, QueueEntryStatus } from '@prisma/client';
+import { logFlowEvent, OrderFlowEventType } from './orderFlowEvent.service';
 
 export interface OrderItemInput {
   menuItemId: string;
@@ -61,7 +62,18 @@ export async function createPreOrder(params: {
     ]);
   }
 
-  return buildOrder(params.venueId, params.queueEntryId, OrderType.PRE_ORDER, params.items, params.notes);
+  const replacedOrderIds = existingPreOrders.length ? existingPreOrders.map(o => o.id) : undefined;
+  const order = await buildOrder(params.venueId, params.queueEntryId, OrderType.PRE_ORDER, params.items, params.notes);
+
+  await logFlowEvent({
+    queueEntryId: params.queueEntryId,
+    venueId: params.venueId,
+    type: replacedOrderIds ? OrderFlowEventType.PREORDER_REPLACED : OrderFlowEventType.PREORDER_CREATED,
+    orderId: order.id,
+    snapshot: { totalIncGst: order.totalIncGst, itemCount: params.items.length, replacedOrderIds },
+  });
+
+  return order;
 }
 
 // ── Create table order ────────────────────────────────────────────
@@ -282,6 +294,14 @@ async function createTableOrderInternal(params: {
     fallbackTableNumber: entry.table?.label ?? 'unknown',
     guestName: entry.guestName,
     notes: params.notes,
+  });
+
+  await logFlowEvent({
+    queueEntryId: params.queueEntryId,
+    venueId: params.venueId,
+    type: OrderFlowEventType.TABLE_ORDER_CREATED,
+    orderId: order.id,
+    snapshot: { totalIncGst: order.totalIncGst, itemCount: params.items.length, initiatedBy: params.initiatedBy, posSync },
   });
 
   return {

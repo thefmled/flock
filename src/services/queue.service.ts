@@ -10,6 +10,7 @@ import { syncPendingPreOrderForSeating } from './order.service';
 import { signGuestToken } from '../utils/jwt';
 import { initiateRefund } from '../integrations/razorpay';
 import { ensurePartySessionForQueueEntry } from './partySession.service';
+import { logFlowEvent, OrderFlowEventType } from './orderFlowEvent.service';
 
 const AVG_TURN_MINUTES = 55; // used for wait time estimation
 
@@ -75,6 +76,13 @@ export async function joinQueue(params: {
   );
 
   await Notify.queueJoined(params.venueId, entry.id, params.guestPhone, params.guestName, position, estimatedWaitMin, venue.name);
+
+  await logFlowEvent({
+    queueEntryId: entry.id,
+    venueId: params.venueId,
+    type: OrderFlowEventType.QUEUE_JOINED,
+    snapshot: { position, partySize: params.partySize, guestName: params.guestName },
+  });
 
   return {
     id: entry.id,
@@ -253,6 +261,13 @@ export async function seatGuest(params: {
     preOrderSync = { attempted: true, status: 'manual_fallback' };
   }
 
+  await logFlowEvent({
+    queueEntryId: entry.id,
+    venueId: params.venueId,
+    type: OrderFlowEventType.GUEST_SEATED,
+    snapshot: { tableId: params.tableId, tableLabel: table.label, preOrderSync },
+  });
+
   return { entryId: entry.id, guestName: entry.guestName, preOrderSync };
 }
 
@@ -362,6 +377,13 @@ export async function cancelQueueEntry(entryId: string, venueId: string): Promis
     redis.publish(PubSubChannels.queueUpdate(venueId), JSON.stringify({ type: 'ENTRY_CANCELLED', entryId }))
   );
 
+  await logFlowEvent({
+    queueEntryId: entryId,
+    venueId,
+    type: OrderFlowEventType.ENTRY_CANCELLED,
+    snapshot: { refundStatus, refundedPaymentId, refundId },
+  });
+
   return {
     queueCancelled: true,
     refundStatus,
@@ -402,6 +424,13 @@ export async function completeQueueEntry(entryId: string): Promise<void> {
       redis.publish(PubSubChannels.tableUpdate(entry.venueId), JSON.stringify({ type: 'TABLE_CLEARING', tableId: entry.tableId }))
     );
   }
+
+  await logFlowEvent({
+    queueEntryId: entryId,
+    venueId: entry.venueId,
+    type: OrderFlowEventType.ENTRY_COMPLETED,
+    snapshot: { tableId: entry.tableId },
+  });
 }
 
 // ── Internal helpers ──────────────────────────────────────────────

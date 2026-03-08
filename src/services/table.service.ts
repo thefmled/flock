@@ -5,6 +5,7 @@ import { AppError } from '../middleware/errorHandler';
 import { TableStatus, QueueEntryStatus } from '@prisma/client';
 import { env } from '../config/env';
 import { logger } from '../config/logger';
+import { logFlowEvent, OrderFlowEventType } from './orderFlowEvent.service';
 
 // ── Get tables for venue ──────────────────────────────────────────
 
@@ -131,6 +132,13 @@ export async function tryAdvanceQueue(venueId: string, tableId: string): Promise
   await redis.publish(PubSubChannels.queueUpdate(venueId), JSON.stringify({
     type: 'TABLE_ASSIGNED', entryId: nextEntry.id, tableId, tableLabel: table.label,
   }));
+
+  await logFlowEvent({
+    queueEntryId: nextEntry.id,
+    venueId,
+    type: OrderFlowEventType.TABLE_NOTIFIED,
+    snapshot: { tableId, tableLabel: table.label },
+  });
 
   logger.info(`Table ${table.label} assigned to ${nextEntry.guestName} (${nextEntry.id})`);
 }

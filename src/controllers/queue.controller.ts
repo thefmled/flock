@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { AuthenticatedRequest } from '../types';
 import * as QueueService from '../services/queue.service';
+import { getFlowEvents } from '../services/orderFlowEvent.service';
 import { ok, created } from '../utils/response';
 
 const JoinSchema = z.object({
@@ -72,5 +73,12 @@ export async function checkoutEntry(req: AuthenticatedRequest, res: Response, ne
   try {
     await QueueService.completeQueueEntry(req.params.entryId);
     ok(res, { checkedOut: true });
+  } catch (e) { next(e); }
+}
+
+export async function getEntryFlowEvents(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const events = await getFlowEvents(req.params.entryId);
+    ok(res, events, { count: events.length });
   } catch (e) { next(e); }
 }

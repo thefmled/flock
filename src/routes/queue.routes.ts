@@ -10,4 +10,5 @@ router.get ('/:entryId',             requireGuestAuth, guestPollReadLimiter, Que
 router.post('/seat',                 requireAuth, operatorWriteLimiter, Queue.seatGuest);
 router.delete('/:entryId',           requireAuth, requireRole('OWNER','MANAGER','STAFF'), operatorWriteLimiter, Queue.cancelEntry);
 router.post  ('/:entryId/checkout',  requireAuth, requireRole('OWNER','MANAGER','STAFF'), operatorWriteLimiter, Queue.checkoutEntry);
+router.get   ('/:entryId/flow',      requireAuth, requireRole('OWNER','MANAGER'), operatorReadLimiter, Queue.getEntryFlowEvents);
 export default router;

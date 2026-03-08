@@ -7,6 +7,7 @@ import { Notify } from '../integrations/notifications';
 import { PaymentType, PaymentStatus, OrderType } from '@prisma/client';
 import { completeQueueEntry } from './queue.service';
 import { selectBillableOrders } from './order.service';
+import { logFlowEvent, OrderFlowEventType } from './orderFlowEvent.service';
 
 // ── Initiate deposit payment for pre-order ────────────────────────
 
@@ -86,6 +87,15 @@ export async function initiateDeposit(params: {
       razorpayOrderId:  rzpOrder.id,
       txnRef,
     },
+  });
+
+  await logFlowEvent({
+    queueEntryId: params.queueEntryId,
+    venueId: params.venueId,
+    type: OrderFlowEventType.DEPOSIT_INITIATED,
+    orderId: params.orderId,
+    paymentId: payment.id,
+    snapshot: { depositAmount, depositPercent: venue.depositPercent, totalOrderValue: order.totalIncGst, txnRef },
   });
 
   return {
@@ -186,6 +196,15 @@ export async function initiateFinalPayment(params: {
     },
   });
 
+  await logFlowEvent({
+    queueEntryId: params.queueEntryId,
+    venueId: params.venueId,
+    type: OrderFlowEventType.FINAL_PAYMENT_INITIATED,
+    orderId: mainOrder.id,
+    paymentId: payment.id,
+    snapshot: { balanceDue: bill.balanceDue, totalIncGst: bill.totalIncGst, depositPaid: bill.depositPaid, txnRef },
+  });
+
   return {
     paymentId: payment.id,
     txnRef,
@@ -233,6 +252,7 @@ export async function capturePaymentFromWebhook(params: {
 export async function refundDeposit(params: { paymentId: string; venueId: string; reason?: string }) {
   const payment = await prisma.payment.findFirst({
     where: { id: params.paymentId, venueId: params.venueId, type: PaymentType.DEPOSIT, status: PaymentStatus.CAPTURED },
+    include: { order: { select: { queueEntryId: true } } },
   });
   if (!payment) throw new AppError('Eligible deposit payment not found', 404);
   if (!payment.razorpayPaymentId) throw new AppError('No Razorpay payment ID on record', 400);
@@ -242,6 +262,16 @@ export async function refundDeposit(params: { paymentId: string; venueId: string
     where: { id: payment.id },
     data:  { status: PaymentStatus.REFUNDED, refundedAt: new Date(), refundAmount: payment.amount },
   });
+
+  await logFlowEvent({
+    queueEntryId: payment.order.queueEntryId,
+    venueId: params.venueId,
+    type: OrderFlowEventType.DEPOSIT_REFUNDED,
+    orderId: payment.orderId,
+    paymentId: payment.id,
+    snapshot: { refundId: result.id, amount: payment.amount, reason: params.reason },
+  });
+
   return { refundId: result.id, amount: payment.amount, status: 'refunded' };
 }
 
@@ -284,6 +314,14 @@ export async function settleFinalOffline(params: { venueId: string; queueEntryId
 
   await completeQueueEntry(params.queueEntryId);
   await issueFinalInvoice(params.queueEntryId, params.venueId);
+
+  await logFlowEvent({
+    queueEntryId: params.queueEntryId,
+    venueId: params.venueId,
+    type: OrderFlowEventType.OFFLINE_SETTLED,
+    orderId: mainOrder.id,
+    snapshot: { balanceDue: bill.balanceDue, settledBy: params.staffId },
+  });
 
   return {
     status: 'captured',
@@ -420,11 +458,34 @@ async function capturePaymentByOrder(params: {
       payment.txnRef,
       payment.amount
     );
+
+    await logFlowEvent({
+      queueEntryId: payment.order.queueEntryId,
+      venueId: payment.venueId,
+      type: OrderFlowEventType.DEPOSIT_CAPTURED,
+      orderId: payment.orderId,
+      paymentId: payment.id,
+      snapshot: {
+        amount: payment.amount,
+        txnRef: payment.txnRef,
+        orderTotal: payment.order.totalIncGst,
+        depositPaidAfter: payment.order.queueEntry.depositPaid + payment.amount,
+      },
+    });
   }
 
   if (payment.type === PaymentType.FINAL) {
     await completeQueueEntry(payment.order.queueEntryId);
     await issueFinalInvoice(payment.order.queueEntryId, payment.venueId);
+
+    await logFlowEvent({
+      queueEntryId: payment.order.queueEntryId,
+      venueId: payment.venueId,
+      type: OrderFlowEventType.FINAL_PAYMENT_CAPTURED,
+      orderId: payment.orderId,
+      paymentId: payment.id,
+      snapshot: { amount: payment.amount, txnRef: payment.txnRef },
+    });
   }
 
   return {
