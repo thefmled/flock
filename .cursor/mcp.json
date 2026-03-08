@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "url": "https://mcp.supabase.com/mcp?project_ref=dcoixzkyrvfzytelvael"
+    },
+    "render": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "npx -y mcp-remote https://mcp.render.com/mcp --header \"Authorization: Bearer $RENDER_API_KEY\""
+      ]
+    }
+  }
+}
