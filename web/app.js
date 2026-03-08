@@ -30,7 +30,8 @@ const uiState = {
   tableOrderSubmitting: false,
   paymentSubmitting: false,
   guestSessionRestoring: false,
-  guestTray: 'ordered',
+  guestTray: 'menu',
+  guestTrayUserChosen: false,
   guestMenuActiveCategory: null,
   activeGuestView: null,
   activePartySessionId: null,
@@ -625,11 +626,10 @@ async function renderGuestEntry(slug, entryId) {
 
   if (entry.status === 'SEATED') {
     if (!['menu', 'bucket', 'ordered'].includes(uiState.guestTray)) {
-      uiState.guestTray = 'ordered';
+      uiState.guestTray = 'menu';
     }
-    const seatedDraftSummary = buildCartSummary(venue.menuCategories || [], BucketStore.getDraftCart());
-    if (!getBucketItemCount(seatedDraftSummary)) {
-      uiState.guestTray = (entry.orders.length || (bill?.summary?.balanceDue || 0) > 0) ? 'ordered' : 'menu';
+    if (!uiState.guestTrayUserChosen) {
+      uiState.guestTray = 'menu';
     }
     mountSeatedGuestExperience({ slug, entry, venue, bill, guestSession });
     return;
@@ -1561,6 +1561,19 @@ async function renderStaffDashboard() {
     }));
   });
 
+  document.querySelectorAll('[data-view-flow]').forEach((button) => {
+    const entryId = button.getAttribute('data-view-flow');
+    button.addEventListener('click', guardedAction(`flow-${entryId}`, async () => {
+      try {
+        const events = await apiRequest(`/queue/${entryId}/flow`, { auth: true });
+        showFlowLogModal(entryId, events);
+      } catch (error) {
+        setFlash('red', `Could not load flow log: ${error.message}`);
+        await renderStaffDashboard();
+      }
+    }));
+  });
+
   document.querySelectorAll('[data-table-status]').forEach((button) => {
     const tableId = button.getAttribute('data-table-id');
     const status = button.getAttribute('data-table-status');
@@ -1918,6 +1931,7 @@ function renderQueueTab(waiting, tables) {
       </div>
       <div class="q-row-actions">
         <button class="btn btn-secondary btn-sm" data-prefill-seat="${escapeHtml(entry.otp)}" data-entry-id="${entry.id}" data-suggested-table="${getSuggestedTableId(entry, tables)}">Seat</button>
+        <button class="btn btn-secondary btn-sm" data-view-flow="${entry.id}">Flow log</button>
         <button class="btn btn-danger btn-sm" data-cancel-entry="${entry.id}">Cancel</button>
       </div>
     </div>
@@ -1942,7 +1956,8 @@ function renderSeatedTab(seated, seatedBills) {
         <div class="q-row-actions" style="align-items:flex-end;">
           <div class="muted">${bill ? `Total ${formatMoney(bill.summary.totalIncGst)}` : 'Loading bill'}</div>
           ${bill ? `<div class="muted">Balance ${formatMoney(bill.summary.balanceDue)}</div>` : ''}
-          <button class="btn btn-secondary btn-sm" data-checkout-entry="${entry.id}" style="margin-top:6px;">Check out</button>
+          <button class="btn btn-secondary btn-sm" data-view-flow="${entry.id}" style="margin-top:4px;">Flow log</button>
+          <button class="btn btn-secondary btn-sm" data-checkout-entry="${entry.id}" style="margin-top:4px;">Check out</button>
         </div>
       </div>
     `;
@@ -2188,6 +2203,63 @@ function renderAdminAddTab(categories) {
       </div>
     </div>
   `;
+}
+
+function showFlowLogModal(entryId, events) {
+  const existing = document.getElementById('flow-log-modal');
+  if (existing) existing.remove();
+
+  const typeLabels = {
+    QUEUE_JOINED: 'Joined queue',
+    PREORDER_CREATED: 'Pre-order created',
+    PREORDER_REPLACED: 'Pre-order replaced',
+    DEPOSIT_INITIATED: 'Deposit initiated',
+    DEPOSIT_CAPTURED: 'Deposit captured',
+    TABLE_NOTIFIED: 'Table ready notified',
+    GUEST_SEATED: 'Guest seated',
+    TABLE_ORDER_CREATED: 'Table order placed',
+    FINAL_PAYMENT_INITIATED: 'Final payment initiated',
+    FINAL_PAYMENT_CAPTURED: 'Final payment captured',
+    OFFLINE_SETTLED: 'Settled offline',
+    ENTRY_COMPLETED: 'Session completed',
+    ENTRY_CANCELLED: 'Session cancelled',
+    DEPOSIT_REFUNDED: 'Deposit refunded',
+  };
+
+  const rows = events.length
+    ? events.map((ev) => {
+        const snap = ev.snapshot || {};
+        const details = Object.entries(snap)
+          .filter(([, v]) => v !== null && v !== undefined)
+          .map(([k, v]) => `<span class="mono">${escapeHtml(k)}</span>: ${typeof v === 'object' ? escapeHtml(JSON.stringify(v)) : escapeHtml(String(v))}`)
+          .join(' · ');
+        return `
+          <div class="flow-event-row">
+            <div class="flow-event-type">${escapeHtml(typeLabels[ev.type] || ev.type)}</div>
+            <div class="flow-event-time">${new Date(ev.createdAt).toLocaleString()}</div>
+            ${details ? `<div class="flow-event-snap">${details}</div>` : ''}
+          </div>
+        `;
+      }).join('')
+    : '<div class="empty-state">No flow events recorded for this session yet.</div>';
+
+  const modal = document.createElement('div');
+  modal.id = 'flow-log-modal';
+  modal.className = 'flow-log-overlay';
+  modal.innerHTML = `
+    <div class="flow-log-panel">
+      <div class="flow-log-header">
+        <div class="card-title">Order flow log</div>
+        <div class="card-sub">Entry <span class="mono">${escapeHtml(entryId.slice(0, 8))}</span> · ${events.length} event${events.length === 1 ? '' : 's'}</div>
+        <button class="btn btn-secondary btn-sm flow-log-close" type="button">&times; Close</button>
+      </div>
+      <div class="flow-log-body">${rows}</div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  modal.querySelector('.flow-log-close')?.addEventListener('click', () => modal.remove());
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 }
 
 function renderShell({ pill, body, right = '' }) {
@@ -2508,6 +2580,7 @@ function mountSeatedGuestExperience({ slug, entry, venue, bill, guestSession }) 
         ` : '';
         toastHost.querySelector('[data-toast-go-bucket]')?.addEventListener('click', () => {
           uiState.guestTray = 'bucket';
+          uiState.guestTrayUserChosen = true;
           renderTrayShell();
         });
       }
@@ -2595,6 +2668,7 @@ function mountSeatedGuestExperience({ slug, entry, venue, bill, guestSession }) 
             }
           }
           uiState.guestTray = 'ordered';
+          uiState.guestTrayUserChosen = true;
           setFlash(
             order.posSync?.status === 'manual_fallback' ? 'amber' : 'green',
             order.posSync?.status === 'manual_fallback'
@@ -2650,6 +2724,7 @@ function mountSeatedGuestExperience({ slug, entry, venue, bill, guestSession }) 
         const nextTray = button.getAttribute('data-guest-tray');
         if (nextTray === uiState.guestTray) return;
         uiState.guestTray = nextTray;
+        uiState.guestTrayUserChosen = true;
         renderTrayShell();
       });
     });

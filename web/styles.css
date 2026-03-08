@@ -1618,3 +1618,72 @@ button, input, select {
   }
 }
 
+/* ── Flow log modal ─────────────────────────────────── */
+
+.flow-log-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.flow-log-panel {
+  background: var(--card-bg, #fff);
+  border-radius: 14px;
+  max-width: 540px;
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.flow-log-header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border, #eee);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+
+.flow-log-header .card-title { flex: 1; min-width: 120px; margin: 0; }
+.flow-log-header .card-sub   { width: 100%; margin: 0; }
+.flow-log-close              { margin-left: auto; }
+
+.flow-log-body {
+  padding: 12px 20px 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.flow-event-row {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border, #eee);
+}
+
+.flow-event-row:last-child { border-bottom: none; }
+
+.flow-event-type {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary, #111);
+}
+
+.flow-event-time {
+  font-size: 12px;
+  color: var(--text-muted, #888);
+  margin-top: 2px;
+}
+
+.flow-event-snap {
+  font-size: 11px;
+  color: var(--text-muted, #888);
+  margin-top: 4px;
+  word-break: break-all;
+}
+
