@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@latest"
+      ]
+    },
+    "render": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "npx -y mcp-remote https://mcp.render.com/mcp --header \"Authorization: Bearer $RENDER_API_KEY\""
+      ]
+    }
+  }
+}
