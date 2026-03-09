@@ -1,26 +1,64 @@
-const API_BASE = '/api/v1';
-const DEFAULT_VENUE_SLUG = 'the-barrel-room-koramangala';
-const STAFF_AUTH_KEY = 'flock_staff_auth';
-const STAFF_PENDING_PHONE_KEY = 'flock_staff_pending_phone';
-const ADMIN_PENDING_PHONE_KEY = 'flock_admin_pending_phone';
-const GUEST_SESSION_PREFIX = 'flock_guest_session:';
-const GUEST_ENTRY_PREFIX = 'flock_guest_entry:';
-const PREORDER_CART_PREFIX = 'flock_cart:';
-const TABLE_CART_PREFIX = 'flock_table_cart:';
-const FLASH_KEY = 'flock_flash';
-const EMPTY_VENUE_STATS = {
-  today: {
-    totalQueueJoins: 0,
-    avgWaitMin: 0,
-    totalPayments: 0,
-    totalRevenuePaise: 0,
-    platformFeePaise: 0,
-  },
-  tables: {},
-};
+import {
+  ADMIN_PENDING_PHONE_KEY,
+  API_BASE,
+  createDefaultPartyPollState,
+  DEFAULT_VENUE_SLUG,
+  EMPTY_VENUE_STATS,
+  STAFF_AUTH_KEY,
+  STAFF_PENDING_PHONE_KEY,
+} from './modules/constants.js';
+import {
+  buildCartSummary,
+  bucketItemsToCart,
+  cartToBucketItems,
+  menuItemTotal,
+  normaliseDraftCart,
+  serialiseDraftCart,
+} from './modules/cart.js';
+import {
+  describeClientError,
+  extractErrorText,
+  isAuthErrorMessage,
+  isTransientServiceErrorMessage,
+  normaliseApiError,
+  renderDependencyWarnings,
+} from './modules/errors.js';
+import {
+  escapeHtml,
+  formatMoney,
+  formatRelativeStamp,
+  renderStatusBadge,
+} from './modules/format.js';
+import {
+  computePartyPollBackoff,
+  computeScheduledPartyPollDelay,
+} from './modules/polling.js';
+import { runHostedPayment } from './modules/payments.js';
+import {
+  buildStaffDashboardFetchPlan,
+  resolveStaffDashboardRefreshMs,
+} from './modules/staff-dashboard.js';
+import {
+  clearGuestEntryId,
+  clearGuestSession,
+  clearStaffAuth,
+  consumeFlash,
+  getCart,
+  getGuestEntryId,
+  getGuestSession,
+  getStaffAuth,
+  getTableCart,
+  normalisePhone,
+  setCart,
+  setFlash,
+  setGuestEntryId,
+  setGuestSession,
+  setTableCart,
+  updateCart,
+  updateTableCart,
+} from './modules/storage.js';
 
 const appRoot = document.getElementById('app');
-let razorpayLoaderPromise = null;
 const uiState = {
   timerId: null,
   partyPollerId: null,
@@ -45,13 +83,7 @@ const uiState = {
   shareLink: '',
   sessionJoinSubmitting: false,
   sessionJoinError: '',
-  partyPoll: {
-    baseDelayMs: 3000,
-    maxDelayMs: 30000,
-    nextDelayMs: 3000,
-    failureCount: 0,
-    lastError: '',
-  },
+  partyPoll: createDefaultPartyPollState(),
   partyBucket: {
     cart: {},
     serverItems: [],
@@ -76,6 +108,10 @@ const uiState = {
   staffLastUpdatedAt: 0,
   staffStats: null,
   staffStatsFetchedAt: 0,
+  staffTables: [],
+  staffTablesFetchedAt: 0,
+  staffRecentTableEvents: [],
+  staffRecentTableEventsFetchedAt: 0,
   staffHistory: [],
   staffHistoryLoadedAt: 0,
   adminTab: 'menu',
@@ -155,24 +191,6 @@ function scheduleRefresh(fn, delayMs) {
   uiState.timerId = window.setTimeout(() => {
     fn().catch(handleBackgroundRefreshError);
   }, delayMs);
-}
-
-function isAuthErrorMessage(message) {
-  return /Unauthorized|expired|invalid token|session invalid/i.test(String(message || ''));
-}
-
-function isTransientServiceErrorMessage(message) {
-  return /too many|temporarily unavailable|waking up|retry|429|502|503|504/i.test(String(message || ''));
-}
-
-function renderDependencyWarnings(messages) {
-  if (!messages.length) return '';
-  return `
-    <div class="alert alert-amber" data-transient-error="true">
-      <div>Some live data is temporarily unavailable:</div>
-      <div>${escapeHtml(messages.join(' • '))}</div>
-    </div>
-  `;
 }
 
 function navigate(path) {
@@ -666,6 +684,7 @@ async function renderGuestEntry(slug, entryId) {
         },
         auth: 'guest',
         guestToken: guestSession.guestToken,
+        apiRequest,
       });
       setFlash('green', 'Final payment captured.');
       await renderGuestEntry(slug, entryId);
@@ -1158,6 +1177,7 @@ async function renderPreorder(slug, entryId) {
         },
         auth: 'guest',
         guestToken: guestSession.guestToken,
+        apiRequest,
       });
 
       setCart(entryId, {});
@@ -1375,16 +1395,26 @@ async function renderStaffDashboard() {
     tableReadyWindowMin: 10,
   };
   let queue = [];
-  let tables = [];
+  const currentTab = uiState.staffTab;
+  const fetchPlan = buildStaffDashboardFetchPlan({
+    currentTab,
+    tablesFetchedAt: uiState.staffTablesFetchedAt,
+    recentTableEventsFetchedAt: uiState.staffRecentTableEventsFetchedAt,
+  });
+  let tables = uiState.staffTables || [];
   let stats = uiState.staffStats || EMPTY_VENUE_STATS;
-  let recentTableEvents = [];
+  let recentTableEvents = uiState.staffRecentTableEvents || [];
   const dependencyWarnings = [];
 
   const [venueResult, queueResult, tablesResult, eventsResult] = await Promise.allSettled([
     apiRequest(`/venues/${auth.venueSlug || DEFAULT_VENUE_SLUG}`),
     apiRequest('/queue/live', { auth: true }),
-    apiRequest('/tables', { auth: true }),
-    apiRequest('/tables/events/recent', { auth: true }),
+    fetchPlan.shouldFetchTables
+      ? apiRequest('/tables', { auth: true })
+      : Promise.resolve(tables),
+    fetchPlan.shouldFetchRecentTableEvents
+      ? apiRequest('/tables/events/recent', { auth: true })
+      : Promise.resolve(recentTableEvents),
   ]);
 
   if (venueResult.status === 'fulfilled') {
@@ -1409,21 +1439,29 @@ async function renderStaffDashboard() {
 
   if (tablesResult.status === 'fulfilled') {
     tables = tablesResult.value;
+    if (fetchPlan.shouldFetchTables) {
+      uiState.staffTables = tables;
+      uiState.staffTablesFetchedAt = Date.now();
+    }
   } else if (isAuthErrorMessage(tablesResult.reason?.message)) {
     clearStaffAuth();
     navigate('/staff/login');
     return;
-  } else {
+  } else if (fetchPlan.needsTables) {
     dependencyWarnings.push('Tables');
   }
 
   if (eventsResult.status === 'fulfilled') {
     recentTableEvents = eventsResult.value;
+    if (fetchPlan.shouldFetchRecentTableEvents) {
+      uiState.staffRecentTableEvents = recentTableEvents;
+      uiState.staffRecentTableEventsFetchedAt = Date.now();
+    }
   } else if (isAuthErrorMessage(eventsResult.reason?.message)) {
     clearStaffAuth();
     navigate('/staff/login');
     return;
-  } else {
+  } else if (fetchPlan.needsRecentTableEvents) {
     dependencyWarnings.push('Table events');
   }
 
@@ -1448,7 +1486,6 @@ async function renderStaffDashboard() {
   const flash = consumeFlash();
   const waiting = queue.filter((entry) => entry.status === 'WAITING' || entry.status === 'NOTIFIED');
   const seated = queue.filter((entry) => entry.status === 'SEATED');
-  const currentTab = uiState.staffTab;
   let seatedBills = uiState.staffSeatedBills;
   const shouldRefreshSeatedBills = currentTab === 'seated'
     && (
@@ -1742,11 +1779,7 @@ async function renderStaffDashboard() {
   }));
 
   if (currentTab !== 'seat' && currentTab !== 'manager' && !uiState.staffSeat.isSubmitting) {
-    const refreshMs = dependencyWarnings.length
-      ? 8000
-      : currentTab === 'seated'
-        ? 10000
-        : 3000;
+    const refreshMs = resolveStaffDashboardRefreshMs({ currentTab, dependencyWarnings });
     scheduleRefresh(() => renderStaffDashboard(), refreshMs);
   }
 }
@@ -2759,6 +2792,7 @@ function mountSeatedGuestExperience({ slug, entry, venue, bill, guestSession }) 
             },
             auth: 'guest',
             guestToken: liveGuestSession.guestToken,
+            apiRequest,
           });
           setFlash('green', 'Final payment captured.');
           await renderGuestEntry(slug, liveEntry.id);
@@ -2802,6 +2836,7 @@ function mountSeatedGuestExperience({ slug, entry, venue, bill, guestSession }) 
           },
           auth: 'guest',
           guestToken: liveGuestSession.guestToken,
+          apiRequest,
         });
         setFlash('green', 'Final payment captured.');
         await renderGuestEntry(slug, liveEntry.id);
@@ -3149,13 +3184,6 @@ function renderTableActions(table) {
   return `<button class="btn btn-secondary btn-sm" data-table-id="${table.id}" data-table-status="FREE">Reset</button>`;
 }
 
-function renderStatusBadge(status) {
-  if (status === 'WAITING') return '<span class="badge badge-waiting">Waiting</span>';
-  if (status === 'NOTIFIED') return '<span class="badge badge-ready">Notified</span>';
-  if (status === 'SEATED') return '<span class="badge badge-seated">Seated</span>';
-  return `<span class="badge badge-neutral">${escapeHtml(status)}</span>`;
-}
-
 function renderInlineFlash(flash) {
   const className = flash.kind === 'green'
     ? 'alert-green'
@@ -3166,93 +3194,6 @@ function renderInlineFlash(flash) {
         : 'alert-amber';
 
   return `<div class="alert ${className}"><div>${escapeHtml(flash.message)}</div></div>`;
-}
-
-function buildCartSummary(categories, cart) {
-  const itemsById = new Map();
-  categories.forEach((category) => {
-    category.items.forEach((item) => itemsById.set(item.id, item));
-  });
-
-  const lines = Object.entries(cart)
-    .filter(([id, quantity]) => quantity > 0 && itemsById.has(id))
-    .map(([id, quantity]) => {
-      const item = itemsById.get(id);
-      return {
-        id,
-        name: item.name,
-        quantity,
-        unitTotal: menuItemTotal(item),
-        total: menuItemTotal(item) * quantity,
-      };
-    });
-
-  return {
-    lines,
-    total: lines.reduce((sum, line) => sum + line.total, 0),
-  };
-}
-
-async function runHostedPayment({ title, initiatePath, initiateBody, capturePath, prefill, auth, guestToken }) {
-  const initiation = await apiRequest(initiatePath, {
-    method: 'POST',
-    body: initiateBody,
-    auth,
-    guestToken,
-  });
-
-  if (initiation.keyId === 'mock_key') {
-    await apiRequest(capturePath, {
-      method: 'POST',
-      body: {
-        razorpayOrderId: initiation.razorpayOrderId,
-        razorpayPaymentId: `pay_mock_${Date.now()}`,
-        razorpaySignature: 'mock_signature',
-      },
-    });
-    return;
-  }
-
-  await ensureRazorpayLoaded();
-
-  if (!window.Razorpay) {
-    throw new Error('Razorpay checkout failed to load. Please refresh and retry.');
-  }
-
-  await new Promise((resolve, reject) => {
-    const razorpay = new window.Razorpay({
-      key: initiation.keyId,
-      amount: initiation.amount,
-      currency: initiation.currency,
-      name: 'Flock',
-      description: title,
-      order_id: initiation.razorpayOrderId,
-      prefill: {
-        name: prefill?.name || '',
-        contact: prefill?.contact || '',
-      },
-      theme: { color: '#e8a830' },
-      handler: async (response) => {
-        try {
-          await apiRequest(capturePath, {
-            method: 'POST',
-            body: {
-              razorpayOrderId: response.razorpay_order_id || initiation.razorpayOrderId,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature,
-            },
-          });
-          resolve();
-        } catch (error) {
-          reject(error);
-        }
-      },
-      modal: {
-        ondismiss: () => reject(new Error('Payment cancelled before completion.')),
-      },
-    });
-    razorpay.open();
-  });
 }
 
 async function apiRequest(path, options = {}) {
@@ -3296,273 +3237,6 @@ async function apiRequest(path, options = {}) {
   }
 
   return payload.data;
-}
-
-function normaliseApiError(rawError, status) {
-  const fallback = status >= 500
-    ? 'The service is temporarily unavailable. Please retry in a few seconds.'
-    : `Request failed (${status})`;
-
-  if (!rawError) {
-    return fallback;
-  }
-
-  const extractedMessage = extractErrorText(rawError);
-  if (extractedMessage) {
-    return extractedMessage;
-  }
-
-  const errorText = String(rawError).trim();
-  const looksLikeHtml = errorText.startsWith('<!DOCTYPE') || errorText.startsWith('<html');
-
-  if (looksLikeHtml) {
-    if (status === 502 || status === 503 || status === 504) {
-      return 'The hosted app is waking up or temporarily unavailable. Please retry in a few seconds.';
-    }
-    return fallback;
-  }
-
-  if (status === 502 || status === 503 || status === 504) {
-    return 'The hosted app is temporarily unavailable. Please retry in a few seconds.';
-  }
-
-  return errorText;
-}
-
-function describeClientError(error) {
-  if (error instanceof Error) {
-    return normaliseApiError(error.message, 500);
-  }
-
-  if (typeof error === 'string') {
-    return normaliseApiError(error, 500);
-  }
-
-  if (error && typeof error === 'object') {
-    return normaliseApiError(error, 500);
-  }
-
-  return 'Something broke';
-}
-
-function extractErrorText(rawError, depth = 0) {
-  if (!rawError || depth > 3) {
-    return '';
-  }
-
-  if (typeof rawError === 'string') {
-    return rawError.trim();
-  }
-
-  if (rawError instanceof Error) {
-    return rawError.message.trim();
-  }
-
-  if (Array.isArray(rawError)) {
-    for (const item of rawError) {
-      const nested = extractErrorText(item, depth + 1);
-      if (nested) return nested;
-    }
-    return '';
-  }
-
-  if (typeof rawError === 'object') {
-    if (Array.isArray(rawError.details)) {
-      const nested = extractErrorText(rawError.details, depth + 1);
-      if (nested) return nested;
-    }
-
-    for (const key of ['message', 'error', 'detail']) {
-      if (key in rawError) {
-        const nested = extractErrorText(rawError[key], depth + 1);
-        if (nested) return nested;
-      }
-    }
-  }
-
-  return '';
-}
-
-async function ensureRazorpayLoaded() {
-  if (window.Razorpay) {
-    return;
-  }
-
-  if (!razorpayLoaderPromise) {
-    razorpayLoaderPromise = new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.async = true;
-      script.onload = () => resolve();
-      script.onerror = () => {
-        razorpayLoaderPromise = null;
-        reject(new Error('Razorpay checkout failed to load. Please refresh and retry.'));
-      };
-      document.head.appendChild(script);
-    });
-  }
-
-  await razorpayLoaderPromise;
-}
-
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function formatMoney(paise) {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 2,
-  }).format((paise || 0) / 100);
-}
-
-function menuItemTotal(item) {
-  const base = item.priceExGst || 0;
-  const total = base + Math.round(base * ((item.gstPercent || 0) / 100));
-  return total;
-}
-
-function normalisePhone(value) {
-  const digits = String(value || '').replace(/\D/g, '');
-  return digits.slice(-10);
-}
-
-function getGuestEntryId(slug) {
-  return localStorage.getItem(`${GUEST_ENTRY_PREFIX}${slug}`);
-}
-
-function setGuestEntryId(slug, entryId) {
-  localStorage.setItem(`${GUEST_ENTRY_PREFIX}${slug}`, entryId);
-}
-
-function clearGuestEntryId(slug) {
-  localStorage.removeItem(`${GUEST_ENTRY_PREFIX}${slug}`);
-}
-
-function getGuestSession(entryId) {
-  try {
-    return JSON.parse(localStorage.getItem(`${GUEST_SESSION_PREFIX}${entryId}`) || 'null');
-  } catch (_error) {
-    return null;
-  }
-}
-
-function setGuestSession(session) {
-  localStorage.setItem(`${GUEST_SESSION_PREFIX}${session.entryId}`, JSON.stringify(session));
-}
-
-function clearGuestSession(entryId) {
-  localStorage.removeItem(`${GUEST_SESSION_PREFIX}${entryId}`);
-}
-
-function getStaffAuth() {
-  try {
-    return JSON.parse(localStorage.getItem(STAFF_AUTH_KEY) || 'null');
-  } catch (_error) {
-    return null;
-  }
-}
-
-function clearStaffAuth() {
-  localStorage.removeItem(STAFF_AUTH_KEY);
-}
-
-function setFlash(kind, message) {
-  sessionStorage.setItem(FLASH_KEY, JSON.stringify({ kind, message }));
-}
-
-function consumeFlash() {
-  const raw = sessionStorage.getItem(FLASH_KEY);
-  if (!raw) return null;
-  sessionStorage.removeItem(FLASH_KEY);
-  try {
-    return JSON.parse(raw);
-  } catch (_error) {
-    return null;
-  }
-}
-
-function getCart(entryId) {
-  try {
-    return JSON.parse(localStorage.getItem(`${PREORDER_CART_PREFIX}${entryId}`) || '{}');
-  } catch (_error) {
-    return {};
-  }
-}
-
-function setCart(entryId, cart) {
-  localStorage.setItem(`${PREORDER_CART_PREFIX}${entryId}`, JSON.stringify(cart));
-}
-
-function updateCart(entryId, menuItemId, delta) {
-  const cart = getCart(entryId);
-  const current = cart[menuItemId] || 0;
-  const next = Math.max(0, current + delta);
-  if (next === 0) {
-    delete cart[menuItemId];
-  } else {
-    cart[menuItemId] = next;
-  }
-  setCart(entryId, cart);
-}
-
-function getTableCart(entryId) {
-  try {
-    return JSON.parse(localStorage.getItem(`${TABLE_CART_PREFIX}${entryId}`) || '{}');
-  } catch (_error) {
-    return {};
-  }
-}
-
-function setTableCart(entryId, cart) {
-  localStorage.setItem(`${TABLE_CART_PREFIX}${entryId}`, JSON.stringify(cart));
-}
-
-function updateTableCart(entryId, menuItemId, delta) {
-  const cart = getTableCart(entryId);
-  const current = cart[menuItemId] || 0;
-  const next = Math.max(0, current + delta);
-  if (next === 0) {
-    delete cart[menuItemId];
-  } else {
-    cart[menuItemId] = next;
-  }
-  setTableCart(entryId, cart);
-}
-
-function normaliseDraftCart(cart) {
-  return Object.fromEntries(
-    Object.entries(cart || {})
-      .filter(([, quantity]) => Number(quantity) > 0)
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([menuItemId, quantity]) => [menuItemId, Math.min(99, Math.max(0, Math.floor(Number(quantity) || 0)))]),
-  );
-}
-
-function serialiseDraftCart(cart) {
-  return JSON.stringify(normaliseDraftCart(cart));
-}
-
-function bucketItemsToCart(bucketItems) {
-  return (bucketItems || []).reduce((acc, item) => {
-    if (item.quantity > 0) {
-      acc[item.menuItemId] = item.quantity;
-    }
-    return acc;
-  }, {});
-}
-
-function cartToBucketItems(cart) {
-  return Object.entries(normaliseDraftCart(cart)).map(([menuItemId, quantity]) => ({
-    menuItemId,
-    quantity,
-  }));
 }
 
 const BucketStore = {
@@ -3728,9 +3402,10 @@ async function refreshPartySessionState({ includeSummary = false, rerender = tru
     uiState.partyBucket.lastSyncError = error.message || 'Shared bucket refresh failed.';
     uiState.partyPoll.failureCount += 1;
     uiState.partyPoll.lastError = uiState.partyBucket.lastSyncError;
-    uiState.partyPoll.nextDelayMs = Math.min(
+    uiState.partyPoll.nextDelayMs = computePartyPollBackoff(
+      uiState.partyPoll.baseDelayMs,
       uiState.partyPoll.maxDelayMs,
-      uiState.partyPoll.baseDelayMs * (2 ** Math.min(uiState.partyPoll.failureCount, 4)),
+      uiState.partyPoll.failureCount,
     );
     if (rerender) {
       rerenderActiveGuestShell();
@@ -3823,11 +3498,10 @@ function startPartySessionPolling() {
   const runTick = async () => {
     const pollSucceeded = await refreshPartySessionState({ includeSummary: false, rerender: true });
     if (uiState.activePartySessionId && uiState.activeGuestView?.entry?.status === 'SEATED') {
-      const hiddenDelay = document.hidden ? Math.max(uiState.partyPoll.nextDelayMs, 12000) : uiState.partyPoll.nextDelayMs;
       const jitter = Math.floor(Math.random() * 450);
       uiState.partyPollerId = window.setTimeout(() => {
         runTick().catch(() => {});
-      }, hiddenDelay + jitter);
+      }, computeScheduledPartyPollDelay(uiState.partyPoll.nextDelayMs, document.hidden, jitter));
     }
     if (pollSucceeded && !document.hidden) {
       uiState.partyPoll.nextDelayMs = uiState.partyPoll.baseDelayMs;
@@ -3872,18 +3546,6 @@ function getSuggestedTableId(entry, tables) {
     return entry.table.id;
   }
   return candidates.sort((a, b) => a.capacity - b.capacity)[0]?.id || '';
-}
-
-function formatRelativeStamp(timestamp) {
-  if (!timestamp) return 'just now';
-  const diffMs = Math.max(0, Date.now() - Number(timestamp));
-  const diffSeconds = Math.round(diffMs / 1000);
-  if (diffSeconds < 5) return 'just now';
-  if (diffSeconds < 60) return `${diffSeconds}s ago`;
-  const diffMinutes = Math.round(diffSeconds / 60);
-  if (diffMinutes < 60) return `${diffMinutes}m ago`;
-  const diffHours = Math.round(diffMinutes / 60);
-  return `${diffHours}h ago`;
 }
 
 function resetStaffSeatState() {

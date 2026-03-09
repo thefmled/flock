@@ -13,7 +13,7 @@ const DEVICES = [
 
 export default defineConfig({
   testDir: './tests',
-  timeout: 60_000,
+  timeout: 90_000,
   expect: {
     toHaveScreenshot: {
       maxDiffPixelRatio: 0.03,
@@ -23,6 +23,9 @@ export default defineConfig({
     baseURL: BASE_URL,
     colorScheme: 'dark',
     locale: 'en-IN',
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
   },
   projects: DEVICES.map((d) => ({
     name: d.name,

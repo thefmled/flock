@@ -12,8 +12,15 @@
     "db:seed": "ts-node prisma/seed.ts",
     "db:studio": "prisma studio",
     "mcp:setup": "bash scripts/setup-mcp.sh",
-    "test:visual": "npx playwright test",
-    "test:visual:update": "npx playwright test --update-snapshots"
+    "test:unit": "vitest run --config vitest.config.ts --project unit",
+    "test:integration": "vitest run --config vitest.config.ts --project integration",
+    "test:contract": "vitest run --config vitest.config.ts --project contract",
+    "test:e2e:local": "FLOCK_TEST_URL=${FLOCK_TEST_URL:-http://localhost:3000} npx playwright test tests/e2e.local.spec.ts --project=iPhone-14 --project=Galaxy-S23 --workers=1",
+    "test:e2e:prod": "FLOCK_TEST_URL=${FLOCK_TEST_URL:-https://taurant.onrender.com} npx playwright test tests/e2e.prod.spec.ts --project=iPhone-14 --project=Galaxy-S23 --workers=1",
+    "test:devtools:prod": "FLOCK_TEST_URL=${FLOCK_TEST_URL:-https://taurant.onrender.com} node scripts/run-devtools-prod-audit.mjs",
+    "test:visual": "npx playwright test tests/visual-regression.spec.ts",
+    "test:visual:update": "npx playwright test tests/visual-regression.spec.ts --update-snapshots",
+    "test:all": "npm run test:unit && npm run test:integration && npm run test:contract"
   },
   "dependencies": {
     "@prisma/client": "^5.10.0",
@@ -41,8 +48,14 @@
     "@types/jsonwebtoken": "^9.0.6",
     "@types/morgan": "^1.9.9",
     "@types/node": "^20.11.28",
+    "@types/supertest": "^7.2.0",
     "@types/uuid": "^9.0.8",
+    "@vitest/coverage-v8": "^4.0.18",
+    "jsdom": "^28.1.0",
+    "node-mocks-http": "^1.17.2",
     "prisma": "^5.10.0",
-    "ts-node-dev": "^2.0.0"
+    "supertest": "^7.2.2",
+    "ts-node-dev": "^2.0.0",
+    "vitest": "^4.0.18"
   }
 }

@@ -6,7 +6,7 @@ import { connectDatabase, disconnectDatabase } from './config/database';
 import { closeRedis, connectRedis } from './config/redis';
 import { startTmsPoller } from './workers/tmsPoller';
 
-async function bootstrap(): Promise<void> {
+export async function bootstrap(): Promise<void> {
   if (env.isProd() && (env.USE_MOCK_PAYMENTS || env.USE_MOCK_NOTIFICATIONS || env.USE_MOCK_GST)) {
     logger.warn(
       '⚠️  PILOT MODE: Mock integrations are enabled in production. ' +
@@ -19,7 +19,9 @@ async function bootstrap(): Promise<void> {
   await connectRedis();
 
   // Start background workers
-  const tmsPoller = startTmsPoller();
+  const tmsPoller = env.DISABLE_TMS_POLLER || env.isTest()
+    ? null
+    : startTmsPoller();
 
   // Start HTTP server
   const server = app.listen(env.PORT, () => {
@@ -30,7 +32,9 @@ async function bootstrap(): Promise<void> {
   // Graceful shutdown
   const shutdown = async (signal: string): Promise<void> => {
     logger.info(`${signal} received — shutting down gracefully`);
-    clearInterval(tmsPoller);
+    if (tmsPoller) {
+      clearInterval(tmsPoller);
+    }
     server.close(async () => {
       await disconnectDatabase();
       await closeRedis();
@@ -44,7 +48,9 @@ async function bootstrap(): Promise<void> {
   process.on('SIGINT',  () => shutdown('SIGINT'));
 }
 
-bootstrap().catch((err) => {
-  console.error('Bootstrap failed:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  bootstrap().catch((err) => {
+    console.error('Bootstrap failed:', err);
+    process.exit(1);
+  });
+}

@@ -66,7 +66,9 @@ export const env = {
 
   TMS_POLL_INTERVAL_MS:       parseInt(optional('TMS_POLL_INTERVAL_MS', '4000'), 10),
   TABLE_READY_WINDOW_MINUTES: parseInt(optional('TABLE_READY_WINDOW_MINUTES', '10'), 10),
+  DISABLE_TMS_POLLER: optional('DISABLE_TMS_POLLER', 'false') === 'true',
 
   isProd: () => process.env.NODE_ENV === 'production',
   isDev:  () => process.env.NODE_ENV !== 'production',
+  isTest: () => process.env.NODE_ENV === 'test',
 };
