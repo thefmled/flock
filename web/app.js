@@ -2226,11 +2226,13 @@ function showFlowLogModal(entryId, events) {
     DEPOSIT_REFUNDED: 'Deposit refunded',
   };
 
+  const isReconstructed = events.length > 0 && events[0].reconstructed;
+
   const rows = events.length
     ? events.map((ev) => {
         const snap = ev.snapshot || {};
         const details = Object.entries(snap)
-          .filter(([, v]) => v !== null && v !== undefined)
+          .filter(([k, v]) => v !== null && v !== undefined && k !== 'note')
           .map(([k, v]) => `<span class="mono">${escapeHtml(k)}</span>: ${typeof v === 'object' ? escapeHtml(JSON.stringify(v)) : escapeHtml(String(v))}`)
           .join(' · ');
         return `
@@ -2250,7 +2252,7 @@ function showFlowLogModal(entryId, events) {
     <div class="flow-log-panel">
       <div class="flow-log-header">
         <div class="card-title">Order flow log</div>
-        <div class="card-sub">Entry <span class="mono">${escapeHtml(entryId.slice(0, 8))}</span> · ${events.length} event${events.length === 1 ? '' : 's'}</div>
+        <div class="card-sub">Entry <span class="mono">${escapeHtml(entryId.slice(0, 8))}</span> · ${events.length} event${events.length === 1 ? '' : 's'}${isReconstructed ? ' · <em>Reconstructed from records</em>' : ''}</div>
         <button class="btn btn-secondary btn-sm flow-log-close" type="button">&times; Close</button>
       </div>
       <div class="flow-log-body">${rows}</div>

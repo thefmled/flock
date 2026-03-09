@@ -8,6 +8,9 @@ import { PaymentType, PaymentStatus, OrderType } from '@prisma/client';
 import { completeQueueEntry } from './queue.service';
 import { selectBillableOrders } from './order.service';
 import { logFlowEvent, OrderFlowEventType } from './orderFlowEvent.service';
+import { env } from '../config/env';
+
+const paymentKeyId = env.USE_MOCK_PAYMENTS ? 'mock_key' : (env.RAZORPAY_KEY_ID || 'mock_key');
 
 // ── Initiate deposit payment for pre-order ────────────────────────
 
@@ -56,7 +59,7 @@ export async function initiateDeposit(params: {
       balanceAtTable: order.totalIncGst - existingPending.amount,
       razorpayOrderId: existingPending.razorpayOrderId,
       currency: 'INR',
-      keyId: process.env.RAZORPAY_KEY_ID ?? 'mock_key',
+      keyId: paymentKeyId,
     };
   }
 
@@ -107,7 +110,7 @@ export async function initiateDeposit(params: {
     balanceAtTable: order.totalIncGst - depositAmount,
     razorpayOrderId: rzpOrder.id,
     currency:       'INR',
-    keyId:          process.env.RAZORPAY_KEY_ID ?? 'mock_key',
+    keyId:          paymentKeyId,
   };
 }
 
@@ -168,7 +171,7 @@ export async function initiateFinalPayment(params: {
       amount: existingPending.amount,
       razorpayOrderId: existingPending.razorpayOrderId,
       currency: 'INR',
-      keyId: process.env.RAZORPAY_KEY_ID ?? 'mock_key',
+      keyId: paymentKeyId,
     };
   }
 
@@ -211,7 +214,7 @@ export async function initiateFinalPayment(params: {
     amount: bill.balanceDue,
     razorpayOrderId: rzpOrder.id,
     currency: 'INR',
-    keyId: process.env.RAZORPAY_KEY_ID ?? 'mock_key',
+    keyId: paymentKeyId,
   };
 }
 
