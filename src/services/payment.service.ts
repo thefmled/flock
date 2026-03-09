@@ -433,8 +433,11 @@ async function capturePaymentByOrder(params: {
     }
   }
 
-  await prisma.payment.update({
-    where: { id: payment.id },
+  // Atomic conditional update: only capture if not already CAPTURED.
+  // Prevents double-increment of depositPaid when client callback and
+  // Razorpay webhook race each other.
+  const { count: updatedCount } = await prisma.payment.updateMany({
+    where: { id: payment.id, status: { not: PaymentStatus.CAPTURED } },
     data: {
       status: PaymentStatus.CAPTURED,
       razorpayPaymentId: params.razorpayPaymentId,
@@ -442,6 +445,11 @@ async function capturePaymentByOrder(params: {
       capturedAt: new Date(),
     },
   });
+
+  if (updatedCount === 0) {
+    const fresh = await prisma.payment.findFirst({ where: { id: payment.id } });
+    return { ...payment, ...fresh };
+  }
 
   if (payment.type === PaymentType.DEPOSIT) {
     await prisma.queueEntry.update({
