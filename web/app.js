@@ -76,6 +76,8 @@ const uiState = {
   staffLastUpdatedAt: 0,
   staffStats: null,
   staffStatsFetchedAt: 0,
+  staffHistory: [],
+  staffHistoryLoadedAt: 0,
   adminTab: 'menu',
   adminMenu: {
     categories: [],
@@ -1461,6 +1463,17 @@ async function renderStaffDashboard() {
     uiState.staffLastUpdatedAt = Date.now();
   }
 
+  if (currentTab === 'history' && (Date.now() - uiState.staffHistoryLoadedAt) >= 15000) {
+    try {
+      const history = await apiRequest('/queue/history/recent', { auth: true });
+      uiState.staffHistory = history;
+      uiState.staffHistoryLoadedAt = Date.now();
+    } catch (error) {
+      if (isAuthErrorMessage(error.message)) { clearStaffAuth(); navigate('/staff/login'); return; }
+      dependencyWarnings.push('History');
+    }
+  }
+
   renderPage(renderShell({
     pill: 'Staff',
     body: `
@@ -1487,12 +1500,14 @@ async function renderStaffDashboard() {
       <div class="tabs">
         ${renderTabButton('queue', 'Queue', currentTab)}
         ${renderTabButton('seated', 'Seated', currentTab)}
+        ${renderTabButton('history', 'History', currentTab)}
         ${renderTabButton('tables', 'Tables', currentTab)}
         ${renderTabButton('seat', 'Seat OTP', currentTab)}
         ${renderTabButton('manager', 'Manager', currentTab)}
       </div>
       ${currentTab === 'queue' ? renderQueueTab(waiting, tables) : ''}
       ${currentTab === 'seated' ? renderSeatedTab(seated, seatedBills) : ''}
+      ${currentTab === 'history' ? renderHistoryTab() : ''}
       ${currentTab === 'tables' ? renderTablesTab(tables, recentTableEvents) : ''}
       ${currentTab === 'seat' ? renderSeatTab(tables) : ''}
       ${currentTab === 'manager' ? renderManagerTab({ auth, venue, queue }) : ''}
@@ -1922,7 +1937,7 @@ function renderQueueTab(waiting, tables) {
           ${entry.depositPaid > 0 ? '<span class="badge badge-neutral">Deposit</span>' : ''}
           ${entry.preOrderTotal > 0 ? '<span class="badge badge-neutral">Pre-order</span>' : ''}
         </div>
-        <div class="q-row-meta">${escapeHtml(entry.guestPhone)} · ${entry.partySize} pax · OTP <span class="mono">${escapeHtml(entry.otp)}</span></div>
+        <div class="q-row-meta">${escapeHtml(entry.guestPhone)} · ${entry.partySize} pax · OTP <span class="mono">${escapeHtml(entry.otp)}</span>${entry.displayRef ? ` · <span class="mono">${escapeHtml(entry.displayRef)}</span>` : ''}</div>
         <div class="q-row-orders">
           ${entry.estimatedWaitMin ? `ETA ~${entry.estimatedWaitMin} mins` : 'Awaiting table match'}
           ${entry.table?.label ? ` · Reserved ${escapeHtml(entry.table.label)}` : ''}
@@ -1950,7 +1965,7 @@ function renderSeatedTab(seated, seatedBills) {
             <span class="badge badge-seated">Seated</span>
             ${entry.depositPaid > 0 ? '<span class="badge badge-neutral">Deposit</span>' : ''}
           </div>
-          <div class="q-row-meta">${escapeHtml(entry.guestPhone)} · ${entry.partySize} pax${entry.table?.section ? ` · ${escapeHtml(entry.table.section)}` : ''}</div>
+          <div class="q-row-meta">${escapeHtml(entry.guestPhone)} · ${entry.partySize} pax${entry.table?.section ? ` · ${escapeHtml(entry.table.section)}` : ''}${entry.displayRef ? ` · <span class="mono">${escapeHtml(entry.displayRef)}</span>` : ''}</div>
           <div class="q-row-orders">${entry.orders?.length ? renderGuestOrderItems(entry.orders.flatMap((order) => order.items || [])) : 'No orders posted yet.'}</div>
         </div>
         <div class="q-row-actions" style="align-items:flex-end;">
@@ -1962,6 +1977,40 @@ function renderSeatedTab(seated, seatedBills) {
       </div>
     `;
   }).join('') : '<div class="empty-state">No seated parties are active right now.</div>';
+}
+
+function renderHistoryTab() {
+  const entries = uiState.staffHistory || [];
+  if (!entries.length) return '<div class="empty-state">No completed sessions found yet.</div>';
+
+  const statusLabel = { COMPLETED: 'Completed', CANCELLED: 'Cancelled', NO_SHOW: 'No-show' };
+
+  return entries.map((entry) => {
+    const totalPaise = (entry.orders || []).reduce((s, o) => s + (o.totalIncGst || 0), 0);
+    const statusBadge = entry.status === 'COMPLETED'
+      ? '<span class="badge badge-seated">Completed</span>'
+      : entry.status === 'CANCELLED'
+        ? '<span class="badge badge-danger">Cancelled</span>'
+        : `<span class="badge badge-neutral">${escapeHtml(statusLabel[entry.status] || entry.status)}</span>`;
+    return `
+      <div class="q-row">
+        <div class="q-row-num">${entry.table?.label ? escapeHtml(entry.table.label) : '-'}</div>
+        <div class="q-row-info">
+          <div class="q-row-name">
+            ${escapeHtml(entry.guestName)}
+            ${statusBadge}
+            ${entry.depositPaid > 0 ? '<span class="badge badge-neutral">Deposit</span>' : ''}
+          </div>
+          <div class="q-row-meta">${escapeHtml(entry.guestPhone)} · ${entry.partySize} pax${entry.displayRef ? ` · <span class="mono">${escapeHtml(entry.displayRef)}</span>` : ''}</div>
+          <div class="q-row-meta muted">${formatRelativeStamp(new Date(entry.completedAt || entry.updatedAt).getTime())}</div>
+        </div>
+        <div class="q-row-actions" style="align-items:flex-end;">
+          <div class="muted">${totalPaise ? `Total ${formatMoney(totalPaise)}` : 'No orders'}</div>
+          <button class="btn btn-secondary btn-sm" data-view-flow="${entry.id}" style="margin-top:4px;">Flow log</button>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 function renderTablesTab(tables, recentTableEvents) {
@@ -2485,6 +2534,7 @@ function renderSeatedGuestShell({ entry, venue, bill, guestSession }) {
         <div class="guest-shell-sub">Add to your next round from Menu, review live totals in Ordered, and only pay the remaining balance when ready.</div>
         <div class="guest-shell-meta">${participantCount} guest${participantCount === 1 ? '' : 's'} in this table session</div>
         ${entry.table?.section ? `<div class="guest-shell-meta">Section: ${escapeHtml(entry.table.section)}</div>` : ''}
+        ${entry.displayRef ? `<div class="guest-shell-meta">Ref: <span class="mono">${escapeHtml(entry.displayRef)}</span></div>` : ''}
       </div>
       <div id="guest-tray-host"></div>
       <div id="guest-floating-pay-host">${renderFloatingPayButton(bill?.summary?.balanceDue || 0)}</div>
@@ -2768,6 +2818,11 @@ function mountSeatedGuestExperience({ slug, entry, venue, bill, guestSession }) 
   startPartySessionPolling();
 }
 
+function renderSessionRef(entry) {
+  if (!entry.displayRef) return '';
+  return `<div class="session-ref">Session ref: <span class="mono">${escapeHtml(entry.displayRef)}</span></div>`;
+}
+
 function renderGuestStateHero(entry, guestSession) {
   const guestOtp = guestSession?.otp;
 
@@ -2778,6 +2833,7 @@ function renderGuestStateHero(entry, guestSession) {
         <div class="queue-pos-num">${entry.position}</div>
         <div class="queue-pos-label">Queue position</div>
         <div class="queue-pos-sub">We will notify you when a matching table clears.</div>
+        ${renderSessionRef(entry)}
       </div>
       <div class="wait-strip">
         <span class="wait-strip-ring" style="--pct:${pct}%"></span>
@@ -2797,6 +2853,7 @@ function renderGuestStateHero(entry, guestSession) {
         <div class="queue-pos-num">${escapeHtml(entry.table?.label || 'Now')}</div>
         <div class="queue-pos-label">Table ready</div>
         <div class="queue-pos-sub">Head to the entrance and show the OTP to staff.</div>
+        ${renderSessionRef(entry)}
       </div>
       <div class="otp-block">
         <div class="otp-num">${guestOtp ? escapeHtml(guestOtp) : 'Active'}</div>
@@ -2821,6 +2878,7 @@ function renderGuestStateHero(entry, guestSession) {
         <div class="queue-pos-num">Done</div>
         <div class="queue-pos-label">Service complete</div>
         <div class="queue-pos-sub">Payment is captured and the table can move into the next turn.</div>
+        ${renderSessionRef(entry)}
       </div>
     `;
   }

@@ -269,6 +269,7 @@ model MenuItem {
 model QueueEntry {
   id               String           @id @default(uuid())
   venueId          String
+  displayRef       String?          @unique
   guestName        String
   guestPhone       String
   partySize        Int

@@ -11,6 +11,7 @@ import { signGuestToken } from '../utils/jwt';
 import { initiateRefund } from '../integrations/razorpay';
 import { ensurePartySessionForQueueEntry } from './partySession.service';
 import { logFlowEvent, OrderFlowEventType } from './orderFlowEvent.service';
+import { generateDisplayRef } from '../utils/txnRef';
 
 const AVG_TURN_MINUTES = 55; // used for wait time estimation
 
@@ -45,6 +46,7 @@ export async function joinQueue(params: {
   const entry = await prisma.queueEntry.create({
     data: {
       venueId:         params.venueId,
+      displayRef:      generateDisplayRef(),
       guestName:       params.guestName,
       guestPhone:      params.guestPhone,
       partySize:       params.partySize,
@@ -133,6 +135,31 @@ export async function getVenueQueue(venueId: string) {
     },
   });
   return entries;
+}
+
+// ── Get recent completed / cancelled entries (history) ────────────
+
+export async function getRecentCompletedEntries(venueId: string, limit = 20) {
+  return prisma.queueEntry.findMany({
+    where: { venueId, status: { in: ['COMPLETED', 'CANCELLED', 'NO_SHOW'] } },
+    orderBy: { updatedAt: 'desc' },
+    take: limit,
+    include: {
+      table: { select: { id: true, label: true, section: true } },
+      orders: {
+        where: { status: { notIn: ['CANCELLED'] } },
+        select: {
+          id: true,
+          type: true,
+          status: true,
+          totalIncGst: true,
+          items: {
+            select: { id: true, name: true, quantity: true },
+          },
+        },
+      },
+    },
+  });
 }
 
 // ── Get single entry ───────────────────────────────────────────────

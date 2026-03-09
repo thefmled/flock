@@ -12,6 +12,19 @@ export function generateTxnRef(): string {
 }
 
 /**
+ * Generate a short human-readable session reference for guest-facing display.
+ * Format: FLK-XXXXXX (6 alphanumeric chars, uppercase)
+ */
+export function generateDisplayRef(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let ref = '';
+  for (let i = 0; i < 6; i++) {
+    ref += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return `FLK-${ref}`;
+}
+
+/**
  * Generate sequential invoice number.
  * Format: FLOCK/YYYY-YY/XXXXX
  */

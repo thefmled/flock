@@ -82,3 +82,10 @@ export async function getEntryFlowEvents(req: AuthenticatedRequest, res: Respons
     ok(res, events, { count: events.length });
   } catch (e) { next(e); }
 }
+
+export async function getRecentHistory(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const entries = await QueueService.getRecentCompletedEntries(req.venue!.id);
+    ok(res, entries, { count: entries.length });
+  } catch (e) { next(e); }
+}
