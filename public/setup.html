@@ -5,6 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Set up your venue — flock</title>
   <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .seating-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .chip {
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 13px;
+      background: transparent;
+      color: var(--text);
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .chip.selected {
+      background: var(--accent);
+      color: var(--accent-text);
+      border-color: var(--accent);
+    }
+    .chip.add-chip {
+      border-style: dashed;
+    }
+    .chip-remove {
+      font-size: 14px;
+      opacity: 0.6;
+    }
+  </style>
 </head>
 <body class="theme-dark-premium">
   <main class="container" style="max-width: 560px; padding-top: 64px;">
@@ -40,8 +73,8 @@
       </div>
 
       <div class="input-group">
-        <label for="seatingOptions">Seating options (comma-separated)</label>
-        <input type="text" id="seatingOptions" value="Indoor,Outdoor,No preference" />
+        <label>Seating options</label>
+        <div class="seating-chips" id="seatingChips"></div>
       </div>
 
       <button class="button" onclick="createVenue()">Create venue</button>
@@ -54,6 +87,48 @@
       window.location.href = '/login.html';
     }
 
+    let seatingOptions = [
+      { name: 'Indoor', selected: true },
+      { name: 'Outdoor', selected: true },
+      { name: 'No preference', selected: true },
+    ];
+
+    function renderChips() {
+      const container = document.getElementById('seatingChips');
+      container.innerHTML = seatingOptions.map((opt, i) => `
+        <button class="chip ${opt.selected ? 'selected' : ''}" onclick="toggleChip(${i})">
+          ${escapeHtml(opt.name)}
+          ${opt.name !== 'No preference' ? `<span class="chip-remove" onclick="removeChip(${i}); event.stopPropagation();">×</span>` : ''}
+        </button>
+      `).join('') + `
+        <button class="chip add-chip" onclick="addChip()">+ Add option</button>
+      `;
+    }
+
+    function toggleChip(i) {
+      seatingOptions[i].selected = !seatingOptions[i].selected;
+      renderChips();
+    }
+
+    function removeChip(i) {
+      seatingOptions.splice(i, 1);
+      renderChips();
+    }
+
+    function addChip() {
+      const name = prompt('New seating option (e.g. Bar, Rooftop):');
+      if (name && name.trim()) {
+        seatingOptions.push({ name: name.trim(), selected: true });
+        renderChips();
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    renderChips();
+
     async function createVenue() {
       const errorEl = document.getElementById('setupError');
       errorEl.textContent = '';
@@ -64,7 +139,7 @@
         address: document.getElementById('venueAddress').value.trim(),
         menuPdfUrl: document.getElementById('menuPdfUrl').value.trim() || null,
         googleReviewsUrl: document.getElementById('googleReviewsUrl').value.trim() || null,
-        seatingOptions: document.getElementById('seatingOptions').value.trim() || 'Indoor,Outdoor,No preference',
+        seatingOptions: seatingOptions.filter(o => o.selected).map(o => o.name).join(',') || 'Indoor,Outdoor,No preference',
       };
 
       if (!payload.floorManagerName || !payload.name || !payload.address) {
