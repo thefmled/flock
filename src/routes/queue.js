@@ -13,12 +13,25 @@ async function computeWaitTimes(entries, venue) {
 
   for (let idx = 0; idx < entries.length; idx++) {
     const entry = entries[idx];
-    const baseSnap = entry.waitTimeBaseAtJoin ?? venue.waitTimeBase;
     const inc = entry.waitTimeIncrementAtJoin ?? venue.waitTimeIncrement;
     const cap = entry.waitTimeCapAtJoin ?? venue.waitTimeCap;
 
     let wait;
     if (idx === 0) {
+      // First time hitting position #1: re-anchor base to current venue base
+      if (!entry.hasBeenPositionOne) {
+        await prisma.queueEntry.update({
+          where: { id: entry.id },
+          data: {
+            waitTimeBaseAtJoin: venue.waitTimeBase,
+            hasBeenPositionOne: true,
+          },
+        });
+        entry.waitTimeBaseAtJoin = venue.waitTimeBase;
+        entry.hasBeenPositionOne = true;
+      }
+
+      const baseSnap = entry.waitTimeBaseAtJoin;
       const newBase = Math.min(baseSnap, venue.waitTimeBase);
       // Persist if it dropped
       if (newBase < baseSnap) {
