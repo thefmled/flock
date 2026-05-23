@@ -17,6 +17,11 @@ function calculateWaitTime(venue, position) {
 router.post('/join/:slug', async (req, res) => {
   try {
     const { guestName, guestPhone, partySize } = req.body;
+    // Validate phone (Indian 10-digit starting 6-9)
+    const phoneClean = (guestPhone || '').replace(/\D/g, '');
+    if (!/^[6-9]\d{9}$/.test(phoneClean)) {
+      return res.status(400).json({ error: 'Please enter a valid 10-digit Indian phone number.' });
+    }
     if (!guestName || !guestPhone || !partySize) {
       return res.status(400).json({ error: 'Name, phone, and party size required' });
     }
@@ -31,7 +36,7 @@ router.post('/join/:slug', async (req, res) => {
         id: generateId(),
         venueId: venue.id,
         guestName,
-        guestPhone,
+        guestPhone: phoneClean,
         partySize: parseInt(partySize),
         seatingPreference: seatingPreference || null,
         notes: notes || null,
