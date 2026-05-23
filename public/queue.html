@@ -80,16 +80,22 @@
       const errorEl = document.getElementById('joinError');
       errorEl.textContent = '';
 
+      const phone = document.getElementById('guestPhone').value.replace(/\D/g, '');
+      if (!/^[6-9]\d{9}$/.test(phone)) {
+        errorEl.textContent = 'Enter a valid 10-digit Indian phone number.';
+        return;
+      }
+
       const payload = {
         guestName: document.getElementById('guestName').value.trim(),
-        guestPhone: document.getElementById('guestPhone').value.trim(),
+        guestPhone: phone,
         partySize: document.getElementById('partySize').value,
         seatingPreference: document.getElementById('seatingPreference').value || null,
         notes: document.getElementById('notes').value.trim() || null,
       };
 
-      if (!payload.guestName || !payload.guestPhone) {
-        errorEl.textContent = 'Name and phone are required.';
+      if (!payload.guestName) {
+        errorEl.textContent = 'Name is required.';
         return;
       }
 
