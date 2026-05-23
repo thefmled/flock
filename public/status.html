@@ -100,6 +100,7 @@ async function loadStatus() {
       waitLabel.style.display = 'block';
       wait.dataset.joinedAt = data.entry.joinedAt;
       wait.dataset.baseWait = data.waitMinutes;
+      wait.dataset.minWait = data.entry.waitTimeBaseAtJoin || data.waitMinutes;
       wait.textContent = '~' + data.waitMinutes + ' minutes';
       document.getElementById('leaveBtn').style.display = 'block';
     }
@@ -136,7 +137,8 @@ setInterval(() => {
     const joinedAt = new Date(waitEl.dataset.joinedAt).getTime();
     const elapsed = Math.floor((Date.now() - joinedAt) / 60000);
     const baseWait = parseInt(waitEl.dataset.baseWait);
-    const remaining = Math.max(8, baseWait - elapsed);
+    const minWait = parseInt(waitEl.dataset.minWait) || baseWait;
+    const remaining = Math.max(minWait, baseWait - elapsed);
     waitEl.textContent = '~' + remaining + ' minutes';
   }
 }, 1000);
