@@ -386,7 +386,7 @@
         const joinedAt = new Date(el.dataset.joinedAt).getTime();
         const elapsed = Math.floor((Date.now() - joinedAt) / 60000);
         const baseWait = parseInt(el.dataset.baseWait);
-        const remaining = Math.max(3, baseWait - elapsed);
+        const remaining = Math.max(8, baseWait - elapsed);
         el.textContent = '~' + remaining + 'm';
       });
     }, 1000);
