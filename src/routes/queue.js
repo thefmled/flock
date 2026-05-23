@@ -8,12 +8,27 @@ function generateId() {
   return 'c' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
 
-function calculateWaitTime(entryOrVenue, position) {
-  // Prefer snapshot on entry; fall back to current venue settings
-  const base = entryOrVenue.waitTimeBaseAtJoin ?? entryOrVenue.waitTimeBase;
-  const inc = entryOrVenue.waitTimeIncrementAtJoin ?? entryOrVenue.waitTimeIncrement;
-  const cap = entryOrVenue.waitTimeCapAtJoin ?? entryOrVenue.waitTimeCap;
-  return Math.min(base + inc * (position - 1), cap);
+function computeWaitTimes(entries, venue) {
+  // entries sorted by joinedAt ascending
+  // Returns array of wait times in minutes
+  const waitTimes = [];
+
+  entries.forEach((entry, idx) => {
+    const base = entry.waitTimeBaseAtJoin ?? venue.waitTimeBase;
+    const inc = entry.waitTimeIncrementAtJoin ?? venue.waitTimeIncrement;
+    const cap = entry.waitTimeCapAtJoin ?? venue.waitTimeCap;
+
+    let wait;
+    if (idx === 0) {
+      wait = base;
+    } else {
+      wait = waitTimes[idx - 1] + inc;
+    }
+    wait = Math.min(wait, cap);
+    waitTimes.push(wait);
+  });
+
+  return waitTimes;
 }
 
 // Add a guest to the queue (public — guest scans QR)
@@ -62,15 +77,12 @@ router.post('/join/:slug', async (req, res) => {
     });
 
     // Calculate guest's position
-    const waitingAhead = await prisma.queueEntry.count({
-      where: {
-        venueId: venue.id,
-        status: 'waiting',
-        joinedAt: { lt: entry.joinedAt },
-      },
+    const allWaiting = await prisma.queueEntry.findMany({
+      where: { venueId: venue.id, status: 'waiting' },
+      orderBy: { joinedAt: 'asc' },
     });
-    const position = waitingAhead + 1;
-    const waitMinutes = calculateWaitTime(entry, position);
+    const position = allWaiting.findIndex(e => e.id === entry.id) + 1;
+    const waitMinutes = computeWaitTimes(allWaiting, venue)[position - 1];
 
     res.json({ success: true, entry, position, waitMinutes });
   } catch (error) {
@@ -92,10 +104,11 @@ router.get('/live/:venueId', requireAuth, async (req, res) => {
       orderBy: { joinedAt: 'asc' },
     });
 
+    const waitTimes = computeWaitTimes(entries, venue);
     const enriched = entries.map((entry, idx) => ({
       ...entry,
       position: idx + 1,
-      waitMinutes: calculateWaitTime(entry, idx + 1),
+      waitMinutes: waitTimes[idx],
     }));
 
     res.json({ entries: enriched });
@@ -114,15 +127,15 @@ router.get('/status/:entryId', async (req, res) => {
     });
     if (!entry) return res.status(404).json({ error: 'Entry not found' });
 
-    const waitingAhead = await prisma.queueEntry.count({
-      where: {
-        venueId: entry.venueId,
-        status: 'waiting',
-        joinedAt: { lt: entry.joinedAt },
-      },
+    const allWaiting = await prisma.queueEntry.findMany({
+      where: { venueId: entry.venueId, status: 'waiting' },
+      orderBy: { joinedAt: 'asc' },
+      include: { venue: false },
     });
-    const position = waitingAhead + 1;
-    const waitMinutes = calculateWaitTime(entry.venue, position);
+    const position = allWaiting.findIndex(e => e.id === entry.id) + 1;
+    const waitMinutes = position > 0
+      ? computeWaitTimes(allWaiting, entry.venue)[position - 1]
+      : 0;
 
     res.json({ entry, position, waitMinutes });
   } catch (error) {
