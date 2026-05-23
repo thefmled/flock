@@ -33,7 +33,7 @@
     <div class="position-label" id="positionLabel">in queue</div>
     <div class="wait" id="wait">~ minutes</div>
     <div class="wait-label" id="waitLabel">approximate wait</div>
-    <button class="leave-btn" onclick="cancelEntry()">Leave waitlist</button>
+    <button class="leave-btn" id="leaveBtn" onclick="cancelEntry()">Leave waitlist</button>
   </div>
 
   <a href="#" class="card action-card" id="menuCard" style="display:none;" target="_blank">
@@ -79,16 +79,19 @@ async function loadStatus() {
       document.getElementById('positionLabel').textContent = 'table ready';
       wait.style.display = 'none';
       waitLabel.style.display = 'none';
+      document.getElementById('leaveBtn').style.display = 'none';
     } else if (status === 'seated') {
       document.getElementById('position').textContent = '\u2713';
       document.getElementById('positionLabel').textContent = 'seated';
       wait.style.display = 'none';
       waitLabel.style.display = 'none';
+      document.getElementById('leaveBtn').style.display = 'none';
     } else if (status === 'cancelled') {
       document.getElementById('position').textContent = '\u2014';
       document.getElementById('positionLabel').textContent = 'cancelled';
       wait.style.display = 'none';
       waitLabel.style.display = 'none';
+      document.getElementById('leaveBtn').style.display = 'none';
     } else {
       banner.style.display = 'none';
       document.getElementById('position').textContent = '#' + data.position;
@@ -98,6 +101,7 @@ async function loadStatus() {
       wait.dataset.joinedAt = data.entry.joinedAt;
       wait.dataset.baseWait = data.waitMinutes;
       wait.textContent = '~' + data.waitMinutes + ' minutes';
+      document.getElementById('leaveBtn').style.display = 'block';
     }
 
     const menuCard = document.getElementById('menuCard');
