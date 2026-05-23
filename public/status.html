@@ -6,178 +6,44 @@
   <title>Your queue status — flock</title>
   <link rel="stylesheet" href="/styles.css" />
   <style>
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+    }
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .topbar-logo {
+      font-family: 'Fraunces', serif;
+      font-style: italic;
+      font-size: 28px;
+      color: var(--accent);
+    }
+    .guest-pill {
+      background: rgba(245,234,212,0.08);
+      color: var(--text-muted);
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
     .status-card {
       text-align: center;
-      padding: 48px 24px;
+      padding: 56px 32px;
     }
     .position {
       font-family: 'Fraunces', serif;
       font-style: italic;
+      font-weight: 400;
       font-size: 96px;
       color: var(--accent);
       line-height: 1;
-      margin-bottom: 8px;
+      margin-bottom: 12px;
     }
     .position-label {
-      font-size: 14px;
-      color: var(--text-muted);
-      margin-bottom: 32px;
-    }
-    .wait {
-      font-family: 'Fraunces', serif;
-      font-weight: 400;
-      font-size: 28px;
-      margin-bottom: 8px;
-    }
-    .wait-label {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-    .content-tabs {
-      display: flex;
-      gap: 4px;
-      margin-top: 32px;
-      border-bottom: 1px solid var(--border);
-    }
-    .content-tab {
-      padding: 12px 16px;
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-family: inherit;
-      font-size: 14px;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-    }
-    .content-tab.active {
-      color: var(--accent);
-      border-bottom-color: var(--accent);
-    }
-    .content-panel {
-      padding: 24px;
-      min-height: 200px;
-    }
-    .content-panel a {
-      color: var(--accent);
-      text-decoration: none;
-    }
-    .notified-banner {
-      background: var(--accent);
-      color: var(--accent-text);
-      padding: 16px;
-      border-radius: 12px;
-      text-align: center;
-      font-weight: 500;
-      margin-bottom: 24px;
-    }
-  </style>
-</head>
-<body class="theme-dark-premium">
-  <main class="container" style="max-width: 480px; padding-top: 32px;">
-    <h1 class="logo" style="font-size: 40px; text-align: center; margin-bottom: 4px;">flock</h1>
-    <p style="text-align:center;color:var(--text-muted);font-size:13px;margin-bottom:32px;" id="venueLabel"></p>
-
-    <div id="notifiedBanner" class="notified-banner" style="display:none;">
-      Your table is ready. Please head in!
-    </div>
-
-    <div class="card status-card">
-      <div class="position" id="position">—</div>
-      <div class="position-label" id="positionLabel">in queue</div>
-      <div class="wait" id="wait">~ minutes</div>
-      <div class="wait-label">approximate wait</div>
-    </div>
-
-    <div class="card" style="padding: 0;">
-      <div class="content-tabs">
-        <button class="content-tab active" data-tab="menu" onclick="switchContent('menu')">Menu</button>
-        <button class="content-tab" data-tab="reviews" onclick="switchContent('reviews')">Reviews</button>
-      </div>
-      <div class="content-panel" id="contentPanel">Loading…</div>
-    </div>
-
-    <p style="text-align:center;margin-top:24px;">
-      <a href="#" onclick="cancelEntry(); return false;" style="color: var(--text-muted); font-size: 13px;">Leave the queue</a>
-    </p>
-  </main>
-
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const entryId = params.get('id');
-    let venue = null;
-    let currentTab = 'menu';
-
-    if (!entryId) {
-      document.body.innerHTML = '<div class="empty" style="padding-top:100px;">Invalid link.</div>';
-    }
-
-    async function loadStatus() {
-      try {
-        const res = await fetch('/api/queue/status/' + entryId);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-
-        venue = data.entry.venue;
-        document.getElementById('venueLabel').textContent = venue.name;
-
-        if (data.entry.status === 'notified') {
-          document.getElementById('notifiedBanner').style.display = 'block';
-          document.getElementById('position').textContent = '✓';
-          document.getElementById('positionLabel').textContent = 'table ready';
-          document.getElementById('wait').style.display = 'none';
-          document.querySelector('.wait-label').style.display = 'none';
-        } else if (data.entry.status === 'seated') {
-          document.getElementById('position').textContent = '✓';
-          document.getElementById('positionLabel').textContent = 'seated';
-          document.getElementById('wait').style.display = 'none';
-          document.querySelector('.wait-label').style.display = 'none';
-        } else if (data.entry.status === 'cancelled') {
-          document.getElementById('position').textContent = '—';
-          document.getElementById('positionLabel').textContent = 'cancelled';
-          document.getElementById('wait').style.display = 'none';
-          document.querySelector('.wait-label').style.display = 'none';
-        } else {
-          document.getElementById('position').textContent = '#' + data.position;
-          document.getElementById('positionLabel').textContent = data.position === 1 ? 'next up' : 'in queue';
-          document.getElementById('wait').textContent = '~' + data.waitMinutes + ' minutes';
-        }
-
-        renderContent();
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    function switchContent(tab) {
-      currentTab = tab;
-      document.querySelectorAll('.content-tab').forEach(b => {
-        b.classList.toggle('active', b.dataset.tab === tab);
-      });
-      renderContent();
-    }
-
-    function renderContent() {
-      const panel = document.getElementById('contentPanel');
-      if (!venue) return;
-      if (currentTab === 'menu') {
-        panel.innerHTML = venue.menuPdfUrl
-          ? `<p>View the menu while you wait:</p><p style="margin-top:12px;"><a href="${venue.menuPdfUrl}" target="_blank">Open menu →</a></p>`
-          : '<p style="color:var(--text-muted);">Menu not available.</p>';
-      } else if (currentTab === 'reviews') {
-        panel.innerHTML = venue.googleReviewsUrl
-          ? `<p>Tell others about your experience:</p><p style="margin-top:12px;"><a href="${venue.googleReviewsUrl}" target="_blank">Leave a review →</a></p>`
-          : '<p style="color:var(--text-muted);">Reviews link not available.</p>';
-      }
-    }
-
-    async function cancelEntry() {
-      if (!confirm('Leave the queue?')) return;
-      await fetch('/api/queue/cancel/' + entryId, { method: 'POST' });
-      loadStatus();
-    }
-
-    loadStatus();
-    setInterval(loadStatus, 5000);
-  </script>
-</body>
-</html>
+      font-size: 11
