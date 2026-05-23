@@ -9,18 +9,17 @@ function generateId() {
 }
 
 function computeWaitTimes(entries, venue) {
-  // entries sorted by joinedAt ascending
-  // Returns array of wait times in minutes
   const waitTimes = [];
 
   entries.forEach((entry, idx) => {
-    const base = entry.waitTimeBaseAtJoin ?? venue.waitTimeBase;
+    const baseSnap = entry.waitTimeBaseAtJoin ?? venue.waitTimeBase;
     const inc = entry.waitTimeIncrementAtJoin ?? venue.waitTimeIncrement;
     const cap = entry.waitTimeCapAtJoin ?? venue.waitTimeCap;
 
     let wait;
     if (idx === 0) {
-      wait = base;
+      // Position 1: min of snapshot base and current venue base
+      wait = Math.min(baseSnap, venue.waitTimeBase);
     } else {
       wait = waitTimes[idx - 1] + inc;
     }
