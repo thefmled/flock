@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Flock — Aesthetic Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Inter:wght@400;500;600&family=Caveat:wght@400;600&family=DM+Serif+Display&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:Inter,sans-serif;background:#eee;padding:24px}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;max-width:1400px;margin:0 auto}
+  .preview{border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);height:560px;display:flex;align-items:center;justify-content:center;text-align:center;padding:48px;position:relative}
+  .label{position:absolute;top:16px;left:16px;background:rgba(0,0,0,0.7);color:white;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:500;font-family:Inter,sans-serif;z-index:10}
+  .content{max-width:480px}
+  .content h1{margin-bottom:20px}
+  .content h2{margin-bottom:12px;font-weight:400;line-height:1.3}
+  .content p{margin-bottom:32px;font-size:15px;opacity:0.7}
+  .content a{display:inline-block;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:500;font-size:15px;font-family:Inter,sans-serif}
+
+  .o1{background:#f7f3ed;color:#2a2a2a}
+  .o1 h1{font-family:Fraunces;font-style:italic;font-weight:300;font-size:72px}
+  .o1 h2{font-family:Fraunces;font-size:26px}
+  .o1 a{background:#2a2a2a;color:#f7f3ed}
+
+  .o2{background:#fff;color:#0a0a0a}
+  .o2 h1{font-family:Inter;font-weight:600;font-size:48px;letter-spacing:-2px}
+  .o2 h2{font-family:Inter;font-weight:500;font-size:22px;letter-spacing:-0.5px}
+  .o2 a{background:#0a0a0a;color:#fff;border-radius:8px}
+
+  .o3{background:#1a3d2e;color:#f5ead4}
+  .o3 h1{font-family:Fraunces;font-style:italic;font-weight:500;font-size:80px}
+  .o3 h2{font-family:Fraunces;font-size:28px}
+  .o3 .content p{color:rgba(245,234,212,0.7)}
+  .o3 a{background:#f5ead4;color:#1a3d2e}
+
+  .o4{background:#fce7d8;color:#4a2c20}
+  .o4 h1{font-family:'DM Serif Display';font-size:64px}
+  .o4 h2{font-family:Caveat;font-weight:600;font-size:32px}
+  .o4 a{background:#4a2c20;color:#fce7d8}
+
+  .o5{background:#0f0f0f;color:#f5f5f5}
+  .o5 h1{font-family:Fraunces;font-style:italic;font-weight:400;font-size:72px;color:#f5a854}
+  .o5 h2{font-family:Inter;font-weight:500;font-size:24px}
+  .o5 .content p{color:rgba(245,245,245,0.6)}
+  .o5 a{background:#f5a854;color:#0f0f0f;border-radius:8px}
+
+  .o6{background:#fffbe8;color:#1a1a1a}
+  .o6 h1{font-family:'Space Grotesk';font-weight:600;font-size:64px;letter-spacing:-2px}
+  .o6 h2{font-family:'Space Grotesk';font-weight:500;font-size:22px}
+  .o6 a{background:#ffe14b;color:#1a1a1a;border-radius:8px;border:2px solid #1a1a1a}
+
+  .o7{background:#fafafa;color:#1a1a1a}
+  .o7 h1{font-family:'Space Grotesk';font-weight:400;font-size:56px;letter-spacing:-3px}
+  .o7 h2{font-family:'Space Grotesk';font-weight:400;font-size:20px;letter-spacing:-0.5px;color:#666}
+  .o7 a{background:#1a1a1a;color:#fafafa;border-radius:4px}
+
+  .o8{background:#e8f0ee;color:#1c3a36}
+  .o8 h1{font-family:Fraunces;font-weight:400;font-size:68px;color:#1c3a36}
+  .o8 h2{font-family:Fraunces;font-style:italic;font-weight:300;font-size:26px}
+  .o8 a{background:#1c3a36;color:#e8f0ee}
+
+  .o9{background:#f4e9d0;color:#3a1f1a}
+  .o9 h1{font-family:'DM Serif Display';font-size:72px}
+  .o9 h2{font-family:'DM Serif Display';font-size:24px;font-style:italic}
+  .o9 a{background:#c44527;color:#f4e9d0}
+
+  .o10{background:#0a0e1a;color:#e8eaf0}
+  .o10 h1{font-family:Inter;font-weight:600;font-size:56px;letter-spacing:-2px;background:linear-gradient(90deg,#7c9eff,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .o10 h2{font-family:Inter;font-weight:400;font-size:22px;color:#a0a8b8}
+  .o10 .content p{color:#7c8390}
+  .o10 a{background:#e8eaf0;color:#0a0e1a;border-radius:8px}
+
+  .o11{background:linear-gradient(135deg,#fceabb 0%,#f8b497 100%);color:#3a1f1a}
+  .o11 h1{font-family:Fraunces;font-style:italic;font-weight:400;font-size:72px}
+  .o11 h2{font-family:Inter;font-weight:500;font-size:22px}
+  .o11 a{background:#3a1f1a;color:#fceabb}
+
+  .o12{background:#faf0e0;color:#1a1a1a}
+  .o12 h1{font-family:'DM Serif Display';font-size:72px;color:#a02525}
+  .o12 h2{font-family:Inter;font-weight:500;font-size:22px}
+  .o12 .content p{font-style:italic}
+  .o12 a{background:#a02525;color:#faf0e0;border-radius:4px}
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <div class="preview o1">
+    <span class="label">1 — Warm Editorial</span>
+    <div class="content">
+      <h1>flock</h1>
+      <h2>Queue management for restaurants that don't have time for spreadsheets.</h2>
+      <p>Guests scan a QR. You tap notify. Done.</p>
+      <a href="#">Get started</a>
+    </div>
+  </div>
+
+  <div class="preview o2">
+    <span class="label">2 — Crisp Modern</span>
+    <div class="content">
+      <h1>Flock</h1>
+      <h2>Queue management built for high-volume venues.</h2>
+      <p>Replace your waitlist clipboard with a system staff actually use.</p>
+      <a href="#">Get started</a>
+    </div>
+  </div>
+
+  <div class="preview o3">
+    <span class="label">3 — Bold Restaurant</span>
+    <div class="content">
+      <h1>flock</h1>
+      <h2>The queue, handled.</h2>
+      <p>For restaurants who want their guests to feel held, not herded.</p>
+      <a href="#">Get started</a>
+    </div>
+  </div>
+
+  <div class="preview o4">
+    <span class="label">4 — Soft Pastel</span>
+    <div class="content">
+      <h1>Flock</h1>
+      <h2>your waitlist, but warmer.</h2>
+      <p>The friendliest way to manage your queue.</p>
+      <a href="#">Get started</a>
+    </div>
+  </div>
+
+  <div class="preview o5">
+    <span class="label">5 — Dark Premium</span>
+    <div class="content">
+      <h1>flock</h1>
+      <h2>Built for venues that take hospitality seriously.</h2>
+      <p>Queue management, without the chaos.</p>
+      <a href="#">Get started</a>
+    </div>
+  </div>
+
+  <div class="preview o6">
+    <span class="label">6 — Playful Indie</span>
+    <div class="content">
+      <h1>Flock.</h1>
+      <h2>The friendlier waitlist.</h2>
+      <p>Built for restaurants in India. Ten minutes to set up.</p>
+      <a href="#">Get started</a>
+    </div>
+  </div>
+
+  <div class="preview o7">
+    <span class="label">7 — Minimal Mono</span>
+    <div class="content">
+      <h1>flock</h1>
+      <h2>A queue system, nothing more.</h2>
+      <p>Designed to disappear when not in use.</p>
+      <a href="#">Get started</a>
+    </div>
+  </div>
+
+  <div class="preview o8">
+    <span class="label">8 — Coastal Calm</span>
+    <div class="content">
+      <h1>Flock</h1>
+      <h2>Quiet software for busy floors.</h2>
+      <p>Stop yelling names across the room.</p>
+      <a href="#">Get started</a>
+    </div>
+  </div>
+
+  <div class="preview o9">
+    <span class="label">9 — Old-School Diner</span>
+    <div class="content">
+      <h1>Flock</h1>
+      <h2>The waitlist, reimagined.</h2>
+      <p>Old-world hospitality. New-world workflow.</p>
+      <a href="#">Get started</a>
+    </div>
+  </div>
+
+  <div class="preview o10">
+    <span class="label">10 — Tech Forward</span>
+    <div class="content">
+      <h1>Flock</h1>
+      <h2>Real-time queue intelligence for F&amp;B operators.</h2>
+      <p>Built for the venues defining hospitality in India.</p>
+      <a href="#">Get started</a>
+    </div>
+  </div>
+
+  <div class="preview o11">
+    <span class="label">11 — Sunset Glow</span>
+    <div class="content">
+      <h1>flock</h1>
+      <h2>Wait times that feel like a glow, not a wait.</h2>
+      <p>Built for the city's most-loved venues.</p>
+      <a href="#">Get started</a>
+    </div>
+  </div>
+
+  <div class="preview o12">
+    <span class="label">12 — Mumbai Print</span>
+    <div class="content">
+      <h1>Flock</h1>
+      <h2>For India's busiest tables.</h2>
+      <p>Cleaner than a clipboard. Sharper than a spreadsheet.</p>
+      <a href="#">Get started</a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
