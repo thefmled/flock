@@ -61,23 +61,23 @@ model OtpCode {
 }
 
 model QueueEntry {
-  id                String         @id @default(cuid())
-  venueId           String
-  venue             Venue          @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  id          String         @id @default(cuid())
+  venueId     String
+  venue       Venue          @relation(fields: [venueId], references: [id], onDelete: Cascade)
   
-  guestName         String
-  guestPhone        String
-  partySize         Int
+  guestName   String
+  guestPhone  String
+  partySize   Int
   seatingPreference String?
   notes             String?
-  status            String         @default("waiting")
+  status      String         @default("waiting")
   
-  joinedAt          DateTime       @default(now())
-  notifiedAt        DateTime?
-  seatedAt          DateTime?
-  cancelledAt       DateTime?
+  joinedAt    DateTime       @default(now())
+  notifiedAt  DateTime?
+  seatedAt    DateTime?
+  cancelledAt DateTime?
   
-  notifications     Notification[]
+  notifications Notification[]
 }
 
 model Notification {
