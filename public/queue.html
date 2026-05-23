@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Join the queue — flock</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="theme-dark-premium">
+  <main class="container" style="max-width: 480px; padding-top: 48px;">
+    <h1 class="logo" style="font-size: 48px; text-align: center; margin-bottom: 8px;">flock</h1>
+    <p style="text-align:center;color:var(--text-muted);font-size:14px;margin-bottom:32px;" id="venueLabel"></p>
+
+    <div class="card" id="joinStep">
+      <h2 class="heading">Join the queue</h2>
+      <p class="subheading">A few quick details and you're on the list.</p>
+
+      <div class="input-group">
+        <label for="guestName">Your name</label>
+        <input type="text" id="guestName" placeholder="e.g. Aarav" />
+      </div>
+
+      <div class="input-group">
+        <label for="guestPhone">Phone</label>
+        <input type="tel" id="guestPhone" inputmode="numeric" placeholder="9876543210" />
+      </div>
+
+      <div class="input-group">
+        <label for="partySize">Party size</label>
+        <select id="partySize">
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8+</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label for="seatingPreference">Seating preference (optional)</label>
+        <select id="seatingPreference">
+          <option value="">No preference</option>
+          <option value="Indoor">Indoor</option>
+          <option value="Outdoor">Outdoor</option>
+          <option value="Bar">Bar</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label for="notes">Anything else? (optional)</label>
+        <textarea id="notes" rows="2" placeholder="e.g. anniversary, allergies, etc."></textarea>
+      </div>
+
+      <button class="button" onclick="joinQueue()">Join queue</button>
+      <p class="error" id="joinError"></p>
+    </div>
+  </main>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get('venue');
+    if (!slug) {
+      document.body.innerHTML = '<div class="empty" style="padding-top:100px;">Invalid queue link.</div>';
+    }
+
+    async function loadVenue() {
+      try {
+        const res = await fetch('/api/venues/by-slug/' + slug);
+        const data = await res.json();
+        if (data.venue) {
+          document.getElementById('venueLabel').textContent = data.venue.name;
+        }
+      } catch (e) {}
+    }
+
+    async function joinQueue() {
+      const errorEl = document.getElementById('joinError');
+      errorEl.textContent = '';
+
+      const payload = {
+        guestName: document.getElementById('guestName').value.trim(),
+        guestPhone: document.getElementById('guestPhone').value.trim(),
+        partySize: document.getElementById('partySize').value,
+        seatingPreference: document.getElementById('seatingPreference').value || null,
+        notes: document.getElementById('notes').value.trim() || null,
+      };
+
+      if (!payload.guestName || !payload.guestPhone) {
+        errorEl.textContent = 'Name and phone are required.';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/queue/join/' + slug, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to join queue');
+        window.location.href = '/status.html?id=' + data.entry.id;
+      } catch (err) {
+        errorEl.textContent = err.message;
+      }
+    }
+
+    loadVenue();
+  </script>
+</body>
+</html>
