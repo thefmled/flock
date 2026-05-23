@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your queue status — flock</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+.status-card { text-align: center; padding: 48px 24px; }
+.position { font-family: 'Fraunces', serif; font-style: italic; font-size: 96px; color: var(--accent); line-height: 1; margin-bottom: 8px; }
+.position-label { font-size: 14px; color: var(--text-muted); margin-bottom: 32px; }
+.wait { font-family: 'Fraunces', serif; font-size: 28px; margin-bottom: 8px; }
+.wait-label { font-size: 13px; color: var(--text-muted); }
+.leave-btn { background: transparent; color: var(--text); border: 1px solid var(--border); padding: 14px; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 500; width: 100%; margin-top: 24px; }
+.leave-btn:hover { border-color: var(--error); color: var(--error); }
+.action-card { padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; text-decoration: none; color: var(--text); }
+.action-card:hover { border-color: var(--accent); }
+.action-card h4 { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+.action-card p { font-size: 13px; color: var(--text-muted); }
+.action-card-arrow { color: var(--accent); font-size: 20px; }
+.notified-banner { background: var(--accent); color: var(--accent-text); padding: 16px; border-radius: 12px; text-align: center; font-weight: 500; margin-bottom: 24px; }
+</style>
+</head>
+<body class="theme-dark-premium">
+<main class="container" style="max-width: 480px; padding-top: 32px;">
+  <h1 class="logo" style="font-size: 48px; text-align: center; margin-bottom: 4px;">flock</h1>
+  <p style="text-align:center;color:var(--text-muted);font-size:13px;margin-bottom:32px;" id="venueLabel"></p>
+
+  <div id="notifiedBanner" class="notified-banner" style="display:none;">Your table is ready. Please head in!</div>
+
+  <div class="card status-card">
+    <div class="position" id="position">—</div>
+    <div class="position-label" id="positionLabel">in queue</div>
+    <div class="wait" id="wait">~ minutes</div>
+    <div class="wait-label" id="waitLabel">approximate wait</div>
+    <button class="leave-btn" onclick="cancelEntry()">Leave waitlist</button>
+  </div>
+
+  <a href="#" class="card action-card" id="menuCard" style="display:none;" target="_blank">
+    <div>
+      <h4>Explore the menu</h4>
+      <p>See what's on offer while you wait</p>
+    </div>
+    <span class="action-card-arrow">&rarr;</span>
+  </a>
+
+  <a href="#" class="card action-card" id="reviewCard" style="display:none;" target="_blank">
+    <div>
+      <h4>Review us on Google</h4>
+      <p>Tell others about your experience</p>
+    </div>
+    <span class="action-card-arrow">&rarr;</span>
+  </a>
+</main>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const entryId = params.get('id');
+let venue = null;
+
+async function loadStatus() {
+  if (!entryId) return;
+  try {
+    const res = await fetch('/api/queue/status/' + entryId);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    venue = data.entry.venue;
+    document.getElementById('venueLabel').textContent = venue.name;
+
+    const banner = document.getElementById('notifiedBanner');
+    const wait = document.getElementById('wait');
+    const waitLabel = document.getElementById('waitLabel');
+    const status = data.entry.status;
+
+    if (status === 'notified') {
+      banner.style.display = 'block';
+      document.getElementById('position').textContent = '\u2713';
+      document.getElementById('positionLabel').textContent = 'table ready';
+      wait.style.display = 'none';
+      waitLabel.style.display = 'none';
+    } else if (status === 'seated') {
+      document.getElementById('position').textContent = '\u2713';
+      document.getElementById('positionLabel').textContent = 'seated';
+      wait.style.display = 'none';
+      waitLabel.style.display = 'none';
+    } else if (status === 'cancelled') {
+      document.getElementById('position').textContent = '\u2014';
+      document.getElementById('positionLabel').textContent = 'cancelled';
+      wait.style.display = 'none';
+      waitLabel.style.display = 'none';
+    } else {
+      banner.style.display = 'none';
+      document.getElementById('position').textContent = '#' + data.position;
+      document.getElementById('positionLabel').textContent = data.position === 1 ? 'next up' : 'in queue';
+      wait.style.display = 'block';
+      waitLabel.style.display = 'block';
+      wait.textContent = '~' + data.waitMinutes + ' minutes';
+    }
+
+    const menuCard = document.getElementById('menuCard');
+    if (venue.menuPdfUrl) {
+      menuCard.style.display = 'flex';
+      menuCard.href = venue.menuPdfUrl;
+    }
+
+    const reviewCard = document.getElementById('reviewCard');
+    if (venue.googleReviewsUrl) {
+      reviewCard.style.display = 'flex';
+      reviewCard.href = venue.googleReviewsUrl;
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function cancelEntry() {
+  if (!confirm('Leave the queue?')) return;
+  await fetch('/api/queue/cancel/' + entryId, { method: 'POST' });
+  loadStatus();
+}
+
+loadStatus();
+setInterval(loadStatus, 3000);
+</script>
+</body>
+</html>
