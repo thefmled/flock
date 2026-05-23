@@ -94,14 +94,63 @@
       color: var(--text);
       margin-right: 6px;
     }
+    .venue-button {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .venue-button:hover {
+      border-color: var(--accent);
+    }
+    #venueDropdown {
+      position: relative;
+    }
+    .venue-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      z-index: 100;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      min-width: 180px;
+    }
+    .venue-menu-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text);
+    }
+    .venue-menu-item:hover {
+      background: var(--border);
+    }
+    .venue-menu-item.add {
+      border-top: 1px solid var(--border);
+      color: var(--accent);
+      font-weight: 500;
+    }
   </style>
 </head>
 <body class="theme-dark-premium">
   <div class="topbar">
     <div class="topbar-logo">flock</div>
-    <div class="topbar-venue">
-      <select id="venueSwitcher" onchange="switchVenue()" style="background:transparent;color:var(--text);border:1px solid var(--border);padding:6px 10px;border-radius:6px;font-family:inherit;font-size:14px;cursor:pointer;">
-      </select>
+    <div class="topbar-venue" id="venueDropdown">
+      <button id="venueButton" class="venue-button" onclick="toggleDropdown()">
+        <span id="venueButtonLabel"></span>
+        <span style="font-size:10px;opacity:0.5;">▼</span>
+      </button>
+      <div id="venueMenu" class="venue-menu" style="display:none;"></div>
     </div>
     <div class="topbar-actions">
       <button onclick="showQr()">QR for guests</button>
@@ -151,24 +200,44 @@
         return;
       }
 
-      // If venue saved in localStorage and still exists, use that; else use first
       const savedId = venue?.id;
       venue = data.venues.find(v => v.id === savedId) || data.venues[0];
       localStorage.setItem('flock_venue', JSON.stringify(venue));
 
-      const switcher = document.getElementById('venueSwitcher');
-      switcher.innerHTML = data.venues.map(v =>
-        `<option value="${v.id}" ${v.id === venue.id ? 'selected' : ''}>${escapeHtml(v.name)}</option>`
-      ).join('') + '<option value="__new__">+ Add new venue</option>';
+      document.getElementById('venueButtonLabel').textContent = venue.name;
+
+      const menu = document.getElementById('venueMenu');
+      menu.innerHTML = data.venues.map(v =>
+        `<div class="venue-menu-item" onclick="selectVenue('${v.id}')">${escapeHtml(v.name)}</div>`
+      ).join('') + '<div class="venue-menu-item add" onclick="window.location.href=\'/setup.html\'">+ Add new venue</div>';
     }
 
-    function switchVenue() {
-      const switcher = document.getElementById('venueSwitcher');
-      const val = switcher.value;
-      if (val === '__new__') {
-        window.location.href = '/setup.html';
-        return;
+    function toggleDropdown() {
+      const menu = document.getElementById('venueMenu');
+      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function selectVenue(id) {
+      const res = await fetch('/api/venues', {
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+      const data = await res.json();
+      venue = data.venues.find(v => v.id === id);
+      if (venue) {
+        localStorage.setItem('flock_venue', JSON.stringify(venue));
+        document.getElementById('venueButtonLabel').textContent = venue.name;
+        document.getElementById('venueMenu').style.display = 'none';
+        loadQueue();
       }
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      const dropdown = document.getElementById('venueDropdown');
+      if (dropdown && !dropdown.contains(e.target)) {
+        document.getElementById('venueMenu').style.display = 'none';
+      }
+    });
       const allVenues = JSON.parse(localStorage.getItem('flock_all_venues') || '[]');
       // Refetch venues and switch
       fetch('/api/venues', {
