@@ -185,7 +185,10 @@
   </div>
 
   <div class="tab-content" id="historyTab" style="display:none;">
-    <button class="button" style="width:auto;margin-bottom:16px;" onclick="downloadCsv()">Download CSV</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <p style="color:var(--text-muted);font-size:14px;">Today's queue activity</p>
+      <a href="#" onclick="downloadCsv(); return false;" style="color:var(--accent);font-size:13px;text-decoration:none;">Download CSV ↓</a>
+    </div>
     <div id="historyList"></div>
   </div>
 
@@ -349,6 +352,82 @@
         document.getElementById(t + 'Tab').style.display = (t === tab) ? 'block' : 'none';
         const btn = document.querySelector(`[data-tab="${t}"]`);
         if (btn) btn.classList.toggle('active', t === tab);
+      });
+      if (tab === 'history') loadHistory();
+    }
+
+    async function loadHistory() {
+      if (!venue) return;
+      const res = await fetch('/api/queue/history/' + venue.id, {
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+      const data = await res.json();
+      const list = document.getElementById('historyList');
+      if (!data.entries || data.entries.length === 0) {
+        list.innerHTML = '<div class="empty">No queue activity today.</div>';
+        return;
+      }
+
+      list.innerHTML = data.entries.map(e => {
+        let statusBadge = '';
+        if (e.status === 'seated') statusBadge = '<span style="color:var(--success);font-size:12px;">✓ Seated</span>';
+        else if (e.status === 'cancelled') statusBadge = '<span style="color:var(--error);font-size:12px;">Cancelled</span>';
+        else if (e.status === 'notified') statusBadge = '<span style="color:var(--accent);font-size:12px;">Notified</span>';
+        else statusBadge = '<span style="color:var(--text-muted);font-size:12px;">Waiting</span>';
+
+        const duration = e.seatedAt
+          ? Math.round((new Date(e.seatedAt) - new Date(e.joinedAt)) / 60000) + ' min wait'
+          : e.cancelledAt
+            ? 'cancelled after ' + Math.round((new Date(e.cancelledAt) - new Date(e.joinedAt)) / 60000) + ' min'
+            : '';
+
+        return `
+          <div class="queue-entry">
+            <div class="queue-entry-row">
+              <div class="queue-entry-info">
+                <h4>${escapeHtml(e.guestName)} · party of ${e.partySize}</h4>
+                <p>${escapeHtml(e.guestPhone)}</p>
+                <div class="meta">
+                  ${e.seatingPreference ? `<span class="preference-tag">${escapeHtml(e.seatingPreference)}</span>` : ''}
+                  joined ${new Date(e.joinedAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})} · ${statusBadge} ${duration ? '· ' + duration : ''}
+                </div>
+                ${e.notes ? `<div class="meta" style="margin-top:6px;">Notes: ${escapeHtml(e.notes)}</div>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function downloadCsv() {
+      if (!venue) return;
+      fetch('/api/queue/history/' + venue.id, {
+        headers: { 'Authorization': 'Bearer ' + token },
+      }).then(r => r.json()).then(data => {
+        const rows = [['Name','Phone','Party Size','Seating Preference','Notes','Status','Joined','Seated','Cancelled','Wait Duration (min)']];
+        data.entries.forEach(e => {
+          const duration = e.seatedAt
+            ? Math.round((new Date(e.seatedAt) - new Date(e.joinedAt)) / 60000)
+            : e.cancelledAt
+              ? Math.round((new Date(e.cancelledAt) - new Date(e.joinedAt)) / 60000)
+              : '';
+          rows.push([
+            e.guestName, e.guestPhone, e.partySize,
+            e.seatingPreference || '', e.notes || '',
+            e.status,
+            new Date(e.joinedAt).toLocaleString(),
+            e.seatedAt ? new Date(e.seatedAt).toLocaleString() : '',
+            e.cancelledAt ? new Date(e.cancelledAt).toLocaleString() : '',
+            duration,
+          ]);
+        });
+        const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `flock-${venue.slug}-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
       });
     }
 
