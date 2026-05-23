@@ -87,4 +87,20 @@ router.get('/by-slug/:slug', async (req, res) => {
   }
 });
 
+// Delete a venue
+router.delete('/:id', requireAuth, async (req, res) => {
+  try {
+    const venue = await prisma.venue.findFirst({
+      where: { id: req.params.id, ownerId: req.ownerId },
+    });
+    if (!venue) return res.status(404).json({ error: 'Venue not found' });
+
+    await prisma.venue.delete({ where: { id: venue.id } });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete venue error:', error);
+    res.status(500).json({ error: 'Failed to delete venue' });
+  }
+});
+
 module.exports = router;
