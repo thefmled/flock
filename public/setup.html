@@ -39,6 +39,11 @@
         <input type="url" id="googleReviewsUrl" placeholder="https://g.page/..." />
       </div>
 
+      <div class="input-group">
+        <label for="seatingOptions">Seating options (comma-separated)</label>
+        <input type="text" id="seatingOptions" value="Indoor,Outdoor,No preference" />
+      </div>
+
       <button class="button" onclick="createVenue()">Create venue</button>
       <p class="error" id="setupError"></p>
     </div>
@@ -59,6 +64,7 @@
         address: document.getElementById('venueAddress').value.trim(),
         menuPdfUrl: document.getElementById('menuPdfUrl').value.trim() || null,
         googleReviewsUrl: document.getElementById('googleReviewsUrl').value.trim() || null,
+        seatingOptions: document.getElementById('seatingOptions').value.trim() || 'Indoor,Outdoor,No preference',
       };
 
       if (!payload.floorManagerName || !payload.name || !payload.address) {
