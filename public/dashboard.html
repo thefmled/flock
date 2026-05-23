@@ -155,6 +155,11 @@
       opacity: 1;
       color: var(--error);
     }
+    .seating-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    .chip { padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; cursor: pointer; font-size: 13px; background: transparent; color: var(--text); font-family: inherit; display: flex; align-items: center; gap: 6px; }
+    .chip.selected { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+    .chip.add-chip { border-style: dashed; }
+    .chip-remove { font-size: 14px; opacity: 0.6; }
   </style>
 </head>
 <body class="theme-dark-premium">
@@ -194,9 +199,62 @@
 
   <div class="tab-content" id="settingsTab" style="display:none;">
     <div class="card">
-      <h2 class="heading">Settings</h2>
-      <p class="subheading">Coming soon — for now, your venue is set up with the defaults.</p>
+      <h2 class="heading">Venue details</h2>
+
+      <div class="input-group">
+        <label>Venue name</label>
+        <input type="text" id="settingsName" />
+      </div>
+
+      <div class="input-group">
+        <label>Address</label>
+        <textarea id="settingsAddress" rows="2"></textarea>
+      </div>
+
+      <div class="input-group">
+        <label>Floor manager name</label>
+        <input type="text" id="settingsManager" />
+      </div>
+
+      <div class="input-group">
+        <label>Menu PDF link</label>
+        <input type="url" id="settingsMenu" placeholder="https://..." />
+      </div>
+
+      <div class="input-group">
+        <label>Google reviews link</label>
+        <input type="url" id="settingsReviews" placeholder="https://g.page/..." />
+      </div>
+
+      <div class="input-group">
+        <label>Seating options</label>
+        <div class="seating-chips" id="settingsChips"></div>
+      </div>
     </div>
+
+    <div class="card">
+      <h2 class="heading">Wait time formula</h2>
+      <p class="subheading">min(base + increment × (position − 1), cap)</p>
+
+      <div style="display:flex;gap:12px;">
+        <div class="input-group" style="flex:1;">
+          <label>Base (min)</label>
+          <input type="number" id="settingsBase" min="1" />
+        </div>
+        <div class="input-group" style="flex:1;">
+          <label>Increment (min)</label>
+          <input type="number" id="settingsIncrement" min="1" />
+        </div>
+        <div class="input-group" style="flex:1;">
+          <label>Cap (min)</label>
+          <input type="number" id="settingsCap" min="1" />
+        </div>
+      </div>
+    </div>
+
+    <button class="button" onclick="saveSettings()">Save changes</button>
+    <p class="success" id="settingsSuccess"></p>
+    <p class="error" id="settingsError"></p>
   </div>
 
   <script>
@@ -354,6 +412,91 @@
         if (btn) btn.classList.toggle('active', t === tab);
       });
       if (tab === 'history') loadHistory();
+      if (tab === 'settings') loadSettings();
+    }
+
+    let settingsSeating = [];
+
+    function loadSettings() {
+      if (!venue) return;
+      document.getElementById('settingsName').value = venue.name || '';
+      document.getElementById('settingsAddress').value = venue.address || '';
+      document.getElementById('settingsManager').value = venue.floorManagerName || '';
+      document.getElementById('settingsMenu').value = venue.menuPdfUrl || '';
+      document.getElementById('settingsReviews').value = venue.googleReviewsUrl || '';
+      document.getElementById('settingsBase').value = venue.waitTimeBase;
+      document.getElementById('settingsIncrement').value = venue.waitTimeIncrement;
+      document.getElementById('settingsCap').value = venue.waitTimeCap;
+
+      const opts = (venue.seatingOptions || 'Indoor,Outdoor,No preference').split(',');
+      settingsSeating = opts.map(o => ({ name: o.trim(), selected: true }));
+      renderSettingsChips();
+    }
+
+    function renderSettingsChips() {
+      const c = document.getElementById('settingsChips');
+      c.innerHTML = settingsSeating.map((opt, i) => `
+        <button class="chip ${opt.selected ? 'selected' : ''}" onclick="toggleSettingsChip(${i})">
+          ${escapeHtml(opt.name)}
+          ${opt.name !== 'No preference' ? `<span class="chip-remove" onclick="removeSettingsChip(${i}); event.stopPropagation();">×</span>` : ''}
+        </button>
+      `).join('') + `<button class="chip add-chip" onclick="addSettingsChip()">+ Add option</button>`;
+    }
+
+    function toggleSettingsChip(i) {
+      settingsSeating[i].selected = !settingsSeating[i].selected;
+      renderSettingsChips();
+    }
+
+    function removeSettingsChip(i) {
+      settingsSeating.splice(i, 1);
+      renderSettingsChips();
+    }
+
+    function addSettingsChip() {
+      const name = prompt('New seating option:');
+      if (name && name.trim()) {
+        settingsSeating.push({ name: name.trim(), selected: true });
+        renderSettingsChips();
+      }
+    }
+
+    async function saveSettings() {
+      const errEl = document.getElementById('settingsError');
+      const okEl = document.getElementById('settingsSuccess');
+      errEl.textContent = '';
+      okEl.textContent = '';
+
+      const payload = {
+        name: document.getElementById('settingsName').value.trim(),
+        address: document.getElementById('settingsAddress').value.trim(),
+        floorManagerName: document.getElementById('settingsManager').value.trim(),
+        menuPdfUrl: document.getElementById('settingsMenu').value.trim() || null,
+        googleReviewsUrl: document.getElementById('settingsReviews').value.trim() || null,
+        seatingOptions: settingsSeating.filter(o => o.selected).map(o => o.name).join(',') || 'Indoor,Outdoor,No preference',
+        waitTimeBase: parseInt(document.getElementById('settingsBase').value) || 8,
+        waitTimeIncrement: parseInt(document.getElementById('settingsIncrement').value) || 3,
+        waitTimeCap: parseInt(document.getElementById('settingsCap').value) || 60,
+      };
+
+      try {
+        const res = await fetch('/api/venues/' + venue.id, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+          },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to save');
+        venue = data.venue;
+        localStorage.setItem('flock_venue', JSON.stringify(venue));
+        okEl.textContent = 'Saved.';
+        loadVenue();
+      } catch (err) {
+        errEl.textContent = err.message;
+      }
     }
 
     async function loadHistory() {
