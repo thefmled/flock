@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Log in — flock</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="theme-dark-premium">
+  <main class="container" style="max-width: 440px; padding-top: 80px;">
+    <h1 class="logo" style="font-size: 56px; text-align: center; margin-bottom: 32px;">flock</h1>
+
+    <div class="card" id="emailStep">
+      <h2 class="heading">Log in</h2>
+      <p class="subheading">Enter your email to receive a one-time code.</p>
+      <div class="input-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="you@venue.com" autocomplete="email" />
+      </div>
+      <button class="button" onclick="requestOtp()">Send code</button>
+      <p class="error" id="emailError"></p>
+    </div>
+
+    <div class="card" id="otpStep" style="display: none;">
+      <h2 class="heading">Enter code</h2>
+      <p class="subheading">We sent a 6-digit code to <span id="emailDisplay"></span>.</p>
+      <div class="input-group">
+        <label for="code">Code</label>
+        <input type="text" id="code" maxlength="6" placeholder="123456" inputmode="numeric" />
+      </div>
+      <button class="button" onclick="verifyOtp()">Log in</button>
+      <p class="error" id="otpError"></p>
+      <p style="text-align: center; margin-top: 16px;">
+        <a href="#" onclick="resetLogin(); return false;" style="color: var(--text-muted); font-size: 13px;">Use a different email</a>
+      </p>
+    </div>
+  </main>
+
+  <script>
+    const API = '';
+
+    async function requestOtp() {
+      const email = document.getElementById('email').value.trim();
+      const errorEl = document.getElementById('emailError');
+      errorEl.textContent = '';
+
+      if (!email || !email.includes('@')) {
+        errorEl.textContent = 'Please enter a valid email.';
+        return;
+      }
+
+      try {
+        const res = await fetch(API + '/api/auth/request-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to send code');
+
+        document.getElementById('emailStep').style.display = 'none';
+        document.getElementById('otpStep').style.display = 'block';
+        document.getElementById('emailDisplay').textContent = email;
+        sessionStorage.setItem('flock_email', email);
+      } catch (err) {
+        errorEl.textContent = err.message;
+      }
+    }
+
+    async function verifyOtp() {
+      const code = document.getElementById('code').value.trim();
+      const email = sessionStorage.getItem('flock_email');
+      const errorEl = document.getElementById('otpError');
+      errorEl.textContent = '';
+
+      if (!code || code.length !== 6) {
+        errorEl.textContent = 'Enter the 6-digit code.';
+        return;
+      }
+
+      try {
+        const res = await fetch(API + '/api/auth/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, code }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Invalid code');
+
+        localStorage.setItem('flock_token', data.token);
+        localStorage.setItem('flock_owner', JSON.stringify(data.owner));
+
+        if (data.isNewUser) {
+          window.location.href = '/setup.html';
+        } else {
+          window.location.href = '/dashboard.html';
+        }
+      } catch (err) {
+        errorEl.textContent = err.message;
+      }
+    }
+
+    function resetLogin() {
+      document.getElementById('emailStep').style.display = 'block';
+      document.getElementById('otpStep').style.display = 'none';
+      document.getElementById('code').value = '';
+      document.getElementById('otpError').textContent = '';
+    }
+  </script>
+</body>
+</html>
