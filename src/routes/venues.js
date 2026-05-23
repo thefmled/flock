@@ -1,0 +1,87 @@
+const express = require('express');
+const prisma = require('../lib/prisma');
+const { requireAuth } = require('../middleware/auth');
+
+const router = express.Router();
+
+function generateId() {
+  return 'c' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
+
+function slugify(text) {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]+/g, '')
+    .replace(/--+/g, '-');
+}
+
+// Create a venue (first-time setup)
+router.post('/', requireAuth, async (req, res) => {
+  try {
+    const { name, address, floorManagerName, menuPdfUrl, googleReviewsUrl } = req.body;
+
+    if (!name || !address || !floorManagerName) {
+      return res.status(400).json({ error: 'Name, address, and floor manager name are required' });
+    }
+
+    // Generate unique slug
+    let baseSlug = slugify(name);
+    let slug = baseSlug;
+    let counter = 1;
+    while (await prisma.venue.findUnique({ where: { slug } })) {
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+
+    const venue = await prisma.venue.create({
+      data: {
+        id: generateId(),
+        slug,
+        name,
+        address,
+        floorManagerName,
+        menuPdfUrl: menuPdfUrl || null,
+        googleReviewsUrl: googleReviewsUrl || null,
+        ownerId: req.ownerId,
+      },
+    });
+
+    res.json({ success: true, venue });
+  } catch (error) {
+    console.error('Create venue error:', error);
+    res.status(500).json({ error: 'Failed to create venue' });
+  }
+});
+
+// Get venues for the logged-in owner
+router.get('/', requireAuth, async (req, res) => {
+  try {
+    const venues = await prisma.venue.findMany({
+      where: { ownerId: req.ownerId },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({ venues });
+  } catch (error) {
+    console.error('Get venues error:', error);
+    res.status(500).json({ error: 'Failed to fetch venues' });
+  }
+});
+
+// Get a venue by slug (public — for guest queue page)
+router.get('/by-slug/:slug', async (req, res) => {
+  try {
+    const venue = await prisma.venue.findUnique({
+      where: { slug: req.params.slug },
+    });
+    if (!venue) return res.status(404).json({ error: 'Venue not found' });
+    res.json({ venue });
+  } catch (error) {
+    console.error('Get venue by slug error:', error);
+    res.status(500).json({ error: 'Failed to fetch venue' });
+  }
+});
+
+module.exports = router;
