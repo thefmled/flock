@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Set up your venue — flock</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="theme-dark-premium">
+  <main class="container" style="max-width: 560px; padding-top: 64px;">
+    <h1 class="logo" style="font-size: 56px; text-align: center; margin-bottom: 32px;">flock</h1>
+
+    <div class="card">
+      <h2 class="heading">Set up your venue</h2>
+      <p class="subheading">A few details and you're ready to start taking guests.</p>
+
+      <div class="input-group">
+        <label for="floorManagerName">Your name (or floor manager's name)</label>
+        <input type="text" id="floorManagerName" placeholder="e.g. Rushali" />
+      </div>
+
+      <div class="input-group">
+        <label for="venueName">Venue name</label>
+        <input type="text" id="venueName" placeholder="e.g. The Craftery" />
+      </div>
+
+      <div class="input-group">
+        <label for="venueAddress">Venue address</label>
+        <textarea id="venueAddress" rows="2" placeholder="e.g. 80 Feet Road, Koramangala, Bangalore"></textarea>
+      </div>
+
+      <div class="input-group">
+        <label for="menuPdfUrl">Menu PDF link (optional)</label>
+        <input type="url" id="menuPdfUrl" placeholder="https://..." />
+      </div>
+
+      <div class="input-group">
+        <label for="googleReviewsUrl">Google reviews link (optional)</label>
+        <input type="url" id="googleReviewsUrl" placeholder="https://g.page/..." />
+      </div>
+
+      <button class="button" onclick="createVenue()">Create venue</button>
+      <p class="error" id="setupError"></p>
+    </div>
+  </main>
+
+  <script>
+    if (!localStorage.getItem('flock_token')) {
+      window.location.href = '/login.html';
+    }
+
+    async function createVenue() {
+      const errorEl = document.getElementById('setupError');
+      errorEl.textContent = '';
+
+      const payload = {
+        floorManagerName: document.getElementById('floorManagerName').value.trim(),
+        name: document.getElementById('venueName').value.trim(),
+        address: document.getElementById('venueAddress').value.trim(),
+        menuPdfUrl: document.getElementById('menuPdfUrl').value.trim() || null,
+        googleReviewsUrl: document.getElementById('googleReviewsUrl').value.trim() || null,
+      };
+
+      if (!payload.floorManagerName || !payload.name || !payload.address) {
+        errorEl.textContent = 'Please fill in name, venue name, and address.';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/venues', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('flock_token'),
+          },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to create venue');
+
+        localStorage.setItem('flock_venue', JSON.stringify(data.venue));
+        window.location.href = '/dashboard.html';
+      } catch (err) {
+        errorEl.textContent = err.message;
+      }
+    }
+  </script>
+</body>
+</html>
