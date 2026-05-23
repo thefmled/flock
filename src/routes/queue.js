@@ -16,14 +16,15 @@ function calculateWaitTime(venue, position) {
 // Add a guest to the queue (public — guest scans QR)
 router.post('/join/:slug', async (req, res) => {
   try {
-    const { guestName, guestPhone, partySize } = req.body;
+    const { guestName, guestPhone, partySize, seatingPreference, notes } = req.body;
+    if (!guestName || !guestPhone || !partySize) {
+      return res.status(400).json({ error: 'Name, phone, and party size required' });
+    }
+
     // Validate phone (Indian 10-digit starting 6-9)
     const phoneClean = (guestPhone || '').replace(/\D/g, '');
     if (!/^[6-9]\d{9}$/.test(phoneClean)) {
       return res.status(400).json({ error: 'Please enter a valid 10-digit Indian phone number.' });
-    }
-    if (!guestName || !guestPhone || !partySize) {
-      return res.status(400).json({ error: 'Name, phone, and party size required' });
     }
 
     const venue = await prisma.venue.findUnique({ where: { slug: req.params.slug } });
