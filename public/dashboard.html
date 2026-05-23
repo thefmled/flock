@@ -101,8 +101,8 @@
     <div class="topbar-logo">flock</div>
     <div class="topbar-venue" id="venueLabel"></div>
     <div class="topbar-actions">
-      <button onclick="showQr()">QR</button>
-      <button onclick="switchTab('settings')">Settings</button>
+      <button onclick="showQr()">QR for guests</button>
+      <button onclick="switchTab('settings')">Queue settings</button>
       <button onclick="logout()">Log out</button>
     </div>
   </div>
@@ -110,7 +110,6 @@
   <div class="tabs">
     <button class="tab active" data-tab="live" onclick="switchTab('live')">Live queue</button>
     <button class="tab" data-tab="history" onclick="switchTab('history')">History</button>
-    <button class="tab" data-tab="settings" onclick="switchTab('settings')">Settings</button>
   </div>
 
   <div class="tab-content" id="liveTab">
