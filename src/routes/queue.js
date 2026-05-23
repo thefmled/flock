@@ -189,4 +189,27 @@ router.post('/cancel/:entryId', async (req, res) => {
   }
 });
 
+// Get queue history (today's entries — all statuses)
+router.get('/history/:venueId', requireAuth, async (req, res) => {
+  try {
+    const venue = await prisma.venue.findFirst({
+      where: { id: req.params.venueId, ownerId: req.ownerId },
+    });
+    if (!venue) return res.status(404).json({ error: 'Venue not found' });
+
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const entries = await prisma.queueEntry.findMany({
+      where: { venueId: venue.id, joinedAt: { gte: startOfDay } },
+      orderBy: { joinedAt: 'desc' },
+    });
+
+    res.json({ entries });
+  } catch (error) {
+    console.error('History error:', error);
+    res.status(500).json({ error: 'Failed to fetch history' });
+  }
+});
+
 module.exports = router;
