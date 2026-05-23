@@ -24,6 +24,8 @@ router.post('/join/:slug', async (req, res) => {
     const venue = await prisma.venue.findUnique({ where: { slug: req.params.slug } });
     if (!venue) return res.status(404).json({ error: 'Venue not found' });
 
+    const { seatingPreference, notes } = req.body;
+    
     const entry = await prisma.queueEntry.create({
       data: {
         id: generateId(),
@@ -31,6 +33,8 @@ router.post('/join/:slug', async (req, res) => {
         guestName,
         guestPhone,
         partySize: parseInt(partySize),
+        seatingPreference: seatingPreference || null,
+        notes: notes || null,
         status: 'waiting',
       },
     });
@@ -124,7 +128,7 @@ router.post('/notify/:entryId', requireAuth, async (req, res) => {
 
     // TODO: trigger WhatsApp via Gupshup (we'll add this next)
 
-    res.json({ success: true, callUrl: `tel:${entry.guestPhone}` });
+    res.json({ success: true });
   } catch (error) {
     console.error('Notify error:', error);
     res.status(500).json({ error: 'Failed to notify' });
