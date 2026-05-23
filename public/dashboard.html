@@ -99,7 +99,10 @@
 <body class="theme-dark-premium">
   <div class="topbar">
     <div class="topbar-logo">flock</div>
-    <div class="topbar-venue" id="venueLabel"></div>
+    <div class="topbar-venue">
+      <select id="venueSwitcher" onchange="switchVenue()" style="background:transparent;color:var(--text);border:1px solid var(--border);padding:6px 10px;border-radius:6px;font-family:inherit;font-size:14px;cursor:pointer;">
+      </select>
+    </div>
     <div class="topbar-actions">
       <button onclick="showQr()">QR for guests</button>
       <button onclick="switchTab('settings')">Queue settings</button>
@@ -138,21 +141,45 @@
     }
 
     async function loadVenue() {
-      if (venue) {
-        document.getElementById('venueLabel').textContent = venue.name;
-        return;
-      }
       const res = await fetch('/api/venues', {
         headers: { 'Authorization': 'Bearer ' + token },
       });
       const data = await res.json();
-      if (data.venues && data.venues.length > 0) {
-        venue = data.venues[0];
-        localStorage.setItem('flock_venue', JSON.stringify(venue));
-        document.getElementById('venueLabel').textContent = venue.name;
-      } else {
+      
+      if (!data.venues || data.venues.length === 0) {
         window.location.href = '/setup.html';
+        return;
       }
+
+      // If venue saved in localStorage and still exists, use that; else use first
+      const savedId = venue?.id;
+      venue = data.venues.find(v => v.id === savedId) || data.venues[0];
+      localStorage.setItem('flock_venue', JSON.stringify(venue));
+
+      const switcher = document.getElementById('venueSwitcher');
+      switcher.innerHTML = data.venues.map(v =>
+        `<option value="${v.id}" ${v.id === venue.id ? 'selected' : ''}>${escapeHtml(v.name)}</option>`
+      ).join('') + '<option value="__new__">+ Add new venue</option>';
+    }
+
+    function switchVenue() {
+      const switcher = document.getElementById('venueSwitcher');
+      const val = switcher.value;
+      if (val === '__new__') {
+        window.location.href = '/setup.html';
+        return;
+      }
+      const allVenues = JSON.parse(localStorage.getItem('flock_all_venues') || '[]');
+      // Refetch venues and switch
+      fetch('/api/venues', {
+        headers: { 'Authorization': 'Bearer ' + token },
+      }).then(r => r.json()).then(data => {
+        venue = data.venues.find(v => v.id === val);
+        if (venue) {
+          localStorage.setItem('flock_venue', JSON.stringify(venue));
+          loadQueue();
+        }
+      });
     }
 
     async function loadQueue() {
