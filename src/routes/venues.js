@@ -103,4 +103,29 @@ router.delete('/:id', requireAuth, async (req, res) => {
   }
 });
 
+// Update a venue
+router.patch('/:id', requireAuth, async (req, res) => {
+  try {
+    const venue = await prisma.venue.findFirst({
+      where: { id: req.params.id, ownerId: req.ownerId },
+    });
+    if (!venue) return res.status(404).json({ error: 'Venue not found' });
+
+    const allowed = ['name', 'address', 'floorManagerName', 'menuPdfUrl', 'googleReviewsUrl', 'seatingOptions', 'waitTimeBase', 'waitTimeIncrement', 'waitTimeCap', 'theme'];
+    const data = {};
+    for (const key of allowed) {
+      if (key in req.body) data[key] = req.body[key];
+    }
+
+    const updated = await prisma.venue.update({
+      where: { id: venue.id },
+      data,
+    });
+    res.json({ success: true, venue: updated });
+  } catch (error) {
+    console.error('Update venue error:', error);
+    res.status(500).json({ error: 'Failed to update venue' });
+  }
+});
+
 module.exports = router;
