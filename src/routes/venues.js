@@ -36,6 +36,8 @@ router.post('/', requireAuth, async (req, res) => {
       counter++;
     }
 
+    const { seatingOptions } = req.body;
+
     const venue = await prisma.venue.create({
       data: {
         id: generateId(),
@@ -45,6 +47,7 @@ router.post('/', requireAuth, async (req, res) => {
         floorManagerName,
         menuPdfUrl: menuPdfUrl || null,
         googleReviewsUrl: googleReviewsUrl || null,
+        seatingOptions: seatingOptions || 'Indoor,Outdoor,No preference',
         ownerId: req.ownerId,
       },
     });
