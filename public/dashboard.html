@@ -140,6 +140,20 @@
       color: var(--accent);
       font-weight: 500;
     }
+    .venue-menu-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .venue-delete {
+      opacity: 0.5;
+      font-size: 14px;
+      padding: 2px 6px;
+    }
+    .venue-delete:hover {
+      opacity: 1;
+      color: var(--error);
+    }
   </style>
 </head>
 <body class="theme-dark-premium">
@@ -208,7 +222,10 @@
 
       const menu = document.getElementById('venueMenu');
       menu.innerHTML = data.venues.map(v =>
-        '<div class="venue-menu-item" onclick="selectVenue(\'' + v.id + '\')">' + escapeHtml(v.name) + '</div>'
+        '<div class="venue-menu-item" onclick="selectVenue(\'' + v.id + '\')">' +
+        '<span>' + escapeHtml(v.name) + '</span>' +
+        '<span class="venue-delete" onclick="deleteVenue(\'' + v.id + '\', \'' + escapeHtml(v.name) + '\'); event.stopPropagation();">🗑</span>' +
+        '</div>'
       ).join('') + '<div class="venue-menu-item add" onclick="window.location.href=\'/setup.html\'">+ Add new venue</div>';
     }
 
@@ -229,6 +246,24 @@
         document.getElementById('venueButtonLabel').textContent = venue.name;
         document.getElementById('venueMenu').style.display = 'none';
         loadQueue();
+      }
+    }
+
+    async function deleteVenue(id, name) {
+      if (!confirm('Delete "' + name + '"? This cannot be undone.')) return;
+      const res = await fetch('/api/venues/' + id, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+      if (res.ok) {
+        // If deleted current venue, switch or go to setup
+        if (venue && venue.id === id) {
+          localStorage.removeItem('flock_venue');
+          venue = null;
+        }
+        loadVenue().then(loadQueue);
+      } else {
+        alert('Failed to delete venue.');
       }
     }
 
