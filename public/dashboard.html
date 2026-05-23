@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — flock</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .topbar-logo {
+      font-family: 'Fraunces', serif;
+      font-style: italic;
+      font-size: 28px;
+      color: var(--accent);
+    }
+    .topbar-venue {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+    .topbar-actions { display: flex; gap: 8px; }
+    .topbar-actions button {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+    }
+    .tabs {
+      display: flex;
+      gap: 4px;
+      padding: 16px 24px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .tab {
+      padding: 12px 20px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+    .tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .tab-content {
+      padding: 24px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .queue-entry {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+    .queue-entry-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .wait-time {
+      font-family: 'Fraunces', serif;
+      font-style: italic;
+      font-size: 24px;
+      color: var(--accent);
+    }
+    .meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .preference-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      background: var(--border);
+      border-radius: 4px;
+      font-size: 11px;
+      color: var(--text);
+      margin-right: 6px;
+    }
+  </style>
+</head>
+<body class="theme-dark-premium">
+  <div class="topbar">
+    <div class="topbar-logo">flock</div>
+    <div class="topbar-venue" id="venueLabel"></div>
+    <div class="topbar-actions">
+      <button onclick="showQr()">QR</button>
+      <button onclick="switchTab('settings')">Settings</button>
+      <button onclick="logout()">Log out</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="live" onclick="switchTab('live')">Live queue</button>
+    <button class="tab" data-tab="history" onclick="switchTab('history')">History</button>
+    <button class="tab" data-tab="settings" onclick="switchTab('settings')">Settings</button>
+  </div>
+
+  <div class="tab-content" id="liveTab">
+    <div id="queueList"></div>
+    <div class="empty" id="emptyState" style="display:none;">No one in the queue right now.</div>
+  </div>
+
+  <div class="tab-content" id="historyTab" style="display:none;">
+    <button class="button" style="width:auto;margin-bottom:16px;" onclick="downloadCsv()">Download CSV</button>
+    <div id="historyList"></div>
+  </div>
+
+  <div class="tab-content" id="settingsTab" style="display:none;">
+    <div class="card">
+      <h2 class="heading">Settings</h2>
+      <p class="subheading">Coming soon — for now, your venue is set up with the defaults.</p>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('flock_token');
+    let venue = JSON.parse(localStorage.getItem('flock_venue') || 'null');
+
+    if (!token) {
+      window.location.href = '/login.html';
+    }
+
+    async function loadVenue() {
+      if (venue) {
+        document.getElementById('venueLabel').textContent = venue.name;
+        return;
+      }
+      const res = await fetch('/api/venues', {
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+      const data = await res.json();
+      if (data.venues && data.venues.length > 0) {
+        venue = data.venues[0];
+        localStorage.setItem('flock_venue', JSON.stringify(venue));
+        document.getElementById('venueLabel').textContent = venue.name;
+      } else {
+        window.location.href = '/setup.html';
+      }
+    }
+
+    async function loadQueue() {
+      if (!venue) return;
+      const res = await fetch('/api/queue/live/' + venue.id, {
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+      const data = await res.json();
+      const list = document.getElementById('queueList');
+      const empty = document.getElementById('emptyState');
+
+      if (!data.entries || data.entries.length === 0) {
+        list.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+      }
+      empty.style.display = 'none';
+
+      list.innerHTML = data.entries.map(e => `
+        <div class="queue-entry">
+          <div class="queue-entry-row">
+            <div class="queue-entry-info">
+              <h4>${escapeHtml(e.guestName)} · party of ${e.partySize}</h4>
+              <p>${escapeHtml(e.guestPhone)}</p>
+              <div class="meta">
+                ${e.seatingPreference ? `<span class="preference-tag">${escapeHtml(e.seatingPreference)}</span>` : ''}
+                joined ${timeAgo(e.joinedAt)}
+              </div>
+              ${e.notes ? `<div class="meta" style="margin-top:6px;">Notes: ${escapeHtml(e.notes)}</div>` : ''}
+            </div>
+            <div class="wait-time">~${e.waitMinutes}m</div>
+          </div>
+          <div class="queue-actions">
+            <button class="btn-notify" onclick="notifyGuest('${e.id}')">Notify</button>
+            <button class="btn-cancel" onclick="callGuest('${e.guestPhone}')">Call</button>
+            <button class="btn-seat" onclick="seatGuest('${e.id}')">Mark seated</button>
+            <button class="btn-cancel" onclick="cancelGuest('${e.id}')">Cancel</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function notifyGuest(id) {
+      await fetch('/api/queue/notify/' + id, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+      loadQueue();
+    }
+
+    function callGuest(phone) {
+      window.location.href = 'tel:' + phone;
+    }
+
+    async function seatGuest(id) {
+      await fetch('/api/queue/seat/' + id, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+      loadQueue();
+    }
+
+    async function cancelGuest(id) {
+      if (!confirm('Cancel this entry?')) return;
+      await fetch('/api/queue/cancel/' + id, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+      loadQueue();
+    }
+
+    function switchTab(tab) {
+      ['live','history','settings'].forEach(t => {
+        document.getElementById(t + 'Tab').style.display = (t === tab) ? 'block' : 'none';
+        const btn = document.querySelector(`[data-tab="${t}"]`);
+        if (btn) btn.classList.toggle('active', t === tab);
+      });
+    }
+
+    function showQr() {
+      if (!venue) return;
+      const url = window.location.origin + '/queue.html?venue=' + venue.slug;
+      window.open('https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=' + encodeURIComponent(url), '_blank');
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = '/';
+    }
+
+    function downloadCsv() {
+      alert('CSV download — coming soon');
+    }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function timeAgo(dateStr) {
+      const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
+      if (diff < 1) return 'just now';
+      if (diff === 1) return '1 min ago';
+      return diff + ' mins ago';
+    }
+
+    loadVenue().then(loadQueue);
+    setInterval(loadQueue, 5000);
+  </script>
+</body>
+</html>
