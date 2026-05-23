@@ -8,24 +8,33 @@ function generateId() {
   return 'c' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
 
-function computeWaitTimes(entries, venue) {
+async function computeWaitTimes(entries, venue) {
   const waitTimes = [];
 
-  entries.forEach((entry, idx) => {
+  for (let idx = 0; idx < entries.length; idx++) {
+    const entry = entries[idx];
     const baseSnap = entry.waitTimeBaseAtJoin ?? venue.waitTimeBase;
     const inc = entry.waitTimeIncrementAtJoin ?? venue.waitTimeIncrement;
     const cap = entry.waitTimeCapAtJoin ?? venue.waitTimeCap;
 
     let wait;
     if (idx === 0) {
-      // Position 1: min of snapshot base and current venue base
-      wait = Math.min(baseSnap, venue.waitTimeBase);
+      const newBase = Math.min(baseSnap, venue.waitTimeBase);
+      // Persist if it dropped
+      if (newBase < baseSnap) {
+        await prisma.queueEntry.update({
+          where: { id: entry.id },
+          data: { waitTimeBaseAtJoin: newBase },
+        });
+        entry.waitTimeBaseAtJoin = newBase;
+      }
+      wait = newBase;
     } else {
       wait = waitTimes[idx - 1] + inc;
     }
     wait = Math.min(wait, cap);
     waitTimes.push(wait);
-  });
+  }
 
   return waitTimes;
 }
@@ -81,7 +90,7 @@ router.post('/join/:slug', async (req, res) => {
       orderBy: { joinedAt: 'asc' },
     });
     const position = allWaiting.findIndex(e => e.id === entry.id) + 1;
-    const waitMinutes = computeWaitTimes(allWaiting, venue)[position - 1];
+    const waitMinutes = (await computeWaitTimes(allWaiting, venue))[position - 1];
 
     res.json({ success: true, entry, position, waitMinutes });
   } catch (error) {
@@ -103,7 +112,7 @@ router.get('/live/:venueId', requireAuth, async (req, res) => {
       orderBy: { joinedAt: 'asc' },
     });
 
-    const waitTimes = computeWaitTimes(entries, venue);
+    const waitTimes = await computeWaitTimes(entries, venue);
     const enriched = entries.map((entry, idx) => ({
       ...entry,
       position: idx + 1,
@@ -133,7 +142,7 @@ router.get('/status/:entryId', async (req, res) => {
     });
     const position = allWaiting.findIndex(e => e.id === entry.id) + 1;
     const waitMinutes = position > 0
-      ? computeWaitTimes(allWaiting, entry.venue)[position - 1]
+      ? (await computeWaitTimes(allWaiting, entry.venue))[position - 1]
       : 0;
 
     res.json({ entry, position, waitMinutes });
