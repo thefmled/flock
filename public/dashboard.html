@@ -183,7 +183,7 @@
               </div>
               ${e.notes ? `<div class="meta" style="margin-top:6px;">Notes: ${escapeHtml(e.notes)}</div>` : ''}
             </div>
-            <div class="wait-time">~${e.waitMinutes}m</div>
+            <div class="wait-time" data-joined-at="${e.joinedAt}" data-base-wait="${e.waitMinutes}">~${e.waitMinutes}m</div>
           </div>
           <div class="queue-actions">
             <button class="btn-notify" onclick="notifyGuest('${e.id}')">Notify</button>
@@ -260,6 +260,17 @@
 
     loadVenue().then(loadQueue);
     setInterval(loadQueue, 5000);
+
+    // Tick wait times every second
+    setInterval(() => {
+      document.querySelectorAll('[data-joined-at]').forEach(el => {
+        const joinedAt = new Date(el.dataset.joinedAt).getTime();
+        const elapsed = Math.floor((Date.now() - joinedAt) / 60000);
+        const baseWait = parseInt(el.dataset.baseWait);
+        const remaining = Math.max(3, baseWait - elapsed);
+        el.textContent = '~' + remaining + 'm';
+      });
+    }, 1000);
   </script>
 </body>
 </html>
