@@ -43,9 +43,6 @@
         <label for="seatingPreference">Seating preference (optional)</label>
         <select id="seatingPreference">
           <option value="">No preference</option>
-          <option value="Indoor">Indoor</option>
-          <option value="Outdoor">Outdoor</option>
-          <option value="Bar">Bar</option>
         </select>
       </div>
 
@@ -72,6 +69,18 @@
         const data = await res.json();
         if (data.venue) {
           document.getElementById('venueLabel').textContent = data.venue.name;
+          
+          // Populate seating options
+          const select = document.getElementById('seatingPreference');
+          select.innerHTML = '';
+          const options = (data.venue.seatingOptions || 'Indoor,Outdoor,No preference').split(',');
+          options.forEach(opt => {
+            const o = document.createElement('option');
+            const trimmed = opt.trim();
+            o.value = trimmed === 'No preference' ? '' : trimmed;
+            o.textContent = trimmed;
+            select.appendChild(o);
+          });
         }
       } catch (e) {}
     }
