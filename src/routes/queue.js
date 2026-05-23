@@ -8,9 +8,12 @@ function generateId() {
   return 'c' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
 
-function calculateWaitTime(venue, position) {
-  const { waitTimeBase, waitTimeIncrement, waitTimeCap } = venue;
-  return Math.min(waitTimeBase + waitTimeIncrement * (position - 1), waitTimeCap);
+function calculateWaitTime(entryOrVenue, position) {
+  // Prefer snapshot on entry; fall back to current venue settings
+  const base = entryOrVenue.waitTimeBaseAtJoin ?? entryOrVenue.waitTimeBase;
+  const inc = entryOrVenue.waitTimeIncrementAtJoin ?? entryOrVenue.waitTimeIncrement;
+  const cap = entryOrVenue.waitTimeCapAtJoin ?? entryOrVenue.waitTimeCap;
+  return Math.min(base + inc * (position - 1), cap);
 }
 
 // Add a guest to the queue (public — guest scans QR)
@@ -52,6 +55,9 @@ router.post('/join/:slug', async (req, res) => {
         seatingPreference: seatingPreference || null,
         notes: notes || null,
         status: 'waiting',
+        waitTimeBaseAtJoin: venue.waitTimeBase,
+        waitTimeIncrementAtJoin: venue.waitTimeIncrement,
+        waitTimeCapAtJoin: venue.waitTimeCap,
       },
     });
 
@@ -64,7 +70,7 @@ router.post('/join/:slug', async (req, res) => {
       },
     });
     const position = waitingAhead + 1;
-    const waitMinutes = calculateWaitTime(venue, position);
+    const waitMinutes = calculateWaitTime(entry, position);
 
     res.json({ success: true, entry, position, waitMinutes });
   } catch (error) {
@@ -89,7 +95,7 @@ router.get('/live/:venueId', requireAuth, async (req, res) => {
     const enriched = entries.map((entry, idx) => ({
       ...entry,
       position: idx + 1,
-      waitMinutes: calculateWaitTime(venue, idx + 1),
+      waitMinutes: calculateWaitTime(entry, idx + 1),
     }));
 
     res.json({ entries: enriched });
