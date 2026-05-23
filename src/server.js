@@ -17,7 +17,7 @@ app.get('/health', (req, res) => {
 // Routes (we'll add these as we build)
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/venues', require('./routes/venues'));
-// app.use('/api/queue', require('./routes/queue'));
+app.use('/api/queue', require('./routes/queue'));
 
 app.listen(PORT, () => {
   console.log(`Flock server running on port ${PORT}`);
