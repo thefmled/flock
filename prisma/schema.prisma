@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Owner {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  venues    Venue[]
+}
+
+model Venue {
+  id                String        @id @default(cuid())
+  slug              String        @unique
+  name              String
+  address           String
+  floorManagerName  String
+  menuPdfUrl        String?
+  googleReviewsUrl  String?
+  
+  waitTimeBase      Int           @default(8)
+  waitTimeIncrement Int           @default(3)
+  waitTimeCap       Int           @default(30)
+  
+  ownerId           String
+  owner             Owner         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  
+  staff             Staff[]
+  queueEntries      QueueEntry[]
+  
+  createdAt         DateTime      @default(now())
+}
+
+model Staff {
+  id        String   @id @default(cuid())
+  phone     String
+  name      String
+  venueId   String
+  venue     Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  
+  @@unique([phone, venueId])
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  consumed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  @@index([phone])
+}
+
+model QueueEntry {
+  id          String         @id @default(cuid())
+  venueId     String
+  venue       Venue          @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  
+  guestName   String
+  guestPhone  String
+  partySize   Int
+  status      String         @default("waiting")
+  
+  joinedAt    DateTime       @default(now())
+  notifiedAt  DateTime?
+  seatedAt    DateTime?
+  cancelledAt DateTime?
+  
+  notifications Notification[]
+}
+
+model Notification {
+  id           String     @id @default(cuid())
+  queueEntryId String
+  queueEntry   QueueEntry @relation(fields: [queueEntryId], references: [id], onDelete: Cascade)
+  
+  channel      String
+  status       String
+  payload      String?
+  
+  sentAt       DateTime   @default(now())
+}
