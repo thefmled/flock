@@ -28,6 +28,7 @@ model Venue {
   waitTimeIncrement Int           @default(3)
   waitTimeCap       Int           @default(30)
   theme             String        @default("dark-premium")
+  seatingOptions    String        @default("Indoor,Outdoor,No preference")
   
   ownerId           String
   owner             Owner         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
