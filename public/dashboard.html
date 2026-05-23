@@ -364,7 +364,7 @@
               </div>
               ${e.notes ? `<div class="meta" style="margin-top:6px;">Notes: ${escapeHtml(e.notes)}</div>` : ''}
             </div>
-            <div class="wait-time" data-joined-at="${e.joinedAt}" data-base-wait="${e.waitMinutes}">~${e.waitMinutes}m</div>
+            <div class="wait-time" data-joined-at="${e.joinedAt}" data-base-wait="${e.waitMinutes}" data-min-wait="${e.waitTimeBaseAtJoin || e.waitMinutes}">~${e.waitMinutes}m</div>
           </div>
           <div class="queue-actions">
             <button class="btn-notify" onclick="notifyGuest('${e.id}')">Notify</button>
@@ -604,7 +604,8 @@
         const joinedAt = new Date(el.dataset.joinedAt).getTime();
         const elapsed = Math.floor((Date.now() - joinedAt) / 60000);
         const baseWait = parseInt(el.dataset.baseWait);
-        const remaining = Math.max(8, baseWait - elapsed);
+        const minWait = parseInt(el.dataset.minWait) || baseWait;
+        const remaining = Math.max(minWait, baseWait - elapsed);
         el.textContent = '~' + remaining + 'm';
       });
     }, 1000);
