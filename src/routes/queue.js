@@ -29,8 +29,18 @@ router.post('/join/:slug', async (req, res) => {
     const venue = await prisma.venue.findUnique({ where: { slug: req.params.slug } });
     if (!venue) return res.status(404).json({ error: 'Venue not found' });
 
-    const { seatingPreference, notes } = req.body;
-    
+    // Check for existing waiting entry from same phone
+    const existing = await prisma.queueEntry.findFirst({
+      where: {
+        venueId: venue.id,
+        guestPhone: phoneClean,
+        status: 'waiting',
+      },
+    });
+    if (existing) {
+      return res.json({ success: true, entry: existing, alreadyInQueue: true });
+    }
+
     const entry = await prisma.queueEntry.create({
       data: {
         id: generateId(),
