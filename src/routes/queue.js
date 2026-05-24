@@ -60,6 +60,13 @@ async function computeWaitTimes(entries, venue) {
       // Positions 2+
       const baseFloor = venue.waitTimeBase;
       const chainStart = waitTimes[idx - 1] + inc;
+      console.log('DEBUG pos2+:', {
+        guestName: entry.guestName,
+        baseFloor, chainStart,
+        lockedWait: entry.lockedWait,
+        positionEnteredAt: entry.positionEnteredAt,
+        inc,
+      });
       const enteredAt = entry.positionEnteredAt;
       const elapsed = enteredAt
         ? Math.floor((Date.now() - new Date(enteredAt).getTime()) / 60000)
