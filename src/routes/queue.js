@@ -21,10 +21,11 @@ async function computeWaitTimes(entries, venue) {
     if (entry.lastPosition !== currentPos) {
       await prisma.queueEntry.update({
         where: { id: entry.id },
-        data: { lastPosition: currentPos, positionEnteredAt: new Date() },
+        data: { lastPosition: currentPos, positionEnteredAt: new Date(), lockedWait: null },
       });
       entry.lastPosition = currentPos;
       entry.positionEnteredAt = new Date();
+      entry.lockedWait = null;
     }
 
     let wait;
@@ -52,14 +53,28 @@ async function computeWaitTimes(entries, venue) {
       }
       wait = newBase;
     } else {
-      const startingWait = waitTimes[idx - 1] + inc;
-      const enteredAt = entry.positionEnteredAt;
-      if (enteredAt) {
-        const elapsed = Math.floor((Date.now() - new Date(enteredAt).getTime()) / 60000);
-        const baseFloor = venue.waitTimeBase; // use CURRENT venue base for non-position-1
-        wait = Math.max(baseFloor, startingWait - elapsed);
+      // If wait is already locked, just serve it
+      if (entry.lockedWait != null) {
+        wait = entry.lockedWait;
       } else {
-        wait = startingWait;
+        const startingWait = waitTimes[idx - 1] + inc;
+        const enteredAt = entry.positionEnteredAt;
+        if (enteredAt) {
+          const elapsed = Math.floor((Date.now() - new Date(enteredAt).getTime()) / 60000);
+          const baseFloor = venue.waitTimeBase;
+          const computed = Math.max(baseFloor, startingWait - elapsed);
+          // Lock if we've hit the floor
+          if (computed === baseFloor) {
+            await prisma.queueEntry.update({
+              where: { id: entry.id },
+              data: { lockedWait: baseFloor },
+            });
+            entry.lockedWait = baseFloor;
+          }
+          wait = computed;
+        } else {
+          wait = startingWait;
+        }
       }
     }
     wait = Math.min(wait, cap);
