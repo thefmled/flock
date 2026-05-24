@@ -593,20 +593,6 @@ function timeAgo(dateStr) {
 
 loadVenue().then(loadQueue);
 setInterval(loadQueue, 2000);
-
-  setInterval(() => {
-  document.querySelectorAll('.wait-time').forEach(el => {
-    const pos = parseInt(el.dataset.position);
-    if (pos === 1) return; // position 1 stays at base
-    const enteredAt = el.dataset.positionEnteredAt;
-    if (!enteredAt) return;
-    const starting = parseInt(el.dataset.startingWait);
-    const base = parseInt(el.dataset.baseWait);
-    const elapsed = Math.floor((Date.now() - new Date(enteredAt).getTime()) / 60000);
-    const remaining = Math.max(base, starting - elapsed);
-    el.textContent = '~' + remaining + 'm';
-  });
-}, 1000);
   
 </script>
 </body>
