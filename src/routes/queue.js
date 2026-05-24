@@ -13,12 +13,22 @@ async function computeWaitTimes(entries, venue) {
 
   for (let idx = 0; idx < entries.length; idx++) {
     const entry = entries[idx];
+    const currentPos = idx + 1;
     const inc = entry.waitTimeIncrementAtJoin ?? venue.waitTimeIncrement;
     const cap = entry.waitTimeCapAtJoin ?? venue.waitTimeCap;
 
+    // Track position changes — set positionEnteredAt whenever position changes
+    if (entry.lastPosition !== currentPos) {
+      await prisma.queueEntry.update({
+        where: { id: entry.id },
+        data: { lastPosition: currentPos, positionEnteredAt: new Date() },
+      });
+      entry.lastPosition = currentPos;
+      entry.positionEnteredAt = new Date();
+    }
+
     let wait;
     if (idx === 0) {
-      // First time hitting position #1: re-anchor base to current venue base
       if (!entry.hasBeenPositionOne) {
         await prisma.queueEntry.update({
           where: { id: entry.id },
@@ -33,7 +43,6 @@ async function computeWaitTimes(entries, venue) {
 
       const baseSnap = entry.waitTimeBaseAtJoin;
       const newBase = Math.min(baseSnap, venue.waitTimeBase);
-      // Persist if it dropped
       if (newBase < baseSnap) {
         await prisma.queueEntry.update({
           where: { id: entry.id },
