@@ -80,6 +80,7 @@ model QueueEntry {
   lockedWait             Int?
   chainStartOverride     Int?
   lastBaseSeen           Int?
+  startingWait           Int?
   status      String         @default("waiting")
   
   joinedAt    DateTime       @default(now())
