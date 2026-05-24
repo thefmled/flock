@@ -75,6 +75,8 @@ model QueueEntry {
   waitTimeIncrementAtJoin Int?
   waitTimeCapAtJoin       Int?
   hasBeenPositionOne      Boolean   @default(false)
+  lastPosition           Int?
+  positionEnteredAt      DateTime?
   status      String         @default("waiting")
   
   joinedAt    DateTime       @default(now())
