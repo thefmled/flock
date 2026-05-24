@@ -52,7 +52,15 @@ async function computeWaitTimes(entries, venue) {
       }
       wait = newBase;
     } else {
-      wait = waitTimes[idx - 1] + inc;
+      const startingWait = waitTimes[idx - 1] + inc;
+      const enteredAt = entry.positionEnteredAt;
+      if (enteredAt) {
+        const elapsed = Math.floor((Date.now() - new Date(enteredAt).getTime()) / 60000);
+        const baseFloor = entry.waitTimeBaseAtJoin ?? venue.waitTimeBase;
+        wait = Math.max(baseFloor, startingWait - elapsed);
+      } else {
+        wait = startingWait;
+      }
     }
     wait = Math.min(wait, cap);
     waitTimes.push(wait);
