@@ -628,6 +628,18 @@ loadVenue().then(() => {
 });
 setInterval(loadQueue, 2000);
 setInterval(loadStats, 10000);
+
+setInterval(() => {
+  document.querySelectorAll('.wait-time').forEach(el => {
+    const pos = parseInt(el.dataset.position);
+    if (pos === 1) return;
+    const serverWait = parseInt(el.dataset.serverWait);
+    const lastSync = parseInt(el.dataset.lastSync);
+    const elapsedMin = (Date.now() - lastSync) / 60000;
+    const remaining = Math.max(0, Math.ceil(serverWait - elapsedMin));
+    el.textContent = '~' + remaining + 'm';
+  });
+}, 1000);
   
 </script>
 </body>
