@@ -1,605 +1,581 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard — flock</title>
-  <link rel="stylesheet" href="/styles.css" />
-  <style>
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 24px;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-    .topbar-logo {
-      font-family: 'Fraunces', serif;
-      font-style: italic;
-      font-size: 28px;
-      color: var(--accent);
-    }
-    .topbar-venue {
-      font-size: 14px;
-      color: var(--text-muted);
-    }
-    .topbar-actions { display: flex; gap: 8px; }
-    .topbar-actions button {
-      background: transparent;
-      color: var(--text);
-      border: 1px solid var(--border);
-      padding: 8px 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 13px;
-    }
-    .tabs {
-      display: flex;
-      gap: 4px;
-      padding: 16px 24px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .tab {
-      padding: 12px 20px;
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-family: inherit;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-    }
-    .tab.active {
-      color: var(--accent);
-      border-bottom-color: var(--accent);
-    }
-    .tab-content {
-      padding: 24px;
-      max-width: 900px;
-      margin: 0 auto;
-    }
-    .queue-entry {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 12px;
-    }
-    .queue-entry-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-    .wait-time {
-      font-family: 'Fraunces', serif;
-      font-style: italic;
-      font-size: 24px;
-      color: var(--accent);
-    }
-    .meta {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-    .preference-tag {
-      display: inline-block;
-      padding: 2px 8px;
-      background: var(--border);
-      border-radius: 4px;
-      font-size: 11px;
-      color: var(--text);
-      margin-right: 6px;
-    }
-    .venue-button {
-      background: transparent;
-      color: var(--text);
-      border: 1px solid var(--border);
-      padding: 8px 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .venue-button:hover {
-      border-color: var(--accent);
-    }
-    #venueDropdown {
-      position: relative;
-    }
-    .venue-menu {
-      position: absolute;
-      top: calc(100% + 6px);
-      left: 0;
-      right: 0;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-      z-index: 100;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-      min-width: 180px;
-    }
-    .venue-menu-item {
-      padding: 10px 14px;
-      cursor: pointer;
-      font-size: 14px;
-      color: var(--text);
-    }
-    .venue-menu-item:hover {
-      background: var(--border);
-    }
-    .venue-menu-item.add {
-      border-top: 1px solid var(--border);
-      color: var(--accent);
-      font-weight: 500;
-    }
-    .venue-menu-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .venue-delete {
-      opacity: 0.6;
-      font-size: 18px;
-      padding: 4px 8px;
-      cursor: pointer;
-    }
-    .venue-delete:hover {
-      opacity: 1;
-      color: var(--error);
-    }
-    .seating-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
-    .chip { padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; cursor: pointer; font-size: 13px; background: transparent; color: var(--text); font-family: inherit; display: flex; align-items: center; gap: 6px; }
-    .chip.selected { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
-    .chip.add-chip { border-style: dashed; }
-    .chip-remove { font-size: 14px; opacity: 0.6; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — flock</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.topbar-logo {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 28px;
+  color: var(--text);
+}
+.topbar-logo .accent { color: var(--accent); }
+.topbar-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.topbar-actions button {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+.topbar-actions button:hover { border-color: var(--accent); color: var(--accent); }
+.venue-button {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+.venue-button:hover { border-color: var(--accent); }
+#venueDropdown { position: relative; }
+.venue-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  overflow: hidden;
+  z-index: 100;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  min-width: 220px;
+}
+.venue-menu-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.venue-menu-item:hover { background: var(--card-hover); }
+.venue-menu-item.add {
+  border-top: 1px solid var(--border);
+  color: var(--accent);
+  font-weight: 500;
+}
+.venue-delete { opacity: 0.5; font-size: 16px; padding: 4px 6px; cursor: pointer; }
+.venue-delete:hover { opacity: 1; color: var(--error); }
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 14px 20px 0;
+  border-bottom: 1px solid var(--border);
+}
+.tab {
+  padding: 12px 18px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  letter-spacing: 0.02em;
+}
+.tab:hover { color: var(--text); }
+.tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.tab-content {
+  padding: 24px 20px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.history-header p {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.history-header a {
+  color: var(--accent);
+  font-size: 12px;
+  text-decoration: none;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+.history-header a:hover { opacity: 0.8; }
+
+@media (max-width: 480px) {
+  .topbar { padding: 14px 16px; }
+  .topbar-actions button { padding: 7px 10px; font-size: 11px; }
+  .venue-button { padding: 7px 10px; font-size: 13px; }
+  .tab { padding: 10px 14px; font-size: 13px; }
+  .tab-content { padding: 18px 16px; }
+}
+</style>
 </head>
 <body class="theme-dark-premium">
-  <div class="topbar">
-    <div class="topbar-logo">flock</div>
-    <div class="topbar-venue" id="venueDropdown">
-      <button id="venueButton" class="venue-button" onclick="toggleDropdown(event)">
-        <span id="venueButtonLabel"></span>
-        <span style="font-size:10px;opacity:0.5;">▼</span>
-      </button>
-      <div id="venueMenu" class="venue-menu" style="display:none;"></div>
+
+<div class="topbar">
+  <div class="topbar-logo">fl<span class="accent">o</span>ck</div>
+  <div id="venueDropdown">
+    <button id="venueButton" class="venue-button" onclick="toggleDropdown(event)">
+      <span id="venueButtonLabel"></span>
+      <span style="font-size:10px;opacity:0.5;">▼</span>
+    </button>
+    <div id="venueMenu" class="venue-menu" style="display:none;"></div>
+  </div>
+  <div class="topbar-actions">
+    <button onclick="showQr()">QR for guests</button>
+    <button onclick="switchTab('settings')">Queue settings</button>
+    <button onclick="logout()">Log out</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="live" onclick="switchTab('live')">Live queue</button>
+  <button class="tab" data-tab="history" onclick="switchTab('history')">History</button>
+</div>
+
+<div class="tab-content" id="liveTab">
+  <div id="queueList"></div>
+  <div class="empty" id="emptyState" style="display:none;">No one in the queue right now.</div>
+</div>
+
+<div class="tab-content" id="historyTab" style="display:none;">
+  <div class="history-header">
+    <p>Today's queue activity</p>
+    <a href="#" onclick="downloadCsv(); return false;">DOWNLOAD CSV ↓</a>
+  </div>
+  <div id="historyList"></div>
+</div>
+
+<div class="tab-content" id="settingsTab" style="display:none;">
+  <div class="card">
+    <h2 class="heading">Venue details</h2>
+    <p class="subheading">Update what guests see when they scan the QR.</p>
+
+    <div class="input-group">
+      <label>Venue name</label>
+      <input type="text" id="settingsName">
     </div>
-    <div class="topbar-actions">
-      <button onclick="showQr()">QR for guests</button>
-      <button onclick="switchTab('settings')">Queue settings</button>
-      <button onclick="logout()">Log out</button>
+    <div class="input-group">
+      <label>Address</label>
+      <textarea id="settingsAddress" rows="2"></textarea>
+    </div>
+    <div class="input-group">
+      <label>Floor manager name</label>
+      <input type="text" id="settingsManager">
+    </div>
+    <div class="input-group">
+      <label>Menu PDF link</label>
+      <input type="url" id="settingsMenu" placeholder="https://...">
+    </div>
+    <div class="input-group">
+      <label>Google reviews link</label>
+      <input type="url" id="settingsReviews" placeholder="https://g.page/...">
+    </div>
+    <div class="input-group">
+      <label>Seating options</label>
+      <div class="seating-chips" id="settingsChips"></div>
     </div>
   </div>
 
-  <div class="tabs">
-    <button class="tab active" data-tab="live" onclick="switchTab('live')">Live queue</button>
-    <button class="tab" data-tab="history" onclick="switchTab('history')">History</button>
-  </div>
-
-  <div class="tab-content" id="liveTab">
-    <div id="queueList"></div>
-    <div class="empty" id="emptyState" style="display:none;">No one in the queue right now.</div>
-  </div>
-
-  <div class="tab-content" id="historyTab" style="display:none;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <p style="color:var(--text-muted);font-size:14px;">Today's queue activity</p>
-      <a href="#" onclick="downloadCsv(); return false;" style="color:var(--accent);font-size:13px;text-decoration:none;">Download CSV ↓</a>
-    </div>
-    <div id="historyList"></div>
-  </div>
-
-  <div class="tab-content" id="settingsTab" style="display:none;">
-    <div class="card">
-      <h2 class="heading">Venue details</h2>
-
-      <div class="input-group">
-        <label>Venue name</label>
-        <input type="text" id="settingsName" />
+  <div class="card">
+    <h2 class="heading">Wait time formula</h2>
+    <p class="subheading">min(base + increment × (position − 1), cap)</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <div class="input-group" style="flex:1;min-width:90px;">
+        <label>Base (min)</label>
+        <input type="number" id="settingsBase" min="1">
       </div>
-
-      <div class="input-group">
-        <label>Address</label>
-        <textarea id="settingsAddress" rows="2"></textarea>
+      <div class="input-group" style="flex:1;min-width:90px;">
+        <label>Increment</label>
+        <input type="number" id="settingsIncrement" min="1">
       </div>
-
-      <div class="input-group">
-        <label>Floor manager name</label>
-        <input type="text" id="settingsManager" />
-      </div>
-
-      <div class="input-group">
-        <label>Menu PDF link</label>
-        <input type="url" id="settingsMenu" placeholder="https://..." />
-      </div>
-
-      <div class="input-group">
-        <label>Google reviews link</label>
-        <input type="url" id="settingsReviews" placeholder="https://g.page/..." />
-      </div>
-
-      <div class="input-group">
-        <label>Seating options</label>
-        <div class="seating-chips" id="settingsChips"></div>
+      <div class="input-group" style="flex:1;min-width:90px;">
+        <label>Cap (min)</label>
+        <input type="number" id="settingsCap" min="1">
       </div>
     </div>
-
-    <div class="card">
-      <h2 class="heading">Wait time formula</h2>
-      <p class="subheading">min(base + increment × (position − 1), cap)</p>
-
-      <div style="display:flex;gap:12px;">
-        <div class="input-group" style="flex:1;">
-          <label>Base (min)</label>
-          <input type="number" id="settingsBase" min="1" />
-        </div>
-        <div class="input-group" style="flex:1;">
-          <label>Increment (min)</label>
-          <input type="number" id="settingsIncrement" min="1" />
-        </div>
-        <div class="input-group" style="flex:1;">
-          <label>Cap (min)</label>
-          <input type="number" id="settingsCap" min="1" />
-        </div>
-      </div>
-    </div>
-
-    <button class="button" onclick="saveSettings()">Save changes</button>
-    <p class="success" id="settingsSuccess"></p>
-    <p class="error" id="settingsError"></p>
   </div>
 
-  <script>
-    const token = localStorage.getItem('flock_token');
-    let venue = JSON.parse(localStorage.getItem('flock_venue') || 'null');
+  <button class="button" onclick="saveSettings()">Save changes</button>
+  <p class="success" id="settingsSuccess"></p>
+  <p class="error" id="settingsError"></p>
+</div>
 
-    if (!token) {
-      window.location.href = '/login.html';
+<script>
+const token = localStorage.getItem('flock_token');
+let venue = JSON.parse(localStorage.getItem('flock_venue') || 'null');
+
+if (!token) {
+  window.location.href = '/login.html';
+}
+
+async function loadVenue() {
+  const res = await fetch('/api/venues', {
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
+  const data = await res.json();
+  
+  if (!data.venues || data.venues.length === 0) {
+    window.location.href = '/setup.html';
+    return;
+  }
+
+  const savedId = venue ? venue.id : null;
+  venue = data.venues.find(v => v.id === savedId) || data.venues[0];
+  localStorage.setItem('flock_venue', JSON.stringify(venue));
+
+  document.getElementById('venueButtonLabel').textContent = venue.name;
+
+  const menu = document.getElementById('venueMenu');
+  menu.innerHTML = data.venues.map(v =>
+    '<div class="venue-menu-item" onclick="selectVenue(\'' + v.id + '\')">' +
+    '<span>' + escapeHtml(v.name) + '</span>' +
+    '<span class="venue-delete" onclick="deleteVenue(\'' + v.id + '\', \'' + escapeHtml(v.name) + '\'); event.stopPropagation();">🗑</span>' +
+    '</div>'
+  ).join('') + '<div class="venue-menu-item add" onclick="window.location.href=\'/setup.html\'">+ Add new venue</div>';
+}
+
+function toggleDropdown(e) {
+  if (e) e.stopPropagation();
+  const m = document.getElementById('venueMenu');
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+
+async function selectVenue(id) {
+  const res = await fetch('/api/venues', {
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
+  const data = await res.json();
+  venue = data.venues.find(v => v.id === id);
+  if (venue) {
+    localStorage.setItem('flock_venue', JSON.stringify(venue));
+    document.getElementById('venueButtonLabel').textContent = venue.name;
+    document.getElementById('venueMenu').style.display = 'none';
+    loadQueue();
+  }
+}
+
+async function deleteVenue(id, name) {
+  if (!confirm('Delete "' + name + '"? This cannot be undone.')) return;
+  const res = await fetch('/api/venues/' + id, {
+    method: 'DELETE',
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
+  if (res.ok) {
+    if (venue && venue.id === id) {
+      localStorage.removeItem('flock_venue');
+      venue = null;
     }
-
-    async function loadVenue() {
-      const res = await fetch('/api/venues', {
-        headers: { 'Authorization': 'Bearer ' + token },
-      });
-      const data = await res.json();
-      
-      if (!data.venues || data.venues.length === 0) {
-        window.location.href = '/setup.html';
-        return;
-      }
-
-      const savedId = venue ? venue.id : null;
-      venue = data.venues.find(v => v.id === savedId) || data.venues[0];
-      localStorage.setItem('flock_venue', JSON.stringify(venue));
-
-      document.getElementById('venueButtonLabel').textContent = venue.name;
-
-      const menu = document.getElementById('venueMenu');
-      menu.innerHTML = data.venues.map(v =>
-        '<div class="venue-menu-item" onclick="selectVenue(\'' + v.id + '\')">' +
-        '<span>' + escapeHtml(v.name) + '</span>' +
-        '<span class="venue-delete" onclick="deleteVenue(\'' + v.id + '\', \'' + escapeHtml(v.name) + '\'); event.stopPropagation();">🗑</span>' +
-        '</div>'
-      ).join('') + '<div class="venue-menu-item add" onclick="window.location.href=\'/setup.html\'">+ Add new venue</div>';
-    }
-
-    function toggleDropdown(e) {
-      if (e) e.stopPropagation();
-      const menu = document.getElementById('venueMenu');
-      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-    }
-
-    async function selectVenue(id) {
-      const res = await fetch('/api/venues', {
-        headers: { 'Authorization': 'Bearer ' + token },
-      });
-      const data = await res.json();
-      venue = data.venues.find(v => v.id === id);
-      if (venue) {
-        localStorage.setItem('flock_venue', JSON.stringify(venue));
-        document.getElementById('venueButtonLabel').textContent = venue.name;
-        document.getElementById('venueMenu').style.display = 'none';
-        loadQueue();
-      }
-    }
-
-    async function deleteVenue(id, name) {
-      if (!confirm('Delete "' + name + '"? This cannot be undone.')) return;
-      const res = await fetch('/api/venues/' + id, {
-        method: 'DELETE',
-        headers: { 'Authorization': 'Bearer ' + token },
-      });
-      if (res.ok) {
-        // If deleted current venue, switch or go to setup
-        if (venue && venue.id === id) {
-          localStorage.removeItem('flock_venue');
-          venue = null;
-        }
-        loadVenue().then(loadQueue);
-      } else {
-        alert('Failed to delete venue.');
-      }
-    }
-
-    document.addEventListener('click', (e) => {
-      const dropdown = document.getElementById('venueDropdown');
-      if (dropdown && !dropdown.contains(e.target)) {
-        document.getElementById('venueMenu').style.display = 'none';
-      }
-    });
-
-    async function loadQueue() {
-      if (!venue) return;
-      const res = await fetch('/api/queue/live/' + venue.id, {
-        headers: { 'Authorization': 'Bearer ' + token },
-      });
-      const data = await res.json();
-      const list = document.getElementById('queueList');
-      const empty = document.getElementById('emptyState');
-
-      if (!data.entries || data.entries.length === 0) {
-        list.innerHTML = '';
-        empty.style.display = 'block';
-        return;
-      }
-      empty.style.display = 'none';
-
-      list.innerHTML = data.entries.map(e => `
-        <div class="queue-entry">
-          <div class="queue-entry-row">
-            <div class="queue-entry-info">
-              <h4>${escapeHtml(e.guestName)} · party of ${e.partySize}</h4>
-              <p>${escapeHtml(e.guestPhone)}</p>
-              <div class="meta">
-                ${e.seatingPreference ? `<span class="preference-tag">${escapeHtml(e.seatingPreference)}</span>` : ''}
-                joined ${timeAgo(e.joinedAt)}
-              </div>
-              ${e.notes ? `<div class="meta" style="margin-top:6px;">Notes: ${escapeHtml(e.notes)}</div>` : ''}
-            </div>
-            <div class="wait-time">~${e.waitMinutes}m</div>
-          </div>
-          <div class="queue-actions">
-            <button class="btn-notify" onclick="notifyGuest('${e.id}')">Notify</button>
-            <button class="btn-cancel" onclick="callGuest('${e.guestPhone}')">Call</button>
-            <button class="btn-seat" onclick="seatGuest('${e.id}')">Mark seated</button>
-            <button class="btn-cancel" onclick="cancelGuest('${e.id}')">Cancel</button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    async function notifyGuest(id) {
-      await fetch('/api/queue/notify/' + id, {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token },
-      });
-      loadQueue();
-    }
-
-    function callGuest(phone) {
-      window.location.href = 'tel:' + phone;
-    }
-
-    async function seatGuest(id) {
-      await fetch('/api/queue/seat/' + id, {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token },
-      });
-      loadQueue();
-    }
-
-    async function cancelGuest(id) {
-      if (!confirm('Cancel this entry?')) return;
-      await fetch('/api/queue/cancel/' + id, {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token },
-      });
-      loadQueue();
-    }
-
-    function switchTab(tab) {
-      ['live','history','settings'].forEach(t => {
-        document.getElementById(t + 'Tab').style.display = (t === tab) ? 'block' : 'none';
-        const btn = document.querySelector(`[data-tab="${t}"]`);
-        if (btn) btn.classList.toggle('active', t === tab);
-      });
-      if (tab === 'history') loadHistory();
-      if (tab === 'settings') loadSettings();
-    }
-
-    let settingsSeating = [];
-
-    function loadSettings() {
-      if (!venue) return;
-      document.getElementById('settingsName').value = venue.name || '';
-      document.getElementById('settingsAddress').value = venue.address || '';
-      document.getElementById('settingsManager').value = venue.floorManagerName || '';
-      document.getElementById('settingsMenu').value = venue.menuPdfUrl || '';
-      document.getElementById('settingsReviews').value = venue.googleReviewsUrl || '';
-      document.getElementById('settingsBase').value = venue.waitTimeBase;
-      document.getElementById('settingsIncrement').value = venue.waitTimeIncrement;
-      document.getElementById('settingsCap').value = venue.waitTimeCap;
-
-      const opts = (venue.seatingOptions || 'Indoor,Outdoor,No preference').split(',');
-      settingsSeating = opts.map(o => ({ name: o.trim(), selected: true }));
-      renderSettingsChips();
-    }
-
-    function renderSettingsChips() {
-      const protectedOpts = ['Indoor', 'Outdoor', 'No preference'];
-      const c = document.getElementById('settingsChips');
-      c.innerHTML = settingsSeating.map((opt, i) => `
-        <button class="chip ${opt.selected ? 'selected' : ''}" onclick="toggleSettingsChip(${i})">
-          ${escapeHtml(opt.name)}
-          ${!protectedOpts.includes(opt.name) ? `<span class="chip-remove" onclick="removeSettingsChip(${i}); event.stopPropagation();">×</span>` : ''}
-        </button>
-      `).join('') + `<button class="chip add-chip" onclick="addSettingsChip()">+ Add option</button>`;
-    }
-
-    function toggleSettingsChip(i) {
-      settingsSeating[i].selected = !settingsSeating[i].selected;
-      renderSettingsChips();
-    }
-
-    function removeSettingsChip(i) {
-      settingsSeating.splice(i, 1);
-      renderSettingsChips();
-    }
-
-    function addSettingsChip() {
-      const name = prompt('New seating option:');
-      if (name && name.trim()) {
-        settingsSeating.push({ name: name.trim(), selected: true });
-        renderSettingsChips();
-      }
-    }
-
-    async function saveSettings() {
-      const errEl = document.getElementById('settingsError');
-      const okEl = document.getElementById('settingsSuccess');
-      errEl.textContent = '';
-      okEl.textContent = '';
-
-      const payload = {
-        name: document.getElementById('settingsName').value.trim(),
-        address: document.getElementById('settingsAddress').value.trim(),
-        floorManagerName: document.getElementById('settingsManager').value.trim(),
-        menuPdfUrl: document.getElementById('settingsMenu').value.trim() || null,
-        googleReviewsUrl: document.getElementById('settingsReviews').value.trim() || null,
-        seatingOptions: settingsSeating.filter(o => o.selected).map(o => o.name).join(',') || 'Indoor,Outdoor,No preference',
-        waitTimeBase: parseInt(document.getElementById('settingsBase').value) || 8,
-        waitTimeIncrement: parseInt(document.getElementById('settingsIncrement').value) || 3,
-        waitTimeCap: parseInt(document.getElementById('settingsCap').value) || 60,
-      };
-
-      try {
-        const res = await fetch('/api/venues/' + venue.id, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token,
-          },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to save');
-        venue = data.venue;
-        localStorage.setItem('flock_venue', JSON.stringify(venue));
-        okEl.textContent = 'Saved.';
-        loadVenue();
-      } catch (err) {
-        errEl.textContent = err.message;
-      }
-    }
-
-    async function loadHistory() {
-      if (!venue) return;
-      const res = await fetch('/api/queue/history/' + venue.id, {
-        headers: { 'Authorization': 'Bearer ' + token },
-      });
-      const data = await res.json();
-      const list = document.getElementById('historyList');
-      if (!data.entries || data.entries.length === 0) {
-        list.innerHTML = '<div class="empty">No queue activity today.</div>';
-        return;
-      }
-
-      list.innerHTML = data.entries.map(e => {
-        let statusBadge = '';
-        if (e.status === 'seated') statusBadge = '<span style="color:var(--success);font-size:12px;">✓ Seated</span>';
-        else if (e.status === 'cancelled') statusBadge = '<span style="color:var(--error);font-size:12px;">Cancelled</span>';
-        else if (e.status === 'notified') statusBadge = '<span style="color:var(--accent);font-size:12px;">Notified</span>';
-        else statusBadge = '<span style="color:var(--text-muted);font-size:12px;">Waiting</span>';
-
-        const duration = e.seatedAt
-          ? Math.round((new Date(e.seatedAt) - new Date(e.joinedAt)) / 60000) + ' min wait'
-          : e.cancelledAt
-            ? 'cancelled after ' + Math.round((new Date(e.cancelledAt) - new Date(e.joinedAt)) / 60000) + ' min'
-            : '';
-
-        return `
-          <div class="queue-entry">
-            <div class="queue-entry-row">
-              <div class="queue-entry-info">
-                <h4>${escapeHtml(e.guestName)} · party of ${e.partySize}</h4>
-                <p>${escapeHtml(e.guestPhone)}</p>
-                <div class="meta">
-                  ${e.seatingPreference ? `<span class="preference-tag">${escapeHtml(e.seatingPreference)}</span>` : ''}
-                  joined ${new Date(e.joinedAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})} · ${statusBadge} ${duration ? '· ' + duration : ''}
-                </div>
-                ${e.notes ? `<div class="meta" style="margin-top:6px;">Notes: ${escapeHtml(e.notes)}</div>` : ''}
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function downloadCsv() {
-      if (!venue) return;
-      fetch('/api/queue/history/' + venue.id, {
-        headers: { 'Authorization': 'Bearer ' + token },
-      }).then(r => r.json()).then(data => {
-        const rows = [['Name','Phone','Party Size','Seating Preference','Notes','Status','Joined','Seated','Cancelled','Wait Duration (min)']];
-        data.entries.forEach(e => {
-          const duration = e.seatedAt
-            ? Math.round((new Date(e.seatedAt) - new Date(e.joinedAt)) / 60000)
-            : e.cancelledAt
-              ? Math.round((new Date(e.cancelledAt) - new Date(e.joinedAt)) / 60000)
-              : '';
-          rows.push([
-            e.guestName, e.guestPhone, e.partySize,
-            e.seatingPreference || '', e.notes || '',
-            e.status,
-            new Date(e.joinedAt).toLocaleString(),
-            e.seatedAt ? new Date(e.seatedAt).toLocaleString() : '',
-            e.cancelledAt ? new Date(e.cancelledAt).toLocaleString() : '',
-            duration,
-          ]);
-        });
-        const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `flock-${venue.slug}-${new Date().toISOString().split('T')[0]}.csv`;
-        a.click();
-      });
-    }
-
-    function showQr() {
-      if (!venue) return;
-      const url = window.location.origin + '/queue.html?venue=' + venue.slug;
-      window.open('https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=' + encodeURIComponent(url), '_blank');
-    }
-
-    function logout() {
-      localStorage.clear();
-      window.location.href = '/';
-    }
-
-    function escapeHtml(str) {
-      return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    }
-
-    function timeAgo(dateStr) {
-      const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
-      if (diff < 1) return 'just now';
-      if (diff === 1) return '1 min ago';
-      return diff + ' mins ago';
-    }
-
     loadVenue().then(loadQueue);
-    setInterval(loadQueue, 5000);
+  } else {
+    alert('Failed to delete venue.');
+  }
+}
 
-  </script>
+document.addEventListener('click', (e) => {
+  const d = document.getElementById('venueDropdown');
+  if (d && !d.contains(e.target)) {
+    document.getElementById('venueMenu').style.display = 'none';
+  }
+});
+
+async function loadQueue() {
+  if (!venue) return;
+  const res = await fetch('/api/queue/live/' + venue.id, {
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
+  const data = await res.json();
+  const list = document.getElementById('queueList');
+  const empty = document.getElementById('emptyState');
+
+  if (!data.entries || data.entries.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  list.innerHTML = data.entries.map(e => `
+    <div class="queue-entry">
+      <div class="queue-entry-row">
+        <div class="queue-entry-info">
+          <h4>${escapeHtml(e.guestName)} · party of ${e.partySize}</h4>
+          <div class="meta">
+            ${e.seatingPreference ? `<span class="preference-tag">${escapeHtml(e.seatingPreference)}</span>` : ''}
+            <span>${escapeHtml(e.guestPhone)}</span>
+            <span>· joined ${timeAgo(e.joinedAt)}</span>
+          </div>
+          ${e.notes ? `<div class="meta" style="margin-top:6px;">Notes: ${escapeHtml(e.notes)}</div>` : ''}
+        </div>
+        <div class="wait-time">~${e.waitMinutes}m</div>
+      </div>
+      <div class="queue-actions">
+        <button class="btn-notify" onclick="notifyGuest('${e.id}')">Notify</button>
+        <button class="btn-call" onclick="callGuest('${e.guestPhone}')">Call</button>
+        <button class="btn-seat" onclick="seatGuest('${e.id}')">Mark seated</button>
+        <button class="btn-cancel" onclick="cancelGuest('${e.id}')">Cancel</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function notifyGuest(id) {
+  await fetch('/api/queue/notify/' + id, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
+  loadQueue();
+}
+
+function callGuest(phone) {
+  window.location.href = 'tel:' + phone;
+}
+
+async function seatGuest(id) {
+  await fetch('/api/queue/seat/' + id, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
+  loadQueue();
+}
+
+async function cancelGuest(id) {
+  if (!confirm('Cancel this entry?')) return;
+  await fetch('/api/queue/cancel/' + id, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
+  loadQueue();
+}
+
+function switchTab(tab) {
+  ['live','history','settings'].forEach(t => {
+    document.getElementById(t + 'Tab').style.display = (t === tab) ? 'block' : 'none';
+    const btn = document.querySelector('[data-tab="' + t + '"]');
+    if (btn) btn.classList.toggle('active', t === tab);
+  });
+  if (tab === 'history') loadHistory();
+  if (tab === 'settings') loadSettings();
+}
+
+async function loadHistory() {
+  if (!venue) return;
+  const res = await fetch('/api/queue/history/' + venue.id, {
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
+  const data = await res.json();
+  const list = document.getElementById('historyList');
+  if (!data.entries || data.entries.length === 0) {
+    list.innerHTML = '<div class="empty">No queue activity today.</div>';
+    return;
+  }
+
+  list.innerHTML = data.entries.map(e => {
+    let statusBadge = '';
+    if (e.status === 'seated') statusBadge = '<span style="color:var(--success);font-size:12px;">✓ Seated</span>';
+    else if (e.status === 'cancelled') statusBadge = '<span style="color:var(--error);font-size:12px;">Cancelled</span>';
+    else if (e.status === 'notified') statusBadge = '<span style="color:var(--accent);font-size:12px;">Notified</span>';
+    else statusBadge = '<span style="color:var(--text-muted);font-size:12px;">Waiting</span>';
+
+    const duration = e.seatedAt
+      ? Math.round((new Date(e.seatedAt) - new Date(e.joinedAt)) / 60000) + ' min wait'
+      : e.cancelledAt
+        ? 'cancelled after ' + Math.round((new Date(e.cancelledAt) - new Date(e.joinedAt)) / 60000) + ' min'
+        : '';
+
+    return `
+      <div class="queue-entry">
+        <div class="queue-entry-row" style="margin-bottom:0;">
+          <div class="queue-entry-info">
+            <h4>${escapeHtml(e.guestName)} · party of ${e.partySize}</h4>
+            <div class="meta">
+              ${e.seatingPreference ? `<span class="preference-tag">${escapeHtml(e.seatingPreference)}</span>` : ''}
+              <span>${escapeHtml(e.guestPhone)}</span>
+            </div>
+            <div class="meta" style="margin-top:6px;">
+              joined ${new Date(e.joinedAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})} · ${statusBadge} ${duration ? '· ' + duration : ''}
+            </div>
+            ${e.notes ? `<div class="meta" style="margin-top:6px;">Notes: ${escapeHtml(e.notes)}</div>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function downloadCsv() {
+  if (!venue) return;
+  fetch('/api/queue/history/' + venue.id, {
+    headers: { 'Authorization': 'Bearer ' + token },
+  }).then(r => r.json()).then(data => {
+    const rows = [['Name','Phone','Party Size','Seating Preference','Notes','Status','Joined','Seated','Cancelled','Wait Duration (min)']];
+    data.entries.forEach(e => {
+      const duration = e.seatedAt
+        ? Math.round((new Date(e.seatedAt) - new Date(e.joinedAt)) / 60000)
+        : e.cancelledAt
+          ? Math.round((new Date(e.cancelledAt) - new Date(e.joinedAt)) / 60000)
+          : '';
+      rows.push([
+        e.guestName, e.guestPhone, e.partySize,
+        e.seatingPreference || '', e.notes || '',
+        e.status,
+        new Date(e.joinedAt).toLocaleString(),
+        e.seatedAt ? new Date(e.seatedAt).toLocaleString() : '',
+        e.cancelledAt ? new Date(e.cancelledAt).toLocaleString() : '',
+        duration,
+      ]);
+    });
+    const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'flock-' + venue.slug + '-' + new Date().toISOString().split('T')[0] + '.csv';
+    a.click();
+  });
+}
+
+let settingsSeating = [];
+
+function loadSettings() {
+  if (!venue) return;
+  document.getElementById('settingsName').value = venue.name || '';
+  document.getElementById('settingsAddress').value = venue.address || '';
+  document.getElementById('settingsManager').value = venue.floorManagerName || '';
+  document.getElementById('settingsMenu').value = venue.menuPdfUrl || '';
+  document.getElementById('settingsReviews').value = venue.googleReviewsUrl || '';
+  document.getElementById('settingsBase').value = venue.waitTimeBase;
+  document.getElementById('settingsIncrement').value = venue.waitTimeIncrement;
+  document.getElementById('settingsCap').value = venue.waitTimeCap;
+
+  const opts = (venue.seatingOptions || 'Indoor,Outdoor,No preference').split(',');
+  settingsSeating = opts.map(o => ({ name: o.trim(), selected: true }));
+  renderSettingsChips();
+}
+
+function renderSettingsChips() {
+  const protectedOpts = ['Indoor', 'Outdoor', 'No preference'];
+  const c = document.getElementById('settingsChips');
+  c.innerHTML = settingsSeating.map((opt, i) => `
+    <button class="chip ${opt.selected ? 'selected' : ''}" onclick="toggleSettingsChip(${i})">
+      ${escapeHtml(opt.name)}
+      ${!protectedOpts.includes(opt.name) ? `<span class="chip-remove" onclick="removeSettingsChip(${i}); event.stopPropagation();">×</span>` : ''}
+    </button>
+  `).join('') + '<button class="chip add-chip" onclick="addSettingsChip()">+ Add option</button>';
+}
+
+function toggleSettingsChip(i) {
+  settingsSeating[i].selected = !settingsSeating[i].selected;
+  renderSettingsChips();
+}
+
+function removeSettingsChip(i) {
+  settingsSeating.splice(i, 1);
+  renderSettingsChips();
+}
+
+function addSettingsChip() {
+  const name = prompt('New seating option:');
+  if (name && name.trim()) {
+    settingsSeating.push({ name: name.trim(), selected: true });
+    renderSettingsChips();
+  }
+}
+
+async function saveSettings() {
+  const errEl = document.getElementById('settingsError');
+  const okEl = document.getElementById('settingsSuccess');
+  errEl.textContent = '';
+  okEl.textContent = '';
+
+  const payload = {
+    name: document.getElementById('settingsName').value.trim(),
+    address: document.getElementById('settingsAddress').value.trim(),
+    floorManagerName: document.getElementById('settingsManager').value.trim(),
+    menuPdfUrl: document.getElementById('settingsMenu').value.trim() || null,
+    googleReviewsUrl: document.getElementById('settingsReviews').value.trim() || null,
+    seatingOptions: settingsSeating.filter(o => o.selected).map(o => o.name).join(',') || 'Indoor,Outdoor,No preference',
+    waitTimeBase: parseInt(document.getElementById('settingsBase').value) || 8,
+    waitTimeIncrement: parseInt(document.getElementById('settingsIncrement').value) || 3,
+    waitTimeCap: parseInt(document.getElementById('settingsCap').value) || 60,
+  };
+
+  try {
+    const res = await fetch('/api/venues/' + venue.id, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token,
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to save');
+    venue = data.venue;
+    localStorage.setItem('flock_venue', JSON.stringify(venue));
+    okEl.textContent = 'Saved.';
+    loadVenue();
+  } catch (err) {
+    errEl.textContent = err.message;
+  }
+}
+
+function showQr() {
+  if (!venue) return;
+  const url = window.location.origin + '/queue.html?venue=' + venue.slug;
+  window.open('https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=' + encodeURIComponent(url), '_blank');
+}
+
+function logout() {
+  localStorage.clear();
+  window.location.href = '/';
+}
+
+function escapeHtml(str) {
+  return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function timeAgo(dateStr) {
+  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
+  if (diff < 1) return 'just now';
+  if (diff === 1) return '1 min ago';
+  return diff + ' mins ago';
+}
+
+loadVenue().then(loadQueue);
+setInterval(loadQueue, 5000);
+</script>
 </body>
 </html>
