@@ -66,12 +66,33 @@ async function computeWaitTimes(entries, venue) {
       if (entry.lockedWait != null) {
         wait = entry.lockedWait;
       } else {
-        // Recompute starting wait based on chain
-        const baseFloor = venue.waitTimeBase;
-        // Starting point for tick-down: max of (previous guest's wait + increment, baseFloor)
-        const chainStart = waitTimes[idx - 1] + inc;
-        // If chain start is below or at floor, use floor and lock immediately
-        if (chainStart <= baseFloor) {
+      const inc_ = inc;
+      const baseFloor = venue.waitTimeBase;
+      const chainStart = waitTimes[idx - 1] + inc_;
+
+      // If wait is locked but current base is lower, treat the locked value as new starting point
+      if (entry.lockedWait != null && baseFloor < entry.lockedWait) {
+        // Unlock and reset positionEnteredAt; treat current lockedWait as the new "chain start"
+        const newChainStart = entry.lockedWait;
+        await prisma.queueEntry.update({
+          where: { id: entry.id },
+          data: { lockedWait: null, positionEnteredAt: new Date(), waitTimeBaseAtJoin: newChainStart },
+        });
+        entry.lockedWait = null;
+        entry.positionEnteredAt = new Date();
+        entry.waitTimeBaseAtJoin = newChainStart;
+      }
+
+      if (entry.lockedWait != null) {
+        wait = entry.lockedWait;
+      } else {
+        // The starting point for tick-down: the lower of chainStart and any stored previous chain start
+        // If waitTimeBaseAtJoin holds a "previous chain start" from unlocking, use min
+        const effectiveStart = entry.waitTimeBaseAtJoin
+          ? Math.min(chainStart, entry.waitTimeBaseAtJoin)
+          : chainStart;
+
+        if (effectiveStart <= baseFloor) {
           await prisma.queueEntry.update({
             where: { id: entry.id },
             data: { lockedWait: baseFloor },
@@ -82,7 +103,7 @@ async function computeWaitTimes(entries, venue) {
           const enteredAt = entry.positionEnteredAt;
           if (enteredAt) {
             const elapsed = Math.floor((Date.now() - new Date(enteredAt).getTime()) / 60000);
-            const computed = Math.max(baseFloor, chainStart - elapsed);
+            const computed = Math.max(baseFloor, effectiveStart - elapsed);
             if (computed === baseFloor) {
               await prisma.queueEntry.update({
                 where: { id: entry.id },
@@ -92,7 +113,7 @@ async function computeWaitTimes(entries, venue) {
             }
             wait = computed;
           } else {
-            wait = chainStart;
+            wait = effectiveStart;
           }
         }
       }
