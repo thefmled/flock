@@ -434,11 +434,12 @@
     }
 
     function renderSettingsChips() {
+      const protectedOpts = ['Indoor', 'Outdoor', 'No preference'];
       const c = document.getElementById('settingsChips');
       c.innerHTML = settingsSeating.map((opt, i) => `
         <button class="chip ${opt.selected ? 'selected' : ''}" onclick="toggleSettingsChip(${i})">
           ${escapeHtml(opt.name)}
-          ${opt.name !== 'No preference' ? `<span class="chip-remove" onclick="removeSettingsChip(${i}); event.stopPropagation();">×</span>` : ''}
+          ${!protectedOpts.includes(opt.name) ? `<span class="chip-remove" onclick="removeSettingsChip(${i}); event.stopPropagation();">×</span>` : ''}
         </button>
       `).join('') + `<button class="chip add-chip" onclick="addSettingsChip()">+ Add option</button>`;
     }
