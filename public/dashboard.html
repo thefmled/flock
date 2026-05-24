@@ -350,7 +350,7 @@ async function loadQueue() {
           </div>
           ${e.notes ? `<div class="meta" style="margin-top:6px;">Notes: ${escapeHtml(e.notes)}</div>` : ''}
         </div>
-        <div class="wait-time" data-position="${e.position}" data-position-entered-at="${e.positionEnteredAt || ''}" data-server-wait="${e.waitMinutes}" data-base-wait="${e.waitTimeBaseAtJoin || venue.waitTimeBase}" data-last-sync="${Date.now()}">~${e.waitMinutes}m</div>
+        <div class="wait-time" data-position="${e.position}" data-position-entered-at="${e.positionEnteredAt || ''}" data-server-wait="${e.waitMinutes}" data-base-wait="${venue.waitTimeBase}" data-last-sync="${Date.now()}">~${e.waitMinutes}m</div>
       </div>
       <div class="queue-actions">
         <button class="btn-notify" onclick="notifyGuest('${e.id}')">Notify</button>
