@@ -269,4 +269,27 @@ router.get('/history/:venueId', requireAuth, async (req, res) => {
   }
 });
 
+// Clear queue (cancel all waiting/notified entries)
+router.post('/clear/:venueId', requireAuth, async (req, res) => {
+  try {
+    const venue = await prisma.venue.findFirst({
+      where: { id: req.params.venueId, ownerId: req.ownerId },
+    });
+    if (!venue) return res.status(404).json({ error: 'Venue not found' });
+
+    await prisma.queueEntry.updateMany({
+      where: {
+        venueId: venue.id,
+        status: { in: ['waiting', 'notified'] },
+      },
+      data: { status: 'cancelled', cancelledAt: new Date() },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Clear queue error:', error);
+    res.status(500).json({ error: 'Failed to clear queue' });
+  }
+});
+
 module.exports = router;
