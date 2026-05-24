@@ -40,15 +40,13 @@
       </div>
 
       <div class="input-group">
-        <label for="seatingPreference">Seating preference (optional)</label>
-        <select id="seatingPreference">
-          <option value="">No preference</option>
-        </select>
+        <label>Seating preference (optional)</label>
+        <div class="seating-chips" id="seatingChips"></div>
       </div>
 
       <div class="input-group">
-        <label for="notes">Anything else? (optional)</label>
-        <textarea id="notes" rows="2" placeholder="e.g. anniversary, allergies, etc."></textarea>
+        <label>Any other notes? (optional)</label>
+        <div class="seating-chips" id="notesChips"></div>
       </div>
 
       <button class="button" onclick="joinQueue()">Join queue</button>
@@ -63,6 +61,16 @@
       document.body.innerHTML = '<div class="empty" style="padding-top:100px;">Invalid queue link.</div>';
     }
 
+    let seatingState = [];
+    let notesState = [
+      { name: "I'm lactose intolerant", selected: false },
+      { name: "Prefer Jain food", selected: false },
+      { name: "Prefer non-spicy", selected: false },
+      { name: "Allergic to nuts", selected: false },
+      { name: "Birthday/anniversary", selected: false },
+      { name: "Need a high chair", selected: false },
+    ];
+
     async function loadVenue() {
       try {
         const res = await fetch('/api/venues/by-slug/' + slug);
@@ -70,19 +78,55 @@
         if (data.venue) {
           document.getElementById('venueLabel').textContent = data.venue.name;
           
-          // Populate seating options
-          const select = document.getElementById('seatingPreference');
-          select.innerHTML = '';
-          const options = (data.venue.seatingOptions || 'Indoor,Outdoor,No preference').split(',');
-          options.forEach(opt => {
-            const o = document.createElement('option');
-            const trimmed = opt.trim();
-            o.value = trimmed === 'No preference' ? '' : trimmed;
-            o.textContent = trimmed;
-            select.appendChild(o);
-          });
+          const opts = (data.venue.seatingOptions || 'Indoor,Outdoor,No preference').split(',');
+          // Put "No preference" first and pre-select it
+          const sorted = ['No preference', ...opts.map(o => o.trim()).filter(o => o !== 'No preference')];
+          seatingState = sorted.map(o => ({ name: o, selected: o === 'No preference' }));
+          renderSeatingChips();
+          renderNotesChips();
         }
       } catch (e) {}
+    }
+
+    function renderSeatingChips() {
+      const c = document.getElementById('seatingChips');
+      c.innerHTML = seatingState.map((opt, i) => `
+        <button type="button" class="chip ${opt.selected ? 'selected' : ''}" onclick="selectSeating(${i})">
+          ${escapeHtml(opt.name)}
+        </button>
+      `).join('');
+    }
+
+    function selectSeating(i) {
+      // Single-select for seating
+      seatingState = seatingState.map((o, idx) => ({ ...o, selected: idx === i }));
+      renderSeatingChips();
+    }
+
+    function renderNotesChips() {
+      const c = document.getElementById('notesChips');
+      c.innerHTML = notesState.map((opt, i) => `
+        <button type="button" class="chip ${opt.selected ? 'selected' : ''}" onclick="toggleNote(${i})">
+          ${escapeHtml(opt.name)}
+        </button>
+      `).join('') + '<button type="button" class="chip add-chip" onclick="addNote()">+ Add note</button>';
+    }
+
+    function toggleNote(i) {
+      notesState[i].selected = !notesState[i].selected;
+      renderNotesChips();
+    }
+
+    function addNote() {
+      const name = prompt('Add a note:');
+      if (name && name.trim()) {
+        notesState.push({ name: name.trim(), selected: true });
+        renderNotesChips();
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
 
     async function joinQueue() {
@@ -95,12 +139,15 @@
         return;
       }
 
+      const selectedSeating = seatingState.find(o => o.selected);
+      const selectedNotes = notesState.filter(o => o.selected).map(o => o.name);
+
       const payload = {
         guestName: document.getElementById('guestName').value.trim(),
         guestPhone: phone,
         partySize: document.getElementById('partySize').value,
-        seatingPreference: document.getElementById('seatingPreference').value || null,
-        notes: document.getElementById('notes').value.trim() || null,
+        seatingPreference: (selectedSeating && selectedSeating.name !== 'No preference') ? selectedSeating.name : null,
+        notes: selectedNotes.length ? selectedNotes.join(', ') : null,
       };
 
       if (!payload.guestName) {
