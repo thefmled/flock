@@ -78,6 +78,7 @@ model QueueEntry {
   lastPosition           Int?
   positionEnteredAt      DateTime?
   lockedWait             Int?
+  chainStartOverride     Int?
   status      String         @default("waiting")
   
   joinedAt    DateTime       @default(now())
