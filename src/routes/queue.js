@@ -17,7 +17,6 @@ async function computeWaitTimes(entries, venue) {
     const inc = entry.waitTimeIncrementAtJoin ?? venue.waitTimeIncrement;
     const cap = entry.waitTimeCapAtJoin ?? venue.waitTimeCap;
 
-    // Track position changes — set positionEnteredAt whenever position changes
     if (entry.lastPosition !== currentPos) {
       await prisma.queueEntry.update({
         where: { id: entry.id },
@@ -53,26 +52,10 @@ async function computeWaitTimes(entries, venue) {
       }
       wait = newBase;
     } else {
-      // If wait is locked but current base is lower, unlock so it can tick down further
-      if (entry.lockedWait != null && venue.waitTimeBase < entry.lockedWait) {
-        await prisma.queueEntry.update({
-          where: { id: entry.id },
-          data: { lockedWait: null, positionEnteredAt: new Date() },
-        });
-        entry.lockedWait = null;
-        entry.positionEnteredAt = new Date();
-      }
-
-      if (entry.lockedWait != null) {
-        wait = entry.lockedWait;
-      } else {
-      const inc_ = inc;
       const baseFloor = venue.waitTimeBase;
-      const chainStart = waitTimes[idx - 1] + inc_;
+      const chainStart = waitTimes[idx - 1] + inc;
 
-      // If wait is locked but current base is lower, treat the locked value as new starting point
       if (entry.lockedWait != null && baseFloor < entry.lockedWait) {
-        // Unlock and reset positionEnteredAt; treat current lockedWait as the new "chain start"
         const newChainStart = entry.lockedWait;
         await prisma.queueEntry.update({
           where: { id: entry.id },
@@ -86,8 +69,6 @@ async function computeWaitTimes(entries, venue) {
       if (entry.lockedWait != null) {
         wait = entry.lockedWait;
       } else {
-        // The starting point for tick-down: the lower of chainStart and any stored previous chain start
-        // If waitTimeBaseAtJoin holds a "previous chain start" from unlocking, use min
         const effectiveStart = entry.waitTimeBaseAtJoin
           ? Math.min(chainStart, entry.waitTimeBaseAtJoin)
           : chainStart;
