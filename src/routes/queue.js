@@ -56,7 +56,7 @@ async function computeWaitTimes(entries, venue) {
       const enteredAt = entry.positionEnteredAt;
       if (enteredAt) {
         const elapsed = Math.floor((Date.now() - new Date(enteredAt).getTime()) / 60000);
-        const baseFloor = entry.waitTimeBaseAtJoin ?? venue.waitTimeBase;
+        const baseFloor = venue.waitTimeBase; // use CURRENT venue base for non-position-1
         wait = Math.max(baseFloor, startingWait - elapsed);
       } else {
         wait = startingWait;
