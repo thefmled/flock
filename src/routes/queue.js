@@ -17,7 +17,7 @@ async function computeWaitTimes(entries, venue) {
     const inc = entry.waitTimeIncrementAtJoin ?? venue.waitTimeIncrement;
     const cap = entry.waitTimeCapAtJoin ?? venue.waitTimeCap;
 
-    // Detect position change → reset tick anchor + unlock + clear any override
+    // Position change → reset everything
     if (entry.lastPosition !== currentPos) {
       await prisma.queueEntry.update({
         where: { id: entry.id },
@@ -25,17 +25,16 @@ async function computeWaitTimes(entries, venue) {
           lastPosition: currentPos,
           positionEnteredAt: new Date(),
           lockedWait: null,
-          chainStartOverride: null,
         },
       });
       entry.lastPosition = currentPos;
       entry.positionEnteredAt = new Date();
       entry.lockedWait = null;
-      entry.chainStartOverride = null;
     }
 
     let wait;
     if (idx === 0) {
+      // Position 1: stays at base, with snapshot logic
       if (!entry.hasBeenPositionOne) {
         await prisma.queueEntry.update({
           where: { id: entry.id },
@@ -47,7 +46,6 @@ async function computeWaitTimes(entries, venue) {
         entry.waitTimeBaseAtJoin = venue.waitTimeBase;
         entry.hasBeenPositionOne = true;
       }
-
       const baseSnap = entry.waitTimeBaseAtJoin;
       const newBase = Math.min(baseSnap, venue.waitTimeBase);
       if (newBase < baseSnap) {
@@ -59,60 +57,33 @@ async function computeWaitTimes(entries, venue) {
       }
       wait = newBase;
     } else {
+      // Positions 2+
       const baseFloor = venue.waitTimeBase;
       const chainStart = waitTimes[idx - 1] + inc;
-      const effectiveStart = entry.chainStartOverride != null
-        ? Math.min(chainStart, entry.chainStartOverride)
-        : chainStart;
+      const enteredAt = entry.positionEnteredAt;
+      const elapsed = enteredAt
+        ? Math.floor((Date.now() - new Date(enteredAt).getTime()) / 60000)
+        : 0;
+      const tickedDown = Math.max(baseFloor, chainStart - elapsed);
 
-      // Unlock if floor dropped below locked wait
-      if (entry.lockedWait != null && baseFloor < entry.lockedWait) {
-        const newOverride = entry.lockedWait;
+      // Wait can only decrease — clamp against previous locked value
+      let computed;
+      if (entry.lockedWait != null) {
+        computed = Math.min(entry.lockedWait, tickedDown);
+      } else {
+        computed = tickedDown;
+      }
+
+      // Persist if changed
+      if (entry.lockedWait !== computed) {
         await prisma.queueEntry.update({
           where: { id: entry.id },
-          data: {
-            lockedWait: null,
-            positionEnteredAt: new Date(),
-            chainStartOverride: newOverride,
-          },
+          data: { lockedWait: computed },
         });
-        entry.lockedWait = null;
-        entry.positionEnteredAt = new Date();
-        entry.chainStartOverride = newOverride;
+        entry.lockedWait = computed;
       }
 
-      if (entry.lockedWait != null) {
-        wait = entry.lockedWait;
-      } else {
-        const start = entry.chainStartOverride != null
-          ? Math.min(chainStart, entry.chainStartOverride)
-          : chainStart;
-
-        if (start <= baseFloor) {
-          await prisma.queueEntry.update({
-            where: { id: entry.id },
-            data: { lockedWait: baseFloor },
-          });
-          entry.lockedWait = baseFloor;
-          wait = baseFloor;
-        } else {
-          const enteredAt = entry.positionEnteredAt;
-          if (enteredAt) {
-            const elapsed = Math.floor((Date.now() - new Date(enteredAt).getTime()) / 60000);
-            const computed = Math.max(baseFloor, start - elapsed);
-            if (computed === baseFloor) {
-              await prisma.queueEntry.update({
-                where: { id: entry.id },
-                data: { lockedWait: baseFloor },
-              });
-              entry.lockedWait = baseFloor;
-            }
-            wait = computed;
-          } else {
-            wait = start;
-          }
-        }
-      }
+      wait = computed;
     }
     wait = Math.min(wait, cap);
     waitTimes.push(wait);
