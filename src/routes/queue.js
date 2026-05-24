@@ -17,14 +17,21 @@ async function computeWaitTimes(entries, venue) {
     const inc = entry.waitTimeIncrementAtJoin ?? venue.waitTimeIncrement;
     const cap = entry.waitTimeCapAtJoin ?? venue.waitTimeCap;
 
+    // Detect position change → reset tick anchor + unlock + clear any override
     if (entry.lastPosition !== currentPos) {
       await prisma.queueEntry.update({
         where: { id: entry.id },
-        data: { lastPosition: currentPos, positionEnteredAt: new Date(), lockedWait: null },
+        data: {
+          lastPosition: currentPos,
+          positionEnteredAt: new Date(),
+          lockedWait: null,
+          chainStartOverride: null,
+        },
       });
       entry.lastPosition = currentPos;
       entry.positionEnteredAt = new Date();
       entry.lockedWait = null;
+      entry.chainStartOverride = null;
     }
 
     let wait;
@@ -54,26 +61,34 @@ async function computeWaitTimes(entries, venue) {
     } else {
       const baseFloor = venue.waitTimeBase;
       const chainStart = waitTimes[idx - 1] + inc;
+      const effectiveStart = entry.chainStartOverride != null
+        ? Math.min(chainStart, entry.chainStartOverride)
+        : chainStart;
 
+      // Unlock if floor dropped below locked wait
       if (entry.lockedWait != null && baseFloor < entry.lockedWait) {
-        const newChainStart = entry.lockedWait;
+        const newOverride = entry.lockedWait;
         await prisma.queueEntry.update({
           where: { id: entry.id },
-          data: { lockedWait: null, positionEnteredAt: new Date(), waitTimeBaseAtJoin: newChainStart },
+          data: {
+            lockedWait: null,
+            positionEnteredAt: new Date(),
+            chainStartOverride: newOverride,
+          },
         });
         entry.lockedWait = null;
         entry.positionEnteredAt = new Date();
-        entry.waitTimeBaseAtJoin = newChainStart;
+        entry.chainStartOverride = newOverride;
       }
 
       if (entry.lockedWait != null) {
         wait = entry.lockedWait;
       } else {
-        const effectiveStart = entry.waitTimeBaseAtJoin
-          ? Math.min(chainStart, entry.waitTimeBaseAtJoin)
+        const start = entry.chainStartOverride != null
+          ? Math.min(chainStart, entry.chainStartOverride)
           : chainStart;
 
-        if (effectiveStart <= baseFloor) {
+        if (start <= baseFloor) {
           await prisma.queueEntry.update({
             where: { id: entry.id },
             data: { lockedWait: baseFloor },
@@ -84,7 +99,7 @@ async function computeWaitTimes(entries, venue) {
           const enteredAt = entry.positionEnteredAt;
           if (enteredAt) {
             const elapsed = Math.floor((Date.now() - new Date(enteredAt).getTime()) / 60000);
-            const computed = Math.max(baseFloor, effectiveStart - elapsed);
+            const computed = Math.max(baseFloor, start - elapsed);
             if (computed === baseFloor) {
               await prisma.queueEntry.update({
                 where: { id: entry.id },
@@ -94,7 +109,7 @@ async function computeWaitTimes(entries, venue) {
             }
             wait = computed;
           } else {
-            wait = effectiveStart;
+            wait = start;
           }
         }
       }
