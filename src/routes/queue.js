@@ -93,6 +93,7 @@ async function computeWaitTimes(entries, venue) {
       wait = computed;
     }
     wait = Math.min(wait, cap);
+    console.log('DEBUG final wait for', entry.guestName, ':', wait);
     waitTimes.push(wait);
   }
 
