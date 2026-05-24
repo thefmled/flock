@@ -328,7 +328,7 @@ async function loadQueue() {
   empty.style.display = 'none';
 
   list.innerHTML = data.entries.map(e => `
-    <div class="queue-entry">
+    <div class="queue-entry" data-entry-id="${e.id}">
       <div class="queue-entry-row">
         <div class="queue-entry-info">
           <h4>${escapeHtml(e.guestName)} · party of ${e.partySize}</h4>
@@ -352,6 +352,10 @@ async function loadQueue() {
 }
 
 async function notifyGuest(id) {
+  // Optimistic: visually mark as notified immediately
+  const card = document.querySelector(`[data-entry-id="${id}"]`);
+  if (card) card.style.opacity = '0.5';
+  
   await fetch('/api/queue/notify/' + id, {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + token },
@@ -364,6 +368,13 @@ function callGuest(phone) {
 }
 
 async function seatGuest(id) {
+  const card = document.querySelector(`[data-entry-id="${id}"]`);
+  if (card) {
+    card.style.opacity = '0.3';
+    card.style.transform = 'translateX(20px)';
+    card.style.transition = 'all 0.3s';
+  }
+  
   await fetch('/api/queue/seat/' + id, {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + token },
@@ -373,6 +384,12 @@ async function seatGuest(id) {
 
 async function cancelGuest(id) {
   if (!confirm('Cancel this entry?')) return;
+  const card = document.querySelector(`[data-entry-id="${id}"]`);
+  if (card) {
+    card.style.opacity = '0.3';
+    card.style.transition = 'opacity 0.3s';
+  }
+  
   await fetch('/api/queue/cancel/' + id, {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + token },
@@ -575,7 +592,7 @@ function timeAgo(dateStr) {
 }
 
 loadVenue().then(loadQueue);
-setInterval(loadQueue, 5000);
+setInterval(loadQueue, 2000);
 
   setInterval(() => {
   document.querySelectorAll('.wait-time').forEach(el => {
