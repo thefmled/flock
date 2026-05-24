@@ -350,7 +350,7 @@ async function loadQueue() {
           </div>
           ${e.notes ? `<div class="meta" style="margin-top:6px;">Notes: ${escapeHtml(e.notes)}</div>` : ''}
         </div>
-        <div class="wait-time" data-position="${e.position}" data-position-entered-at="${e.positionEnteredAt || ''}" data-starting-wait="${e.waitMinutes}" data-base-wait="${e.waitTimeBaseAtJoin || venue.waitTimeBase}">~${e.waitMinutes}m</div>
+        <div class="wait-time" data-position="${e.position}" data-position-entered-at="${e.positionEnteredAt || ''}" data-server-wait="${e.waitMinutes}" data-base-wait="${e.waitTimeBaseAtJoin || venue.waitTimeBase}" data-last-sync="${Date.now()}">~${e.waitMinutes}m</div>
       </div>
       <div class="queue-actions">
         <button class="btn-notify" onclick="notifyGuest('${e.id}')">Notify</button>
@@ -628,6 +628,19 @@ loadVenue().then(() => {
 });
 setInterval(loadQueue, 2000);
 setInterval(loadStats, 10000);
+
+  setInterval(() => {
+  document.querySelectorAll('.wait-time').forEach(el => {
+    const pos = parseInt(el.dataset.position);
+    if (pos === 1) return;
+    const serverWait = parseInt(el.dataset.serverWait);
+    const lastSync = parseInt(el.dataset.lastSync);
+    const base = parseInt(el.dataset.baseWait);
+    const elapsedSinceSync = Math.floor((Date.now() - lastSync) / 60000);
+    const remaining = Math.max(base, serverWait - elapsedSinceSync);
+    el.textContent = '~' + remaining + 'm';
+  });
+}, 1000);
   
 </script>
 </body>
