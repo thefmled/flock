@@ -62,25 +62,13 @@ async function computeWaitTimes(entries, venue) {
       const baseFloor = venue.waitTimeBase;
       const chainStart = waitTimes[idx - 1] + inc;
 
-      // If base dropped below current locked wait, reset the tick so it ticks down freshly
-      if (entry.lockedWait != null && baseFloor < entry.lockedWait) {
-        await prisma.queueEntry.update({
-          where: { id: entry.id },
-          data: {
-            positionEnteredAt: new Date(),
-            lockedWait: Math.min(entry.lockedWait, chainStart),
-          },
-        });
-        entry.positionEnteredAt = new Date();
-        entry.lockedWait = Math.min(entry.lockedWait, chainStart);
-      }
-
       const enteredAt = entry.positionEnteredAt;
       const elapsed = enteredAt
         ? Math.floor((Date.now() - new Date(enteredAt).getTime()) / 60000)
         : 0;
       const tickedDown = Math.max(baseFloor, chainStart - elapsed);
 
+      // Wait can only decrease over time — clamp against previous locked value
       let computed;
       if (entry.lockedWait != null) {
         computed = Math.min(entry.lockedWait, tickedDown);
