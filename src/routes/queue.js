@@ -61,16 +61,25 @@ async function computeWaitTimes(entries, venue) {
       const baseFloor = venue.waitTimeBase;
       const chainStart = waitTimes[idx - 1] + inc;
 
-      // Detect base drop — reset positionEnteredAt so wait ticks down freshly
+      // If no startingWait yet, snapshot it now
+      if (entry.startingWait == null) {
+        await prisma.queueEntry.update({
+          where: { id: entry.id },
+          data: { startingWait: chainStart },
+        });
+        entry.startingWait = chainStart;
+      }
+
+      // Detect base drop — reset positionEnteredAt and startingWait to current lockedWait
       if (entry.lastBaseSeen != null && baseFloor < entry.lastBaseSeen && entry.lockedWait != null && entry.lockedWait > baseFloor) {
         await prisma.queueEntry.update({
           where: { id: entry.id },
-          data: { positionEnteredAt: new Date() },
+          data: { positionEnteredAt: new Date(), startingWait: entry.lockedWait },
         });
         entry.positionEnteredAt = new Date();
+        entry.startingWait = entry.lockedWait;
       }
 
-      // Update lastBaseSeen
       if (entry.lastBaseSeen !== baseFloor) {
         await prisma.queueEntry.update({
           where: { id: entry.id },
@@ -80,16 +89,13 @@ async function computeWaitTimes(entries, venue) {
       }
 
       const enteredAt = entry.positionEnteredAt;
-      const elapsedSeconds = enteredAt
-        ? (Date.now() - new Date(enteredAt).getTime()) / 1000
+      const elapsedMinutes = enteredAt
+        ? (Date.now() - new Date(enteredAt).getTime()) / 60000
         : 0;
-      const elapsedMinutes = elapsedSeconds / 60;
 
-      // Tick from chainStart with elapsed
-      // The result is a candidate. Take min against lockedWait to ensure monotonic decrease.
-      const tickedDown = Math.max(baseFloor, Math.ceil(chainStart - elapsedMinutes));
-      
-      // Clamp against previous locked value
+      const tickedDown = Math.max(baseFloor, Math.ceil(entry.startingWait - elapsedMinutes));
+
+      // Monotonic decrease
       let computed;
       if (entry.lockedWait != null) {
         computed = Math.min(entry.lockedWait, tickedDown);
