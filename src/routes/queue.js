@@ -18,6 +18,7 @@ async function computeWaitTimes(entries, venue) {
     const cap = entry.waitTimeCapAtJoin ?? venue.waitTimeCap;
 
     // Position change → reset everything
+    console.log('DEBUG pos check', entry.guestName, 'lastPosition:', entry.lastPosition, 'currentPos:', currentPos);
     if (entry.lastPosition !== currentPos) {
       await prisma.queueEntry.update({
         where: { id: entry.id },
