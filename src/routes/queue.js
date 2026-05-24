@@ -81,13 +81,14 @@ async function computeWaitTimes(entries, venue) {
       }
 
       const enteredAt = entry.positionEnteredAt;
-      const elapsed = enteredAt
-        ? Math.floor((Date.now() - new Date(enteredAt).getTime()) / 60000)
+      const elapsedSeconds = enteredAt
+        ? (Date.now() - new Date(enteredAt).getTime()) / 1000
         : 0;
+      const elapsedMinutes = elapsedSeconds / 60;
 
       // When ticking after a base drop, start from lockedWait, not chainStart
       const tickStart = entry.lockedWait != null ? entry.lockedWait : chainStart;
-      const tickedDown = Math.max(baseFloor, tickStart - elapsed);
+      const tickedDown = Math.max(baseFloor, Math.ceil(tickStart - elapsedMinutes));
 
       // Clamp against previous locked value
       let computed;
