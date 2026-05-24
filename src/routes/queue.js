@@ -292,4 +292,34 @@ router.post('/clear/:venueId', requireAuth, async (req, res) => {
   }
 });
 
+// Today's stats
+router.get('/stats/:venueId', requireAuth, async (req, res) => {
+  try {
+    const venue = await prisma.venue.findFirst({
+      where: { id: req.params.venueId, ownerId: req.ownerId },
+    });
+    if (!venue) return res.status(404).json({ error: 'Venue not found' });
+
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const entries = await prisma.queueEntry.findMany({
+      where: { venueId: venue.id, joinedAt: { gte: startOfDay } },
+    });
+
+    const totalGuests = entries.length;
+    const seated = entries.filter(e => e.status === 'seated' && e.seatedAt);
+    const avgWaitMinutes = seated.length > 0
+      ? Math.round(
+          seated.reduce((sum, e) => sum + (new Date(e.seatedAt) - new Date(e.joinedAt)) / 60000, 0) / seated.length
+        )
+      : 0;
+
+    res.json({ totalGuests, seatedCount: seated.length, avgWaitMinutes });
+  } catch (error) {
+    console.error('Stats error:', error);
+    res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
 module.exports = router;
