@@ -88,8 +88,7 @@ async function computeWaitTimes(entries, venue) {
       // When ticking after a base drop, start from lockedWait, not chainStart
       const tickStart = entry.lockedWait != null ? entry.lockedWait : chainStart;
       const tickedDown = Math.max(baseFloor, Math.ceil(tickStart - elapsedMinutes));
-      console.log('TICK', entry.guestName, 'tickStart:', tickStart, 'elapsed:', elapsedMinutes.toFixed(2), 'tickedDown:', tickedDown, 'lockedWait:', entry.lockedWait);
-
+      
       // Clamp against previous locked value
       let computed;
       if (entry.lockedWait != null) {
