@@ -168,8 +168,13 @@
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to join queue');
-        // Replace page so back-button doesn't return to the form
-        window.location.replace('/status.html?id=' + data.entry.id);
+        const params = new URLSearchParams({
+          id: data.entry.id,
+          position: data.position,
+          wait: data.waitMinutes,
+          venueName: document.getElementById('venueLabel').textContent,
+        });
+        window.location.replace('/status.html?' + params.toString());
       } catch (err) {
         errorEl.textContent = err.message;
         btn.disabled = false;
