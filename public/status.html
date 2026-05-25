@@ -58,6 +58,19 @@ const params = new URLSearchParams(window.location.search);
 const entryId = params.get('id');
 let venue = null;
 
+// Pre-fill from URL params (instant render before first API call)
+const preposition = params.get('position');
+const prewait = params.get('wait');
+const prevenue = params.get('venueName');
+if (preposition && prewait) {
+  document.getElementById('position').textContent = '#' + preposition;
+  document.getElementById('positionLabel').textContent = preposition === '1' ? 'next up' : 'in queue';
+  document.getElementById('wait').textContent = '~' + prewait + ' minutes';
+}
+if (prevenue) {
+  document.getElementById('venueLabel').textContent = prevenue;
+}
+
 async function loadStatus() {
   if (!entryId) return;
   try {
