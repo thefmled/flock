@@ -131,6 +131,7 @@
 
     async function joinQueue() {
       const errorEl = document.getElementById('joinError');
+      const btn = document.querySelector('.button');
       errorEl.textContent = '';
 
       const phone = document.getElementById('guestPhone').value.replace(/\D/g, '');
@@ -155,6 +156,10 @@
         return;
       }
 
+      // Optimistic: disable button + show loading state instantly
+      btn.disabled = true;
+      btn.textContent = 'Joining…';
+
       try {
         const res = await fetch('/api/queue/join/' + slug, {
           method: 'POST',
@@ -163,9 +168,12 @@
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to join queue');
-        window.location.href = '/status.html?id=' + data.entry.id;
+        // Replace page so back-button doesn't return to the form
+        window.location.replace('/status.html?id=' + data.entry.id);
       } catch (err) {
         errorEl.textContent = err.message;
+        btn.disabled = false;
+        btn.textContent = 'Join queue';
       }
     }
 
