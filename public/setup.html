@@ -166,6 +166,9 @@
         errorEl.textContent = err.message;
       }
     }
+
+    setInterval(() => fetch('/health'), 5 * 60 * 1000);
+    
   </script>
 </body>
 </html>
