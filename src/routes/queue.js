@@ -144,7 +144,7 @@ router.post('/join/:slug', async (req, res) => {
       where: {
         venueId: venue.id,
         guestPhone: phoneClean,
-        status: 'waiting',
+        status: { in: ['waiting', 'notified'] },
       },
     });
     if (existing) {
@@ -171,7 +171,7 @@ router.post('/join/:slug', async (req, res) => {
     
     // Calculate guest's position
     const count = await prisma.queueEntry.count({
-      where: { venueId: venue.id, status: 'waiting', joinedAt: { lte: entry.joinedAt } },
+      where: { venueId: venue.id, status: { in: ['waiting', 'notified'] }, joinedAt: { lte: entry.joinedAt } },
     });
     const position = count;
     // Simple position-based estimate — full recalc happens on next dashboard poll
@@ -225,7 +225,7 @@ router.get('/status/:entryId', async (req, res) => {
     if (!entry) return res.status(404).json({ error: 'Entry not found' });
 
     const allWaiting = await prisma.queueEntry.findMany({
-      where: { venueId: entry.venueId, status: 'waiting' },
+      where: { venueId: entry.venueId, status: { in: ['waiting', 'notified'] } },
       orderBy: { joinedAt: 'asc' },
       include: { venue: false },
     });
