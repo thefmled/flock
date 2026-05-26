@@ -214,6 +214,25 @@
   font-weight: 500;
 }
 .step-action:hover { opacity: 0.8; }
+
+.range-btn {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-strong);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+.range-btn:hover { color: var(--text); border-color: var(--accent); }
+.range-btn.active {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
   
 </style>
 </head>
@@ -268,6 +287,15 @@
 </div>
 
 <div class="tab-content" id="analyticsTab" style="display:none;">
+  <div style="display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap;margin-bottom:16px;" id="rangeToggle">
+    <button class="range-btn" data-range="LM" title="Last month (full previous calendar month)" onclick="setRange('LM')">LM</button>
+    <button class="range-btn" data-range="L7D" title="Last 7 days" onclick="setRange('L7D')">L7D</button>
+    <button class="range-btn active" data-range="MTD" title="Month to date" onclick="setRange('MTD')">MTD</button>
+    <button class="range-btn" data-range="L3M" title="Last 3 months (rolling 90 days)" onclick="setRange('L3M')">L3M</button>
+    <button class="range-btn" data-range="L6M" title="Last 6 months (rolling 180 days)" onclick="setRange('L6M')">L6M</button>
+    <button class="range-btn" data-range="YTD" title="Year to date" onclick="setRange('YTD')">YTD</button>
+    <button class="range-btn" data-range="L1Y" title="Last 1 year (rolling 365 days)" onclick="setRange('L1Y')">L1Y</button>
+  </div>
   <div class="card">
     <h2 class="heading">Today</h2>
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;">
@@ -979,7 +1007,7 @@ let hoursChart = null;
 
 async function loadAnalytics() {
   if (!venue) return;
-  const res = await fetch('/api/queue/analytics/' + venue.id, {
+  const res = await fetch('/api/queue/analytics/' + venue.id + '?range=' + currentRange, {
     headers: { 'Authorization': 'Bearer ' + token },
   });
   const data = await res.json();
@@ -1051,6 +1079,16 @@ async function loadAnalytics() {
     },
   });
 }
+
+let currentRange = 'MTD';
+
+function setRange(range) {
+  currentRange = range;
+  document.querySelectorAll('.range-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.range === range);
+  });
+  loadAnalytics();
+}  
   
 loadVenue().then(() => {
   loadQueue();
