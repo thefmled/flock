@@ -559,12 +559,18 @@ router.get('/analytics/:venueId', requireAuth, requireActiveSubscription, async 
       });
     }
 
-    // Hours
-    const hours = Array(24).fill(0);
+    // Hours — grouped by day-of-week (so frontend can compute weighted averages)
+    // hoursByDow[dow][hour] = count
+    const hoursByDow = Array.from({ length: 7 }, () => Array(24).fill(0));
+    const daysSeen = Array.from({ length: 7 }, () => new Set());
     allInRange.forEach(e => {
-      const hr = new Date(e.joinedAt).getHours();
-      hours[hr]++;
+      const d = new Date(e.joinedAt);
+      const dow = d.getDay();
+      const hr = d.getHours();
+      hoursByDow[dow][hr]++;
+      daysSeen[dow].add(d.toISOString().split('T')[0]);
     });
+    const dowDayCounts = daysSeen.map(s => s.size);
 
     // Avg party size
     const avgPartySize = allInRange.length > 0
@@ -596,7 +602,9 @@ router.get('/analytics/:venueId', requireAuth, requireActiveSubscription, async 
         avgWait: todayAvgWait,
       },
       daily,
-      hours,
+      hours: hoursByDow.reduce((acc, dowArr) => acc.map((v, i) => v + dowArr[i]), Array(24).fill(0)),
+      hoursByDow,
+      dowDayCounts,
       avgPartySize,
       waitByPartySize,
       range,
