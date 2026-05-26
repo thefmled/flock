@@ -207,8 +207,9 @@
       <input type="text" id="settingsManager">
     </div>
     <div class="input-group">
-      <label>Menu PDF link</label>
-      <input type="url" id="settingsMenu" placeholder="https://...">
+      <label>Menu PDF</label>
+      <div id="menuStatus" style="margin-bottom:8px;"></div>
+      <input type="file" id="settingsMenuFile" accept="application/pdf" />
     </div>
     <div class="input-group">
       <label>Google reviews link</label>
@@ -502,7 +503,12 @@ function loadSettings() {
   document.getElementById('settingsName').value = venue.name || '';
   document.getElementById('settingsAddress').value = venue.address || '';
   document.getElementById('settingsManager').value = venue.floorManagerName || '';
-  document.getElementById('settingsMenu').value = venue.menuPdfUrl || '';
+  const menuStatus = document.getElementById('menuStatus');
+      if (venue.menuPdfUrl) {
+        menuStatus.innerHTML = '<a href="' + venue.menuPdfUrl + '" target="_blank" style="color:var(--accent);font-size:13px;">View current menu →</a>';
+      } else {
+        menuStatus.innerHTML = '<span style="color:var(--text-muted);font-size:13px;">No menu uploaded yet.</span>';
+      }
   document.getElementById('settingsReviews').value = venue.googleReviewsUrl || '';
   document.getElementById('settingsBase').value = venue.waitTimeBase;
   document.getElementById('settingsIncrement').value = venue.waitTimeIncrement;
@@ -552,7 +558,6 @@ async function saveSettings() {
     name: document.getElementById('settingsName').value.trim(),
     address: document.getElementById('settingsAddress').value.trim(),
     floorManagerName: document.getElementById('settingsManager').value.trim(),
-    menuPdfUrl: document.getElementById('settingsMenu').value.trim() || null,
     googleReviewsUrl: document.getElementById('settingsReviews').value.trim() || null,
     seatingOptions: settingsSeating.filter(o => o.selected).map(o => o.name).join(',') || 'Indoor,Outdoor,No preference',
     waitTimeBase: parseInt(document.getElementById('settingsBase').value) || 8,
@@ -571,14 +576,30 @@ async function saveSettings() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to save');
-    venue = data.venue;
-    localStorage.setItem('flock_venue', JSON.stringify(venue));
-    okEl.textContent = 'Saved.';
-    loadVenue();
-  } catch (err) {
-    errEl.textContent = err.message;
-  }
-}
+        venue = data.venue;
+
+        // Upload menu if a new file was selected
+        const fileInput = document.getElementById('settingsMenuFile');
+        if (fileInput.files.length > 0) {
+          const formData = new FormData();
+          formData.append('menu', fileInput.files[0]);
+          const uploadRes = await fetch('/api/venues/' + venue.id + '/menu', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: formData,
+          });
+          const uploadData = await uploadRes.json();
+          if (uploadRes.ok) venue = uploadData.venue;
+        }
+
+        localStorage.setItem('flock_venue', JSON.stringify(venue));
+        okEl.textContent = 'Saved.';
+        loadVenue();
+        loadSettings();
+      } catch (err) {
+        errEl.textContent = err.message;
+      }
+    }
 
 function showQr() {
   if (!venue) return;
