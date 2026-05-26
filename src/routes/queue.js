@@ -252,12 +252,14 @@ router.post('/notify/:entryId', requireAuth, requireActiveSubscription, async (r
       return res.status(403).json({ error: 'Not authorized' });
     }
 
+    const { reportingTime } = req.body;
+    
     await prisma.queueEntry.update({
       where: { id: entry.id },
       data: { notifiedAt: new Date(), status: 'notified' },
     });
 
-    await logAudit(entry.id, 'notified');
+    await logAudit(entry.id, 'notified', reportingTime ? `Reporting time: ${reportingTime} mins` : null);
 
     // TODO: trigger WhatsApp via Gupshup (we'll add this next)
 
