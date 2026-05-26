@@ -7,7 +7,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
 const prisma = require('../lib/prisma');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireActiveSubscription } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -26,7 +26,7 @@ function slugify(text) {
 }
 
 // Create a venue (first-time setup)
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const { name, address, floorManagerName, menuPdfUrl, googleReviewsUrl } = req.body;
 
@@ -67,7 +67,7 @@ router.post('/', requireAuth, async (req, res) => {
 });
 
 // Get venues for the logged-in owner
-router.get('/', requireAuth, async (req, res) => {
+router.get('/', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const venues = await prisma.venue.findMany({
       where: { ownerId: req.ownerId },
@@ -95,7 +95,7 @@ router.get('/by-slug/:slug', async (req, res) => {
 });
 
 // Delete a venue
-router.delete('/:id', requireAuth, async (req, res) => {
+router.delete('/:id', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const venue = await prisma.venue.findFirst({
       where: { id: req.params.id, ownerId: req.ownerId },
@@ -111,7 +111,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
 });
 
 // Update a venue
-router.patch('/:id', requireAuth, async (req, res) => {
+router.patch('/:id', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const venue = await prisma.venue.findFirst({
       where: { id: req.params.id, ownerId: req.ownerId },
@@ -136,7 +136,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
 });
 
 // Upload menu PDF for a venue
-router.post('/:id/menu', requireAuth, upload.single('menu'), async (req, res) => {
+router.post('/:id/menu', requireAuth, requireActiveSubscription, upload.single('menu'), async (req, res) => {
   try {
     const venue = await prisma.venue.findFirst({
       where: { id: req.params.id, ownerId: req.ownerId },
