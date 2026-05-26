@@ -381,15 +381,39 @@ async function loadQueue() {
 }
 
 async function notifyGuest(id) {
+  const reportingTime = await pickReportingTime();
+  if (!reportingTime) return;
+
   // Optimistic: visually mark as notified immediately
   const card = document.querySelector(`[data-entry-id="${id}"]`);
   if (card) card.style.opacity = '0.5';
-  
+
   await fetch('/api/queue/notify/' + id, {
     method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + token },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + token,
+    },
+    body: JSON.stringify({ reportingTime }),
   });
   loadQueue();
+}
+
+function pickReportingTime() {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('reportingTimeModal');
+    modal.style.display = 'flex';
+    
+    window._pickReportingTime = (val) => {
+      modal.style.display = 'none';
+      resolve(val);
+    };
+    
+    window._cancelReportingTime = () => {
+      modal.style.display = 'none';
+      resolve(null);
+    };
+  });
 }
 
 async function callGuest(id, phone) {
@@ -753,6 +777,19 @@ setInterval(() => fetch('/health'), 5 * 60 * 1000);
   
 </script>
 
+<div id="reportingTimeModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--card);border-radius:16px;padding:32px;max-width:380px;width:100%;border:1px solid var(--border-strong);text-align:center;">
+    <h3 class="heading" style="font-size:22px;margin-bottom:8px;">How long should they take?</h3>
+    <p class="subheading" style="margin-bottom:20px;">Guest will be told to arrive within this time.</p>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+      <button class="chip" style="font-size:15px;padding:12px 20px;" onclick="window._pickReportingTime(3)">3 mins</button>
+      <button class="chip" style="font-size:15px;padding:12px 20px;" onclick="window._pickReportingTime(5)">5 mins</button>
+      <button class="chip" style="font-size:15px;padding:12px 20px;" onclick="window._pickReportingTime(10)">10 mins</button>
+    </div>
+    <button onclick="window._cancelReportingTime()" style="background:transparent;color:var(--text-muted);border:none;font-family:inherit;font-size:13px;margin-top:20px;cursor:pointer;">Cancel</button>
+  </div>
+</div>
+  
 <div id="auditModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--card);border-radius:16px;padding:24px;max-width:480px;width:100%;max-height:80vh;overflow-y:auto;border:1px solid var(--border-strong);">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
