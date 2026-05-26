@@ -321,8 +321,13 @@ router.get('/history/:venueId', requireAuth, async (req, res) => {
     startOfDay.setHours(0, 0, 0, 0);
 
     const entries = await prisma.queueEntry.findMany({
-      where: { venueId: venue.id, joinedAt: { gte: startOfDay } },
+      where: {
+        venueId: venue.id,
+        joinedAt: { gte: startOfDay },
+        status: { in: ['seated', 'cancelled'] },
+      },
       orderBy: { joinedAt: 'desc' },
+      include: { auditLogs: { orderBy: { createdAt: 'asc' } } },
     });
 
     res.json({ entries });
