@@ -1,6 +1,7 @@
 const express = require('express');
 const prisma = require('../lib/prisma');
 const { requireAuth, requireActiveSubscription } = require('../middleware/auth');
+const { sendTemplate } = require('../lib/whatsapp');
 
 const router = express.Router();
 
@@ -180,6 +181,28 @@ router.post('/join/:slug', async (req, res) => {
       venue.waitTimeCap
     );
 
+    // Fire WhatsApp queue-joined message (non-blocking)
+    const statusUrl = `${process.env.PUBLIC_URL || 'https://flock-wdz3.onrender.com'}/status.html?id=${entry.id}`;
+    sendTemplate(phoneClean, process.env.GUPSHUP_TEMPLATE_QUEUE_JOIN, [
+      venue.name,
+      guestName,
+      String(position),
+      String(waitMinutes),
+      statusUrl,
+    ]).then(result => {
+      if (result) {
+        prisma.notification.create({
+          data: {
+            id: generateId(),
+            queueEntryId: entry.id,
+            channel: 'whatsapp',
+            status: 'sent',
+            payload: 'queue_join',
+          },
+        }).catch(e => console.error('Notification log error:', e));
+      }
+    });
+    
     res.json({ success: true, entry, position, waitMinutes });
   } catch (error) {
     console.error('Join queue error:', error);
@@ -261,7 +284,24 @@ router.post('/notify/:entryId', requireAuth, requireActiveSubscription, async (r
 
     await logAudit(entry.id, 'notified', reportingTime ? `Reporting time: ${reportingTime} mins` : null);
 
-    // TODO: trigger WhatsApp via Gupshup (we'll add this next)
+    // Fire WhatsApp table-ready message (non-blocking)
+    sendTemplate(entry.guestPhone, process.env.GUPSHUP_TEMPLATE_TABLE_READY, [
+      entry.guestName,
+      entry.venue.name,
+      String(reportingTime || 5),
+    ]).then(result => {
+      if (result) {
+        prisma.notification.create({
+          data: {
+            id: generateId(),
+            queueEntryId: entry.id,
+            channel: 'whatsapp',
+            status: 'sent',
+            payload: 'table_ready',
+          },
+        }).catch(e => console.error('Notification log error:', e));
+      }
+    });
 
     res.json({ success: true });
   } catch (error) {
