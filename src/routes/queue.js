@@ -25,6 +25,7 @@ async function logAudit(queueEntryId, action, details = null) {
 
 async function computeWaitTimes(entries, venue) {
   const waitTimes = [];
+  const updates = [];
 
   for (let idx = 0; idx < entries.length; idx++) {
     const entry = entries[idx];
@@ -32,74 +33,52 @@ async function computeWaitTimes(entries, venue) {
     const inc = entry.waitTimeIncrementAtJoin ?? venue.waitTimeIncrement;
     const cap = entry.waitTimeCapAtJoin ?? venue.waitTimeCap;
 
-    // Position change → reset everything
+    const updateData = {};
+
     if (entry.lastPosition !== currentPos) {
-      await prisma.queueEntry.update({
-        where: { id: entry.id },
-        data: {
-          lastPosition: currentPos,
-          positionEnteredAt: new Date(),
-          lockedWait: null,
-        },
-      });
+      updateData.lastPosition = currentPos;
+      updateData.positionEnteredAt = new Date();
+      updateData.lockedWait = null;
+      updateData.startingWait = null;
       entry.lastPosition = currentPos;
       entry.positionEnteredAt = new Date();
       entry.lockedWait = null;
+      entry.startingWait = null;
     }
 
     let wait;
     if (idx === 0) {
-      // Position 1: stays at base, with snapshot logic
       if (!entry.hasBeenPositionOne) {
-        await prisma.queueEntry.update({
-          where: { id: entry.id },
-          data: {
-            waitTimeBaseAtJoin: venue.waitTimeBase,
-            hasBeenPositionOne: true,
-          },
-        });
+        updateData.waitTimeBaseAtJoin = venue.waitTimeBase;
+        updateData.hasBeenPositionOne = true;
         entry.waitTimeBaseAtJoin = venue.waitTimeBase;
         entry.hasBeenPositionOne = true;
       }
       const baseSnap = entry.waitTimeBaseAtJoin;
       const newBase = Math.min(baseSnap, venue.waitTimeBase);
       if (newBase < baseSnap) {
-        await prisma.queueEntry.update({
-          where: { id: entry.id },
-          data: { waitTimeBaseAtJoin: newBase },
-        });
+        updateData.waitTimeBaseAtJoin = newBase;
         entry.waitTimeBaseAtJoin = newBase;
       }
       wait = newBase;
     } else {
-      // Positions 2+
       const baseFloor = venue.waitTimeBase;
       const chainStart = waitTimes[idx - 1] + inc;
 
-      // If no startingWait yet, snapshot it now
       if (entry.startingWait == null) {
-        await prisma.queueEntry.update({
-          where: { id: entry.id },
-          data: { startingWait: chainStart },
-        });
+        updateData.startingWait = chainStart;
         entry.startingWait = chainStart;
       }
 
-      // Detect base drop — reset positionEnteredAt and startingWait to current lockedWait
       if (entry.lastBaseSeen != null && baseFloor < entry.lastBaseSeen && entry.lockedWait != null && entry.lockedWait > baseFloor) {
-        await prisma.queueEntry.update({
-          where: { id: entry.id },
-          data: { positionEnteredAt: new Date(), startingWait: entry.lockedWait },
-        });
+        updateData.positionEnteredAt = new Date();
+        updateData.startingWait = entry.lockedWait;
         entry.positionEnteredAt = new Date();
         entry.startingWait = entry.lockedWait;
       }
 
       if (entry.lastBaseSeen !== baseFloor) {
-        await prisma.queueEntry.update({
-          where: { id: entry.id },
-          data: { lastBaseSeen: baseFloor },
-        });
+        updateData.lastBaseSeen = baseFloor;
         entry.lastBaseSeen = baseFloor;
       }
 
@@ -110,7 +89,6 @@ async function computeWaitTimes(entries, venue) {
 
       const tickedDown = Math.max(baseFloor, Math.ceil(entry.startingWait - elapsedMinutes));
 
-      // Monotonic decrease
       let computed;
       if (entry.lockedWait != null) {
         computed = Math.min(entry.lockedWait, tickedDown);
@@ -119,10 +97,7 @@ async function computeWaitTimes(entries, venue) {
       }
 
       if (entry.lockedWait !== computed) {
-        await prisma.queueEntry.update({
-          where: { id: entry.id },
-          data: { lockedWait: computed },
-        });
+        updateData.lockedWait = computed;
         entry.lockedWait = computed;
       }
 
@@ -130,6 +105,17 @@ async function computeWaitTimes(entries, venue) {
     }
     wait = Math.min(wait, cap);
     waitTimes.push(wait);
+
+    if (Object.keys(updateData).length > 0) {
+      updates.push({ id: entry.id, data: updateData });
+    }
+  }
+
+  // Batch update — fire all updates in parallel instead of awaiting each one
+  if (updates.length > 0) {
+    await Promise.all(updates.map(u =>
+      prisma.queueEntry.update({ where: { id: u.id }, data: u.data })
+    ));
   }
 
   return waitTimes;
