@@ -267,7 +267,7 @@
   <div id="statsBar" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
     <div class="card" style="padding:14px;margin-bottom:0;text-align:center;">
       <div style="font-family:'Fraunces',serif;font-style:italic;font-size:28px;color:var(--accent);" id="statTotal">—</div>
-      <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.08em;text-transform:uppercase;margin-top:2px;">Guests</div>
+      <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.08em;text-transform:uppercase;margin-top:2px;">Guest parties</div>
     </div>
     <div class="card" style="padding:14px;margin-bottom:0;text-align:center;">
       <div style="font-family:'Fraunces',serif;font-style:italic;font-size:28px;color:var(--accent);" id="statSeated">—</div>
@@ -306,7 +306,7 @@
   </div>
 
   <div class="card">
-    <h2 class="heading" id="dailyChartTitle">Guests</h2>
+    <h2 class="heading" id="dailyChartTitle">Guest parties</h2>
     <p class="subheading" id="dailyChartSub">Past 7 days</p>
     <div style="overflow-x:auto;">
       <canvas id="dailyChart" style="min-width:600px;height:280px;"></canvas>
@@ -315,7 +315,17 @@
 
   <div class="card">
     <h2 class="heading">Busiest hours</h2>
-    <p class="subheading">Guests joined by hour of day</p>
+    <p class="subheading">Average guest parties per hour, by day of week</p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0;" id="dowFilterChips">
+      <button class="chip selected" data-dow="all" onclick="toggleDow('all')">All</button>
+      <button class="chip selected" data-dow="1" onclick="toggleDow('1')">Mon</button>
+      <button class="chip selected" data-dow="2" onclick="toggleDow('2')">Tue</button>
+      <button class="chip selected" data-dow="3" onclick="toggleDow('3')">Wed</button>
+      <button class="chip selected" data-dow="4" onclick="toggleDow('4')">Thu</button>
+      <button class="chip selected" data-dow="5" onclick="toggleDow('5')">Fri</button>
+      <button class="chip selected" data-dow="6" onclick="toggleDow('6')">Sat</button>
+      <button class="chip selected" data-dow="0" onclick="toggleDow('0')">Sun</button>
+    </div>
     <canvas id="hoursChart" style="max-height:240px;"></canvas>
   </div>
 
