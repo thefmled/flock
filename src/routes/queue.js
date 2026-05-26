@@ -482,4 +482,90 @@ router.post('/call/:entryId', requireAuth, requireActiveSubscription, async (req
   }
 });
 
+// Analytics — today + past 7 days
+router.get('/analytics/:venueId', requireAuth, requireActiveSubscription, async (req, res) => {
+  try {
+    const venue = await prisma.venue.findFirst({
+      where: { id: req.params.venueId, ownerId: req.ownerId },
+    });
+    if (!venue) return res.status(404).json({ error: 'Venue not found' });
+
+    const now = new Date();
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    const allRecent = await prisma.queueEntry.findMany({
+      where: { venueId: venue.id, joinedAt: { gte: sevenDaysAgo } },
+    });
+
+    // Today's metrics
+    const todayEntries = allRecent.filter(e => new Date(e.joinedAt) >= startOfToday);
+    const todaySeated = todayEntries.filter(e => e.status === 'seated' && e.seatedAt);
+    const todayCancelled = todayEntries.filter(e => e.status === 'cancelled');
+    const todayAvgWait = todaySeated.length > 0
+      ? Math.round(todaySeated.reduce((sum, e) => sum + (new Date(e.seatedAt) - new Date(e.joinedAt)) / 60000, 0) / todaySeated.length)
+      : 0;
+
+    // Past 7 days — entries per day
+    const daily = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      const next = new Date(d);
+      next.setDate(next.getDate() + 1);
+      const count = allRecent.filter(e => new Date(e.joinedAt) >= d && new Date(e.joinedAt) < next).length;
+      daily.push({ date: d.toISOString().split('T')[0], count });
+    }
+
+    // Busiest hours (across last 7 days)
+    const hours = Array(24).fill(0);
+    allRecent.forEach(e => {
+      const hr = new Date(e.joinedAt).getHours();
+      hours[hr]++;
+    });
+
+    // Avg party size
+    const avgPartySize = allRecent.length > 0
+      ? (allRecent.reduce((sum, e) => sum + e.partySize, 0) / allRecent.length).toFixed(1)
+      : 0;
+
+    // Avg wait by party size (only seated entries with valid times)
+    const seatedAll = allRecent.filter(e => e.status === 'seated' && e.seatedAt);
+    const byPartySize = {};
+    seatedAll.forEach(e => {
+      const ps = e.partySize;
+      if (!byPartySize[ps]) byPartySize[ps] = { total: 0, wait: 0 };
+      byPartySize[ps].total++;
+      byPartySize[ps].wait += (new Date(e.seatedAt) - new Date(e.joinedAt)) / 60000;
+    });
+    const waitByPartySize = Object.keys(byPartySize)
+      .sort((a, b) => parseInt(a) - parseInt(b))
+      .map(ps => ({
+        partySize: parseInt(ps),
+        count: byPartySize[ps].total,
+        avgWait: Math.round(byPartySize[ps].wait / byPartySize[ps].total),
+      }));
+
+    res.json({
+      today: {
+        guests: todayEntries.length,
+        seated: todaySeated.length,
+        cancelled: todayCancelled.length,
+        avgWait: todayAvgWait,
+      },
+      daily,
+      hours,
+      avgPartySize,
+      waitByPartySize,
+    });
+  } catch (error) {
+    console.error('Analytics error:', error);
+    res.status(500).json({ error: 'Failed to fetch analytics' });
+  }
+});
+
 module.exports = router;
