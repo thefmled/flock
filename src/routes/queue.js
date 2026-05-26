@@ -36,7 +36,6 @@ async function computeWaitTimes(entries, venue) {
     const updateData = {};
 
     if (entry.lastPosition !== currentPos) {
-      console.log('POSITION CHANGE for', entry.guestName, 'from', entry.lastPosition, 'to', currentPos);
       updateData.lastPosition = currentPos;
       updateData.positionEnteredAt = new Date();
       updateData.lockedWait = null;
