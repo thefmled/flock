@@ -1,21 +1,441 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>flock — queue management for restaurants</title>
-  <link rel="stylesheet" href="/styles.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>flock — queue management for restaurants</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 32px;
+  position: sticky;
+  top: 0;
+  background: rgba(15, 13, 10, 0.85);
+  backdrop-filter: blur(12px);
+  z-index: 100;
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 28px;
+  color: var(--text);
+}
+.nav-logo .accent { color: var(--accent); }
+.nav-links { display: flex; gap: 24px; align-items: center; }
+.nav-links a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+.nav-links a:hover { color: var(--text); }
+.nav-cta {
+  background: var(--accent);
+  color: var(--accent-text);
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-weight: 500;
+}
+.nav-cta:hover { color: var(--accent-text) !important; opacity: 0.9; }
+
+.hero {
+  text-align: center;
+  padding: 100px 24px 80px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+.hero-logo {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(72px, 16vw, 128px);
+  color: var(--text);
+  letter-spacing: -3px;
+  margin-bottom: 24px;
+  line-height: 1;
+}
+.hero-logo .accent { color: var(--accent); }
+.hero-tagline {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(24px, 5vw, 40px);
+  line-height: 1.25;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+.hero-sub {
+  font-size: 16px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 36px;
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.hero-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.section {
+  padding: 80px 24px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+.section-eyebrow {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-align: center;
+  margin-bottom: 16px;
+}
+.section-title {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(32px, 5vw, 48px);
+  text-align: center;
+  margin-bottom: 48px;
+  letter-spacing: -1px;
+  line-height: 1.2;
+}
+
+.three-col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.feature-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 32px 24px;
+}
+.feature-card h3 {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 24px;
+  margin-bottom: 12px;
+  color: var(--accent);
+}
+.feature-card p {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.flow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 40px;
+}
+.flow-step {
+  text-align: center;
+}
+.flow-step-num {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 48px;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 12px;
+}
+.flow-step h4 {
+  font-size: 15px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.flow-step p {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.why-list {
+  max-width: 600px;
+  margin: 0 auto;
+}
+.why-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+}
+.why-item:last-child { border-bottom: none; }
+.why-check {
+  color: var(--accent);
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.why-item h4 {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.why-item p {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.pricing-card {
+  max-width: 440px;
+  margin: 0 auto;
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  border-radius: 24px;
+  padding: 40px 32px;
+  text-align: center;
+}
+.pricing-amount {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 72px;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.pricing-period {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+.pricing-features {
+  text-align: left;
+  margin: 24px 0;
+}
+.pricing-features div {
+  padding: 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.about {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+}
+.about p {
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.cta-section {
+  text-align: center;
+  padding: 100px 24px;
+  background: var(--accent-soft);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.cta-section h2 {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(32px, 5vw, 48px);
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+.cta-section p {
+  color: var(--text-muted);
+  margin-bottom: 28px;
+  font-size: 16px;
+}
+
+footer {
+  padding: 40px 32px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  border-top: 1px solid var(--border);
+}
+footer a {
+  color: var(--text-muted);
+  text-decoration: none;
+  margin: 0 12px;
+}
+footer a:hover { color: var(--text); }
+
+@media (max-width: 768px) {
+  .three-col { grid-template-columns: 1fr; }
+  .flow { grid-template-columns: repeat(2, 1fr); }
+  .nav { padding: 16px 20px; }
+  .nav-links { gap: 14px; }
+  .nav-links a:not(.nav-cta) { display: none; }
+  .section { padding: 60px 20px; }
+  .hero { padding: 60px 20px 40px; }
+}
+</style>
 </head>
 <body class="theme-dark-premium">
-  <main class="landing">
-    <div class="container">
-      <h1 class="logo">fl<span class="accent">o</span>ck</h1>
-      <p class="tagline">queue management, without the chaos</p>
-      <a href="/login.html" class="cta">Get started</a>
+
+<nav class="nav">
+  <div class="nav-logo">fl<span class="accent">o</span>ck</div>
+  <div class="nav-links">
+    <a href="#how">How it works</a>
+    <a href="#why">Why flock</a>
+    <a href="#pricing">Pricing</a>
+    <a href="/login.html" class="nav-cta">Log in</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <h1 class="hero-logo">fl<span class="accent">o</span>ck</h1>
+  <h2 class="hero-tagline">Queue management, without the chaos.</h2>
+  <p class="hero-sub">A QR code at the door. A status page for your guests. One-tap notifications when their table is ready. Built for restaurants in India that don't have time for spreadsheets.</p>
+  <div class="hero-buttons">
+    <a href="/login.html" class="cta">Get started</a>
+    <a href="#how" class="cta cta-ghost">See how it works</a>
+  </div>
+</section>
+
+<section class="section" id="features">
+  <p class="section-eyebrow">Built for everyone</p>
+  <h2 class="section-title">One tool. Three happier people.</h2>
+  <div class="three-col">
+    <div class="feature-card">
+      <h3>For guests</h3>
+      <p>Scan a QR. Join the queue from your phone. See your position, your wait time, and a quick look at the menu — all in one place. No yelling names. No standing around guessing.</p>
     </div>
-  </main>
-  <script>
-  setInterval(() => fetch('/health'), 5 * 60 * 1000);
-  </script>
+    <div class="feature-card">
+      <h3>For staff</h3>
+      <p>One screen, one tap. Notify the next party with WhatsApp + a phone call — without leaving the floor. No more chasing tables down or losing track of who's next.</p>
+    </div>
+    <div class="feature-card">
+      <h3>For owners</h3>
+      <p>Real-time queue stats, today's guest count, average wait times, and full activity history. Export to CSV. Configure wait times per venue. Run it from your phone.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="how">
+  <p class="section-eyebrow">How it works</p>
+  <h2 class="section-title">From scan to seated in four steps.</h2>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-step-num">1</div>
+      <h4>Guest scans QR</h4>
+      <p>A simple QR code at the door takes guests to your queue page.</p>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">2</div>
+      <h4>They join the queue</h4>
+      <p>Name, phone, party size. Done in 15 seconds.</p>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">3</div>
+      <h4>You tap notify</h4>
+      <p>When their table is ready, one tap sends a WhatsApp + lets you call.</p>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">4</div>
+      <h4>They walk in</h4>
+      <p>No yelling, no waiting around. Just seated.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="why">
+  <p class="section-eyebrow">Why flock</p>
+  <h2 class="section-title">Built for India's busiest tables.</h2>
+  <div class="why-list">
+    <div class="why-item">
+      <span class="why-check">✓</span>
+      <div>
+        <h4>No more clipboard chaos</h4>
+        <p>Replace paper waitlists with a system that actually works during a Friday rush.</p>
+      </div>
+    </div>
+    <div class="why-item">
+      <span class="why-check">✓</span>
+      <div>
+        <h4>No calls to confirm guests are still around</h4>
+        <p>Your guests see their position update in real time. They know exactly when to head back.</p>
+      </div>
+    </div>
+    <div class="why-item">
+      <span class="why-check">✓</span>
+      <div>
+        <h4>Instant data</h4>
+        <p>How many guests today? What's your average wait? Who's been waiting longest? All on one screen.</p>
+      </div>
+    </div>
+    <div class="why-item">
+      <span class="why-check">✓</span>
+      <div>
+        <h4>Mobile-first</h4>
+        <p>Built for the phone in your hand on the floor, not a desktop you'll never sit at.</p>
+      </div>
+    </div>
+    <div class="why-item">
+      <span class="why-check">✓</span>
+      <div>
+        <h4>No setup headache</h4>
+        <p>Ten minutes to sign up, upload a menu, and start taking guests.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="pricing">
+  <p class="section-eyebrow">Pricing</p>
+  <h2 class="section-title">One flat rate.</h2>
+  <div class="pricing-card">
+    <div class="pricing-amount">₹999</div>
+    <div class="pricing-period">per venue, per month</div>
+    <div class="pricing-features">
+      <div>✓ Unlimited guests</div>
+      <div>✓ Unlimited staff</div>
+      <div>✓ WhatsApp notifications</div>
+      <div>✓ Real-time queue + history</div>
+      <div>✓ Menu + Google reviews on guest page</div>
+      <div>✓ CSV exports</div>
+    </div>
+    <a href="/login.html" class="cta" style="width:100%;display:inline-block;">Start using flock</a>
+  </div>
+</section>
+
+<section class="section">
+  <p class="section-eyebrow">About</p>
+  <h2 class="section-title">Built by people who've waited in line.</h2>
+  <div class="about">
+    <p>Bangalore's restaurants are some of the best in the country. They're also some of the busiest. We've spent more weekends than we can count standing outside packed venues, wondering when we'd get a table.</p>
+    <p>flock exists because there had to be a better way — for the guest staring at their phone, the floor manager juggling a clipboard, and the owner trying to make sense of it all.</p>
+  </div>
+</section>
+
+<section class="cta-section">
+  <h2>Ready to ditch the clipboard?</h2>
+  <p>Sign up in under a minute. No credit card required.</p>
+  <a href="/login.html" class="cta">Get started for free</a>
+</section>
+
+<footer>
+  <div style="margin-bottom:12px;">
+    <a href="#features">Features</a>
+    <a href="#how">How it works</a>
+    <a href="#pricing">Pricing</a>
+    <a href="mailto:rushali.c1710@gmail.com">Contact</a>
+  </div>
+  <div style="opacity:0.6;">© 2026 flock. Made in Bengaluru.</div>
+</footer>
+
+<script>
+setInterval(() => fetch('/health'), 5 * 60 * 1000);
+</script>
 </body>
 </html>
