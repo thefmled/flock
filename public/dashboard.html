@@ -153,6 +153,7 @@
 
 <div class="topbar">
   <div class="topbar-logo">fl<span class="accent">o</span>ck</div>
+  <div id="subStatus" style="font-size:11px;color:var(--text-muted);letter-spacing:0.05em;text-transform:uppercase;"></div>
   <div id="venueDropdown">
     <button id="venueButton" class="venue-button" onclick="toggleDropdown(event)">
       <span id="venueButtonLabel"></span>
@@ -718,10 +719,32 @@ async function showAudit(entryId, guestName) {
 function closeAudit() {
   document.getElementById('auditModal').style.display = 'none';
 }
+
+async function loadSubStatus() {
+  const res = await fetch('/api/subscription/status', {
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
+  const data = await res.json();
+  const el = document.getElementById('subStatus');
+  
+  if (data.status === 'trial' && data.trialEndsAt) {
+    const daysLeft = Math.ceil((new Date(data.trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24));
+    el.innerHTML = '<span style="color:var(--accent);">Trial · ' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : '') + ' left</span>';
+  } else if (data.status === 'active') {
+    el.innerHTML = '<span style="color:var(--success);">● Active</span>';
+  } else if (data.status === 'expired') {
+    el.innerHTML = '<span style="color:var(--error);">Subscription expired</span>';
+  } else if (data.status === 'cancelled') {
+    el.innerHTML = '<span style="color:var(--error);">Cancelled</span>';
+  } else {
+    el.textContent = '';
+  }
+}
   
 loadVenue().then(() => {
   loadQueue();
   loadStats();
+  loadSubStatus();
 });
 setInterval(loadQueue, 2000);
 setInterval(loadStats, 10000);
