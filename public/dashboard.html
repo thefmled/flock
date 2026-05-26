@@ -140,6 +140,13 @@
   .tab { padding: 10px 14px; font-size: 13px; }
   .tab-content { padding: 18px 16px; }
 }
+
+.btn-notify.btn-done {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+  
 </style>
 </head>
 <body class="theme-dark-premium">
@@ -357,8 +364,8 @@ async function loadQueue() {
         <div class="wait-time" data-position="${e.position}" data-position-entered-at="${e.positionEnteredAt || ''}" data-server-wait="${e.waitMinutes}" data-base-wait="${venue.waitTimeBase}" data-last-sync="${Date.now()}">~${e.waitMinutes}m</div>
       </div>
       <div class="queue-actions">
-        <button class="btn-notify" onclick="notifyGuest('${e.id}')">${notified ? '✓ Notified' : 'Notify'}</button>
-        <button class="btn-call" onclick="callGuest('${e.id}', '${e.guestPhone}')">${called ? '✓ Called' : 'Call'}</button>
+        <button class="btn-notify ${notified ? 'btn-done' : ''}" onclick="notifyGuest('${e.id}')">${notified ? '✓ Notified' : 'Notify'}</button>
+        <button class="btn-notify ${called ? 'btn-done' : ''}" onclick="callGuest('${e.id}', '${e.guestPhone}')">${called ? '✓ Called' : 'Call'}</button>
         <button class="btn-seat" onclick="seatGuest('${e.id}')">Mark seated</button>
         <button class="btn-cancel" onclick="cancelGuest('${e.id}')">Cancel</button>
       </div>
