@@ -136,7 +136,9 @@
       const btn = document.querySelector('.button');
       errorEl.textContent = '';
 
-      const phone = document.getElementById('guestPhone').value.replace(/\D/g, '');
+      let phone = document.getElementById('guestPhone').value.replace(/\D/g, '');
+      // Strip +91/91 prefix if present
+      if (phone.length > 10) phone = phone.slice(-10);
       if (!/^[6-9]\d{9}$/.test(phone)) {
         errorEl.textContent = 'Enter a valid 10-digit Indian phone number.';
         return;
