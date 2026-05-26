@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Start your trial — flock</title>
+<link rel="stylesheet" href="/styles.css">
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<style>
+.subscribe-card {
+  text-align: center;
+  padding: 40px 32px;
+}
+.price {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 72px;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.price-period {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+.trial-badge {
+  display: inline-block;
+  background: var(--accent-soft);
+  color: var(--accent);
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 24px;
+  letter-spacing: 0.04em;
+}
+.features-list {
+  text-align: left;
+  margin: 24px 0;
+}
+.features-list div {
+  padding: 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+.fineprint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 24px;
+  line-height: 1.5;
+}
+</style>
+</head>
+<body class="theme-dark-premium">
+<main class="container" style="max-width: 480px; padding-top: 64px;">
+  <h1 class="logo" style="font-size: 56px; text-align: center; margin-bottom: 32px;">fl<span class="accent">o</span>ck</h1>
+
+  <div class="card subscribe-card">
+    <div class="trial-badge">14-day free trial</div>
+    <div class="price">₹999</div>
+    <div class="price-period">per venue, per month — after trial</div>
+
+    <div class="features-list">
+      <div>✓ Unlimited guests & staff</div>
+      <div>✓ WhatsApp notifications</div>
+      <div>✓ Real-time queue & history</div>
+      <div>✓ Menu + Google reviews on guest page</div>
+      <div>✓ Configurable wait times</div>
+      <div>✓ CSV exports</div>
+    </div>
+
+    <button class="button" onclick="startSubscription()" id="payBtn">Start free trial</button>
+    <p class="error" id="payError"></p>
+
+    <p class="fineprint">No charges for 14 days. Your card will be charged ₹999 automatically every month after the trial. Cancel anytime.</p>
+  </div>
+</main>
+
+<script>
+const token = localStorage.getItem('flock_token');
+if (!token) window.location.href = '/login.html';
+
+async function startSubscription() {
+  const btn = document.getElementById('payBtn');
+  const errEl = document.getElementById('payError');
+  errEl.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Setting up…';
+
+  try {
+    const res = await fetch('/api/subscription/create', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create subscription');
+
+    const options = {
+      key: data.keyId,
+      subscription_id: data.subscriptionId,
+      name: 'flock',
+      description: 'Monthly subscription — ₹999/mo',
+      handler: function(response) {
+        window.location.href = '/setup.html';
+      },
+      theme: { color: '#f5a854' },
+      modal: {
+        ondismiss: function() {
+          btn.disabled = false;
+          btn.textContent = 'Start free trial';
+        },
+      },
+    };
+
+    const rzp = new Razorpay(options);
+    rzp.open();
+  } catch (err) {
+    errEl.textContent = err.message;
+    btn.disabled = false;
+    btn.textContent = 'Start free trial';
+  }
+}
+
+setInterval(() => fetch('/health'), 5 * 60 * 1000);
+</script>
+</body>
+</html>
