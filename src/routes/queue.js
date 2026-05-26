@@ -491,50 +491,79 @@ router.get('/analytics/:venueId', requireAuth, requireActiveSubscription, async 
     if (!venue) return res.status(404).json({ error: 'Venue not found' });
 
     const now = new Date();
+    const range = req.query.range || 'L7D';
+    let startDate;
+    let endDate = new Date(now);
+
+    if (range === 'L7D') {
+      startDate = new Date(now);
+      startDate.setDate(startDate.getDate() - 6);
+      startDate.setHours(0, 0, 0, 0);
+    } else if (range === 'MTD') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else if (range === 'YTD') {
+      startDate = new Date(now.getFullYear(), 0, 1);
+    } else if (range === 'L3M') {
+      startDate = new Date(now);
+      startDate.setDate(startDate.getDate() - 90);
+      startDate.setHours(0, 0, 0, 0);
+    } else if (range === 'L6M') {
+      startDate = new Date(now);
+      startDate.setDate(startDate.getDate() - 180);
+      startDate.setHours(0, 0, 0, 0);
+    } else if (range === 'L1Y') {
+      startDate = new Date(now);
+      startDate.setDate(startDate.getDate() - 365);
+      startDate.setHours(0, 0, 0, 0);
+    } else if (range === 'LM') {
+      startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      endDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else {
+      startDate = new Date(now);
+      startDate.setDate(startDate.getDate() - 6);
+      startDate.setHours(0, 0, 0, 0);
+    }
+
     const startOfToday = new Date(now);
     startOfToday.setHours(0, 0, 0, 0);
-    const sevenDaysAgo = new Date(now);
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-    sevenDaysAgo.setHours(0, 0, 0, 0);
 
-    const allRecent = await prisma.queueEntry.findMany({
-      where: { venueId: venue.id, joinedAt: { gte: sevenDaysAgo } },
+    const allInRange = await prisma.queueEntry.findMany({
+      where: { venueId: venue.id, joinedAt: { gte: startDate, lt: endDate } },
     });
 
-    // Today's metrics
-    const todayEntries = allRecent.filter(e => new Date(e.joinedAt) >= startOfToday);
+    // Today's metrics (always today, regardless of range)
+    const todayEntries = allInRange.filter(e => new Date(e.joinedAt) >= startOfToday && new Date(e.joinedAt) < new Date(startOfToday.getTime() + 86400000));
     const todaySeated = todayEntries.filter(e => e.status === 'seated' && e.seatedAt);
     const todayCancelled = todayEntries.filter(e => e.status === 'cancelled');
     const todayAvgWait = todaySeated.length > 0
       ? Math.round(todaySeated.reduce((sum, e) => sum + (new Date(e.seatedAt) - new Date(e.joinedAt)) / 60000, 0) / todaySeated.length)
       : 0;
 
-    // Past 7 days — entries per day
+    // Daily buckets for the range
     const daily = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      d.setHours(0, 0, 0, 0);
-      const next = new Date(d);
-      next.setDate(next.getDate() + 1);
-      const count = allRecent.filter(e => new Date(e.joinedAt) >= d && new Date(e.joinedAt) < next).length;
+    const dayMs = 86400000;
+    const numDays = Math.ceil((endDate - startDate) / dayMs);
+    for (let i = 0; i < numDays; i++) {
+      const d = new Date(startDate.getTime() + i * dayMs);
+      const next = new Date(d.getTime() + dayMs);
+      const count = allInRange.filter(e => new Date(e.joinedAt) >= d && new Date(e.joinedAt) < next).length;
       daily.push({ date: d.toISOString().split('T')[0], count });
     }
 
-    // Busiest hours (across last 7 days)
+    // Hours
     const hours = Array(24).fill(0);
-    allRecent.forEach(e => {
+    allInRange.forEach(e => {
       const hr = new Date(e.joinedAt).getHours();
       hours[hr]++;
     });
 
     // Avg party size
-    const avgPartySize = allRecent.length > 0
-      ? (allRecent.reduce((sum, e) => sum + e.partySize, 0) / allRecent.length).toFixed(1)
+    const avgPartySize = allInRange.length > 0
+      ? (allInRange.reduce((sum, e) => sum + e.partySize, 0) / allInRange.length).toFixed(1)
       : 0;
 
-    // Avg wait by party size (only seated entries with valid times)
-    const seatedAll = allRecent.filter(e => e.status === 'seated' && e.seatedAt);
+    // Wait by party size
+    const seatedAll = allInRange.filter(e => e.status === 'seated' && e.seatedAt);
     const byPartySize = {};
     seatedAll.forEach(e => {
       const ps = e.partySize;
@@ -561,6 +590,7 @@ router.get('/analytics/:venueId', requireAuth, requireActiveSubscription, async 
       hours,
       avgPartySize,
       waitByPartySize,
+      range,
     });
   } catch (error) {
     console.error('Analytics error:', error);
