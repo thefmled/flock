@@ -172,4 +172,42 @@ router.post('/:id/menu', requireAuth, requireActiveSubscription, upload.single('
   }
 });
 
+// Mark QR as placed
+router.post('/:id/qr-placed', requireAuth, requireActiveSubscription, async (req, res) => {
+  try {
+    const venue = await prisma.venue.findFirst({
+      where: { id: req.params.id, ownerId: req.ownerId },
+    });
+    if (!venue) return res.status(404).json({ error: 'Venue not found' });
+
+    const updated = await prisma.venue.update({
+      where: { id: venue.id },
+      data: { qrMarkedPlaced: true },
+    });
+    res.json({ success: true, venue: updated });
+  } catch (error) {
+    console.error('QR placed error:', error);
+    res.status(500).json({ error: 'Failed to mark QR placed' });
+  }
+});
+
+// Dismiss onboarding
+router.post('/:id/dismiss-onboarding', requireAuth, requireActiveSubscription, async (req, res) => {
+  try {
+    const venue = await prisma.venue.findFirst({
+      where: { id: req.params.id, ownerId: req.ownerId },
+    });
+    if (!venue) return res.status(404).json({ error: 'Venue not found' });
+
+    const updated = await prisma.venue.update({
+      where: { id: venue.id },
+      data: { onboardingDismissed: true },
+    });
+    res.json({ success: true, venue: updated });
+  } catch (error) {
+    console.error('Dismiss onboarding error:', error);
+    res.status(500).json({ error: 'Failed to dismiss' });
+  }
+});
+
 module.exports = router;
