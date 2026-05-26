@@ -372,6 +372,7 @@ async function loadQueue() {
         <button class="btn-notify ${called ? 'btn-done' : ''}" onclick="callGuest('${e.id}', '${e.guestPhone}')">${called ? '✓ Called' : 'Call'}</button>
         <button class="btn-seat" onclick="seatGuest('${e.id}')">Mark seated</button>
         <button class="btn-cancel" onclick="cancelGuest('${e.id}')">Cancel</button>
+        <button onclick="showAudit('${e.id}', '${escapeHtml(e.guestName)}')" style="background:transparent;color:var(--text-muted);border:1px solid var(--border-strong);padding:8px 14px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;">Audit</button>
       </div>
     </div>
   `;
