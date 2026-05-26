@@ -680,14 +680,24 @@ async function loadStats() {
 
 let historyCache = [];
 
-function showAudit(entryId, guestName) {
+async function showAudit(entryId, guestName) {
   const modal = document.getElementById('auditModal');
   const content = document.getElementById('auditContent');
   document.getElementById('auditTitle').textContent = 'Audit · ' + guestName;
   modal.style.display = 'flex';
 
-  const entry = historyCache.find(e => e.id === entryId);
-  const logs = entry ? entry.auditLogs : [];
+  let logs = [];
+  const cached = historyCache.find(e => e.id === entryId);
+  if (cached && cached.auditLogs) {
+    logs = cached.auditLogs;
+  } else {
+    content.innerHTML = '<p style="color:var(--text-muted);">Loading…</p>';
+    const res = await fetch('/api/queue/audit/' + entryId, {
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    const data = await res.json();
+    logs = data.logs || [];
+  }
   
   if (!logs || logs.length === 0) {
     content.innerHTML = '<p style="color:var(--text-muted);">No activity logged.</p>';
