@@ -1,4 +1,11 @@
 const express = require('express');
+
+const multer = require('multer');
+const { createClient } = require('@supabase/supabase-js');
+
+const upload = multer({ storage: multer.memoryStorage() });
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+
 const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
 
@@ -125,6 +132,43 @@ router.patch('/:id', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Update venue error:', error);
     res.status(500).json({ error: 'Failed to update venue' });
+  }
+});
+
+// Upload menu PDF for a venue
+router.post('/:id/menu', requireAuth, upload.single('menu'), async (req, res) => {
+  try {
+    const venue = await prisma.venue.findFirst({
+      where: { id: req.params.id, ownerId: req.ownerId },
+    });
+    if (!venue) return res.status(404).json({ error: 'Venue not found' });
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    if (req.file.mimetype !== 'application/pdf') {
+      return res.status(400).json({ error: 'Only PDF files are allowed' });
+    }
+
+    const filename = `${venue.slug}-${Date.now()}.pdf`;
+    const { data, error } = await supabase.storage
+      .from('menus')
+      .upload(filename, req.file.buffer, {
+        contentType: 'application/pdf',
+        upsert: true,
+      });
+
+    if (error) throw error;
+
+    const { data: publicData } = supabase.storage.from('menus').getPublicUrl(filename);
+    const menuPdfUrl = publicData.publicUrl;
+
+    const updated = await prisma.venue.update({
+      where: { id: venue.id },
+      data: { menuPdfUrl },
+    });
+
+    res.json({ success: true, venue: updated });
+  } catch (error) {
+    console.error('Menu upload error:', error);
+    res.status(500).json({ error: 'Failed to upload menu' });
   }
 });
 
