@@ -264,14 +264,22 @@
 
 <div class="tab-content" id="liveTab">
   <div id="onboardingBox"></div>
-  <div id="statsBar" style="display:flex;gap:12px;margin-bottom:16px;">
-    <div class="card" style="flex:1;padding:18px;margin-bottom:0;text-align:center;">
-      <div style="font-family:'Fraunces',serif;font-style:italic;font-size:32px;color:var(--accent);" id="statTotal">—</div>
-      <div style="font-size:11px;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-top:4px;">Guests today</div>
+  <div id="statsBar" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
+    <div class="card" style="padding:14px;margin-bottom:0;text-align:center;">
+      <div style="font-family:'Fraunces',serif;font-style:italic;font-size:28px;color:var(--accent);" id="statTotal">—</div>
+      <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.08em;text-transform:uppercase;margin-top:2px;">Guests</div>
     </div>
-    <div class="card" style="flex:1;padding:18px;margin-bottom:0;text-align:center;">
-      <div style="font-family:'Fraunces',serif;font-style:italic;font-size:32px;color:var(--accent);" id="statAvg">—</div>
-      <div style="font-size:11px;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-top:4px;">Avg wait</div>
+    <div class="card" style="padding:14px;margin-bottom:0;text-align:center;">
+      <div style="font-family:'Fraunces',serif;font-style:italic;font-size:28px;color:var(--accent);" id="statSeated">—</div>
+      <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.08em;text-transform:uppercase;margin-top:2px;">Seated</div>
+    </div>
+    <div class="card" style="padding:14px;margin-bottom:0;text-align:center;">
+      <div style="font-family:'Fraunces',serif;font-style:italic;font-size:28px;color:var(--accent);" id="statCancelled">—</div>
+      <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.08em;text-transform:uppercase;margin-top:2px;">Cancelled</div>
+    </div>
+    <div class="card" style="padding:14px;margin-bottom:0;text-align:center;">
+      <div style="font-family:'Fraunces',serif;font-style:italic;font-size:28px;color:var(--accent);" id="statAvg">—</div>
+      <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.08em;text-transform:uppercase;margin-top:2px;">Avg wait</div>
     </div>
   </div>
   <div id="queueList"></div>
@@ -867,6 +875,8 @@ async function loadStats() {
   });
   const data = await res.json();
   document.getElementById('statTotal').textContent = data.totalGuests;
+  document.getElementById('statSeated').textContent = data.seatedCount;
+  document.getElementById('statCancelled').textContent = data.cancelledCount;
   document.getElementById('statAvg').textContent = data.avgWaitMinutes + 'm';
 }
 
