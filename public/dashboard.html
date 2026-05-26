@@ -404,6 +404,7 @@ const pendingActions = new Set();
 const hiddenEntries = new Set();
 
 async function seatGuest(id) {
+  if (!confirm('Mark this guest as seated? They will be removed from the queue.')) return;
   pendingActions.add(id);
   hiddenEntries.add(id);
   const card = document.querySelector(`[data-entry-id="${id}"]`);
