@@ -11,6 +11,11 @@ model Owner {
   id        String   @id @default(cuid())
   phone     String   @unique
   name      String?
+  razorpayCustomerId    String?
+  razorpaySubscriptionId String?
+  subscriptionStatus    String   @default("pending")
+  trialEndsAt           DateTime?
+  subscriptionStartedAt DateTime?
   createdAt DateTime @default(now())
   venues    Venue[]
 }
