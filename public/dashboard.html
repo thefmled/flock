@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard — flock</title>
 <link rel="stylesheet" href="/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 .topbar {
   display: flex;
@@ -239,6 +240,7 @@
 <div class="tabs">
   <button class="tab active" data-tab="live" onclick="switchTab('live')">Live queue</button>
   <button class="tab" data-tab="history" onclick="switchTab('history')">History</button>
+  <button class="tab" data-tab="analytics" onclick="switchTab('analytics')">Analytics</button>
 </div>
 
 <div class="tab-content" id="liveTab">
@@ -265,6 +267,52 @@
   <div id="historyList"></div>
 </div>
 
+<div class="tab-content" id="analyticsTab" style="display:none;">
+  <div class="card">
+    <h2 class="heading">Today</h2>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;">
+      <div style="flex:1;min-width:120px;text-align:center;">
+        <div style="font-family:'Fraunces',serif;font-style:italic;font-size:32px;color:var(--accent);" id="anaGuests">—</div>
+        <div style="font-size:11px;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-top:4px;">Guests</div>
+      </div>
+      <div style="flex:1;min-width:120px;text-align:center;">
+        <div style="font-family:'Fraunces',serif;font-style:italic;font-size:32px;color:var(--accent);" id="anaSeated">—</div>
+        <div style="font-size:11px;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-top:4px;">Seated</div>
+      </div>
+      <div style="flex:1;min-width:120px;text-align:center;">
+        <div style="font-family:'Fraunces',serif;font-style:italic;font-size:32px;color:var(--accent);" id="anaCancelled">—</div>
+        <div style="font-size:11px;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-top:4px;">Cancelled</div>
+      </div>
+      <div style="flex:1;min-width:120px;text-align:center;">
+        <div style="font-family:'Fraunces',serif;font-style:italic;font-size:32px;color:var(--accent);" id="anaAvgWait">—</div>
+        <div style="font-size:11px;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-top:4px;">Avg wait</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="heading">Past 7 days</h2>
+    <p class="subheading">Guests per day</p>
+    <canvas id="dailyChart" style="max-height:240px;"></canvas>
+  </div>
+
+  <div class="card">
+    <h2 class="heading">Busiest hours</h2>
+    <p class="subheading">Guests joined by hour of day (last 7 days)</p>
+    <canvas id="hoursChart" style="max-height:240px;"></canvas>
+  </div>
+
+  <div class="card">
+    <h2 class="heading">Average party size</h2>
+    <div style="font-family:'Fraunces',serif;font-style:italic;font-size:48px;color:var(--accent);text-align:center;margin-top:8px;" id="anaPartySize">—</div>
+  </div>
+
+  <div class="card">
+    <h2 class="heading">Wait by party size</h2>
+    <div id="waitByPartyTable"></div>
+  </div>
+</div>
+  
 <div class="tab-content" id="settingsTab" style="display:none;">
   <div class="card">
     <h2 class="heading">Venue details</h2>
@@ -557,13 +605,14 @@ async function cancelGuest(id) {
 }
 
 function switchTab(tab) {
-  ['live','history','settings'].forEach(t => {
+  ['live','history','settings','analytics'].forEach(t => {
     document.getElementById(t + 'Tab').style.display = (t === tab) ? 'block' : 'none';
     const btn = document.querySelector('[data-tab="' + t + '"]');
     if (btn) btn.classList.toggle('active', t === tab);
   });
   if (tab === 'history') loadHistory();
   if (tab === 'settings') loadSettings();
+  if (tab === 'analytics') loadAnalytics();
 }
 
 async function loadHistory() {
@@ -924,6 +973,84 @@ async function dismissOnboarding() {
   localStorage.setItem('flock_venue', JSON.stringify(venue));
   renderOnboarding();
 }  
+
+let dailyChart = null;
+let hoursChart = null;
+
+async function loadAnalytics() {
+  if (!venue) return;
+  const res = await fetch('/api/queue/analytics/' + venue.id, {
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
+  const data = await res.json();
+
+  document.getElementById('anaGuests').textContent = data.today.guests;
+  document.getElementById('anaSeated').textContent = data.today.seated;
+  document.getElementById('anaCancelled').textContent = data.today.cancelled;
+  document.getElementById('anaAvgWait').textContent = data.today.avgWait + 'm';
+  document.getElementById('anaPartySize').textContent = data.avgPartySize;
+
+  // Wait by party size table
+  const tableEl = document.getElementById('waitByPartyTable');
+  if (data.waitByPartySize.length === 0) {
+    tableEl.innerHTML = '<p style="color:var(--text-muted);font-size:14px;text-align:center;padding:16px;">Not enough data yet.</p>';
+  } else {
+    tableEl.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;font-size:11px;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;padding:12px 0;border-bottom:1px solid var(--border);"><div>Party size</div><div>Count</div><div>Avg wait</div></div>' +
+      data.waitByPartySize.map(r => '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);font-size:14px;"><div>' + r.partySize + '</div><div>' + r.count + '</div><div>' + r.avgWait + 'm</div></div>').join('');
+  }
+
+  // Daily chart
+  const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+  if (dailyChart) dailyChart.destroy();
+  dailyChart = new Chart(dailyCtx, {
+    type: 'line',
+    data: {
+      labels: data.daily.map(d => new Date(d.date).toLocaleDateString('en-IN', {weekday: 'short'})),
+      datasets: [{
+        data: data.daily.map(d => d.count),
+        borderColor: '#f5a854',
+        backgroundColor: 'rgba(245,168,84,0.1)',
+        fill: true,
+        tension: 0.3,
+        pointBackgroundColor: '#f5a854',
+        pointRadius: 4,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { color: 'rgba(245,234,212,0.6)', stepSize: 1 }, grid: { color: 'rgba(245,234,212,0.06)' } },
+        x: { ticks: { color: 'rgba(245,234,212,0.6)' }, grid: { display: false } },
+      },
+    },
+  });
+
+  // Hours chart
+  const hoursCtx = document.getElementById('hoursChart').getContext('2d');
+  if (hoursChart) hoursChart.destroy();
+  hoursChart = new Chart(hoursCtx, {
+    type: 'bar',
+    data: {
+      labels: data.hours.map((_, i) => i + ':00'),
+      datasets: [{
+        data: data.hours,
+        backgroundColor: '#f5a854',
+        borderRadius: 4,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { color: 'rgba(245,234,212,0.6)' }, grid: { color: 'rgba(245,234,212,0.06)' } },
+        x: { ticks: { color: 'rgba(245,234,212,0.6)' }, grid: { display: false } },
+      },
+    },
+  });
+}
   
 loadVenue().then(() => {
   loadQueue();
