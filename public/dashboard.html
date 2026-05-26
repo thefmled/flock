@@ -332,6 +332,8 @@ document.addEventListener('click', (e) => {
 
 async function loadQueue() {
   if (!venue) return;
+  // Skip refresh if there's a pending action — let it complete first
+  if (pendingActions.size > 0) return;
   const res = await fetch('/api/queue/live/' + venue.id, {
     headers: { 'Authorization': 'Bearer ' + token },
   });
@@ -395,19 +397,27 @@ async function callGuest(id, phone) {
   loadQueue();
 }
 
+const pendingActions = new Set();
+
 async function seatGuest(id) {
+  pendingActions.add(id);
   const card = document.querySelector(`[data-entry-id="${id}"]`);
   if (card) {
     card.style.opacity = '0.3';
     card.style.transform = 'translateX(20px)';
     card.style.transition = 'all 0.3s';
+    card.style.pointerEvents = 'none';
   }
   
-  await fetch('/api/queue/seat/' + id, {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + token },
-  });
-  loadQueue();
+  try {
+    await fetch('/api/queue/seat/' + id, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+  } finally {
+    pendingActions.delete(id);
+    loadQueue();
+  }
 }
 
 async function cancelGuest(id) {
