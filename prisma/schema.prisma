@@ -85,6 +85,7 @@ model QueueEntry {
   
   joinedAt    DateTime       @default(now())
   notifiedAt  DateTime?
+  calledAt    DateTime?
   seatedAt    DateTime?
   cancelledAt DateTime?
   
