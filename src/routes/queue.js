@@ -1,6 +1,6 @@
 const express = require('express');
 const prisma = require('../lib/prisma');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireActiveSubscription } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -188,7 +188,7 @@ router.post('/join/:slug', async (req, res) => {
 });
 
 // Get live queue (authed — staff view)
-router.get('/live/:venueId', requireAuth, async (req, res) => {
+router.get('/live/:venueId', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const venue = await prisma.venue.findFirst({
       where: { id: req.params.venueId, ownerId: req.ownerId },
@@ -241,7 +241,7 @@ router.get('/status/:entryId', async (req, res) => {
 });
 
 // Notify guest (authed)
-router.post('/notify/:entryId', requireAuth, async (req, res) => {
+router.post('/notify/:entryId', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const entry = await prisma.queueEntry.findUnique({
       where: { id: req.params.entryId },
@@ -269,7 +269,7 @@ router.post('/notify/:entryId', requireAuth, async (req, res) => {
 });
 
 // Mark as seated (authed)
-router.post('/seat/:entryId', requireAuth, async (req, res) => {
+router.post('/seat/:entryId', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const entry = await prisma.queueEntry.findUnique({
       where: { id: req.params.entryId },
@@ -310,7 +310,7 @@ router.post('/cancel/:entryId', async (req, res) => {
 });
 
 // Get queue history (today's entries — all statuses)
-router.get('/history/:venueId', requireAuth, async (req, res) => {
+router.get('/history/:venueId', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const venue = await prisma.venue.findFirst({
       where: { id: req.params.venueId, ownerId: req.ownerId },
@@ -338,7 +338,7 @@ router.get('/history/:venueId', requireAuth, async (req, res) => {
 });
 
 // Clear queue (cancel all waiting/notified entries)
-router.post('/clear/:venueId', requireAuth, async (req, res) => {
+router.post('/clear/:venueId', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const venue = await prisma.venue.findFirst({
       where: { id: req.params.venueId, ownerId: req.ownerId },
@@ -361,7 +361,7 @@ router.post('/clear/:venueId', requireAuth, async (req, res) => {
 });
 
 // Today's stats
-router.get('/stats/:venueId', requireAuth, async (req, res) => {
+router.get('/stats/:venueId', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const venue = await prisma.venue.findFirst({
       where: { id: req.params.venueId, ownerId: req.ownerId },
@@ -391,7 +391,7 @@ router.get('/stats/:venueId', requireAuth, async (req, res) => {
 });
 
 // Get audit log for a queue entry
-router.get('/audit/:entryId', requireAuth, async (req, res) => {
+router.get('/audit/:entryId', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const entry = await prisma.queueEntry.findUnique({
       where: { id: req.params.entryId },
@@ -415,7 +415,7 @@ router.get('/audit/:entryId', requireAuth, async (req, res) => {
 });
 
 // Mark guest as called (logs the call action — does not actually dial)
-router.post('/call/:entryId', requireAuth, async (req, res) => {
+router.post('/call/:entryId', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const entry = await prisma.queueEntry.findUnique({
       where: { id: req.params.entryId },
