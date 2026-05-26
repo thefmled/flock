@@ -9,7 +9,8 @@
 <body class="theme-dark-premium">
   <main class="container" style="max-width: 480px; padding-top: 48px;">
     <h1 class="logo" style="font-size: 48px; text-align: center; margin-bottom: 8px;">fl<span class="accent">o</span>ck</h1>
-    <p style="text-align:center;color:var(--text-muted);font-size:14px;margin-bottom:32px;" id="venueLabel"></p>
+    <p style="text-align:center;color:var(--text-muted);font-size:14px;margin-bottom:4px;" id="venueLabel"></p>
+    <p style="text-align:center;color:var(--text-muted);font-size:12px;margin-bottom:32px;" id="venueAddress"></p>
 
     <div class="card" id="joinStep">
       <h2 class="heading">Join the queue</h2>
@@ -22,7 +23,7 @@
 
       <div class="input-group">
         <label for="guestPhone">Phone</label>
-        <input type="tel" id="guestPhone" inputmode="numeric" placeholder="9876543210" />
+        <input type="tel" id="guestPhone" inputmode="numeric" placeholder="9876543210" autocomplete="tel" />
       </div>
 
       <div class="input-group">
@@ -77,6 +78,7 @@
         const data = await res.json();
         if (data.venue) {
           document.getElementById('venueLabel').textContent = data.venue.name;
+          document.getElementById('venueAddress').textContent = data.venue.address || '';
           
           const opts = (data.venue.seatingOptions || 'Indoor,Outdoor,No preference').split(',');
           // Put "No preference" first and pre-select it
