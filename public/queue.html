@@ -77,6 +77,7 @@
         const res = await fetch('/api/venues/by-slug/' + slug);
         const data = await res.json();
         if (data.venue) {
+          sessionStorage.setItem('flock_venue_data', JSON.stringify(data.venue));
           document.getElementById('venueLabel').textContent = data.venue.name;
           document.getElementById('venueAddress').textContent = data.venue.address || '';
           
@@ -172,11 +173,14 @@
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to join queue');
+        const venueData = JSON.parse(sessionStorage.getItem('flock_venue_data') || '{}');
         const params = new URLSearchParams({
           id: data.entry.id,
           position: data.position,
           wait: data.waitMinutes,
           venueName: document.getElementById('venueLabel').textContent,
+          menuPdfUrl: venueData.menuPdfUrl || '',
+          googleReviewsUrl: venueData.googleReviewsUrl || '',
         });
         window.location.replace('/status.html?' + params.toString());
       } catch (err) {
