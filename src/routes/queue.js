@@ -196,8 +196,9 @@ router.get('/live/:venueId', requireAuth, async (req, res) => {
     if (!venue) return res.status(404).json({ error: 'Venue not found' });
 
     const entries = await prisma.queueEntry.findMany({
-      where: { venueId: venue.id, status: { in: ['waiting', 'notified'] } },
-      orderBy: { joinedAt: 'asc' },
+      where: { venueId: venue.id, joinedAt: { gte: startOfDay } },
+      orderBy: { joinedAt: 'desc' },
+      include: { auditLogs: { orderBy: { createdAt: 'asc' } } },
     });
 
     const waitTimes = await computeWaitTimes(entries, venue);
