@@ -89,6 +89,7 @@ model QueueEntry {
   cancelledAt DateTime?
   
   notifications Notification[]
+  auditLogs   AuditLog[]
 }
 
 model Notification {
@@ -101,4 +102,17 @@ model Notification {
   payload      String?
   
   sentAt       DateTime   @default(now())
+}
+
+model AuditLog {
+  id           String     @id @default(cuid())
+  queueEntryId String
+  queueEntry   QueueEntry @relation(fields: [queueEntryId], references: [id], onDelete: Cascade)
+  
+  action       String
+  details      String?
+  
+  createdAt    DateTime   @default(now())
+  
+  @@index([queueEntryId])
 }
