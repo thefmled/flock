@@ -166,12 +166,16 @@ router.post('/join/:slug', async (req, res) => {
     });
 
     // Calculate guest's position
-    const allWaiting = await prisma.queueEntry.findMany({
-      where: { venueId: venue.id, status: 'waiting' },
-      orderBy: { joinedAt: 'asc' },
+    const count = await prisma.queueEntry.count({
+      where: { venueId: venue.id, status: 'waiting', joinedAt: { lte: entry.joinedAt } },
     });
-    const position = allWaiting.findIndex(e => e.id === entry.id) + 1;
-    const waitMinutes = (await computeWaitTimes(allWaiting, venue))[position - 1];
+    const position = count;
+    // Simple position-based estimate — full recalc happens on next dashboard poll
+    const baseFloor = venue.waitTimeBase;
+    const waitMinutes = Math.min(
+      baseFloor + venue.waitTimeIncrement * (position - 1),
+      venue.waitTimeCap
+    );
 
     res.json({ success: true, entry, position, waitMinutes });
   } catch (error) {
