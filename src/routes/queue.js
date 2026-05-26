@@ -546,8 +546,16 @@ router.get('/analytics/:venueId', requireAuth, requireActiveSubscription, async 
     for (let i = 0; i < numDays; i++) {
       const d = new Date(startDate.getTime() + i * dayMs);
       const next = new Date(d.getTime() + dayMs);
-      const count = allInRange.filter(e => new Date(e.joinedAt) >= d && new Date(e.joinedAt) < next).length;
-      daily.push({ date: d.toISOString().split('T')[0], count });
+      const dayEntries = allInRange.filter(e => new Date(e.joinedAt) >= d && new Date(e.joinedAt) < next);
+      const avgParty = dayEntries.length > 0
+        ? dayEntries.reduce((sum, e) => sum + e.partySize, 0) / dayEntries.length
+        : 0;
+      daily.push({
+        date: d.toISOString().split('T')[0],
+        dayOfWeek: d.getDay(), // 0 = Sunday, 1 = Monday...
+        count: dayEntries.length,
+        avgPartySize: parseFloat(avgParty.toFixed(1)),
+      });
     }
 
     // Hours
