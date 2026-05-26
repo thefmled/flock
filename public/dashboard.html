@@ -1026,6 +1026,8 @@ async function dismissOnboarding() {
 let dailyChart = null;
 let hoursChart = null;
 let partyChart = null;
+let analyticsData = null;
+let selectedDows = new Set(['all', '0', '1', '2', '3', '4', '5', '6']);
 
 const RANGE_LABELS = {
   LM: 'Last month',
@@ -1038,104 +1040,68 @@ const RANGE_LABELS = {
 };
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+function toggleDow(dow) {
+  if (dow === 'all') {
+    const allOn = selectedDows.has('all');
+    if (allOn) {
+      selectedDows = new Set();
+    } else {
+      selectedDows = new Set(['all', '0', '1', '2', '3', '4', '5', '6']);
+    }
+  } else {
+    if (selectedDows.has(dow)) {
+      selectedDows.delete(dow);
+      selectedDows.delete('all');
+    } else {
+      selectedDows.add(dow);
+      if (['0','1','2','3','4','5','6'].every(d => selectedDows.has(d))) {
+        selectedDows.add('all');
+      }
+    }
+  }
+  document.querySelectorAll('#dowFilterChips .chip').forEach(b => {
+    b.classList.toggle('selected', selectedDows.has(b.dataset.dow));
+  });
+  if (analyticsData) renderHoursChart();
+}
+
 async function loadAnalytics() {
   if (!venue) return;
   const res = await fetch('/api/queue/analytics/' + venue.id + '?range=' + currentRange, {
     headers: { 'Authorization': 'Bearer ' + token },
   });
-  const data = await res.json();
+  analyticsData = await res.json();
 
   document.getElementById('dailyChartSub').textContent = RANGE_LABELS[currentRange] || 'Past 7 days';
 
   const grouped = currentRange !== 'L7D';
+
+  // === Daily chart ===
   const dailyCtx = document.getElementById('dailyChart').getContext('2d');
   if (dailyChart) dailyChart.destroy();
 
   if (!grouped) {
-    // L7D: simple per-day chart
     dailyChart = new Chart(dailyCtx, {
       type: 'bar',
       data: {
-        labels: data.daily.map(d => DAY_NAMES[d.dayOfWeek] + ' ' + new Date(d.date).getDate()),
+        labels: analyticsData.daily.map(d => DAY_NAMES[d.dayOfWeek] + ' ' + new Date(d.date).getDate()),
         datasets: [{
-          label: 'Guests',
-          data: data.daily.map(d => d.count),
+          label: 'Guest parties',
+          data: analyticsData.daily.map(d => d.count),
           backgroundColor: '#f5a854',
           borderRadius: 4,
         }],
       },
-      options: chartBaseOptions(),
+      options: chartBaseOptions({ noLegend: true }),
     });
   } else {
-    // Grouped by day of week
-    const labels = [];
-    const counts = [];
-    const avgs = [];
-    // Group by day-of-week, in order Mon..Sun (we'll start at Monday)
-    const orderedDays = [1, 2, 3, 4, 5, 6, 0]; // Mon..Sun
-    orderedDays.forEach(dow => {
-      const daysForDow = data.daily.filter(d => d.dayOfWeek === dow);
-      daysForDow.forEach((d, idx) => {
-        labels.push(DAY_NAMES[dow] + (idx === 0 ? '' : ''));
-        counts.push(d.count);
-      });
-      const sum = daysForDow.reduce((s, d) => s + d.count, 0);
-      const avg = daysForDow.length > 0 ? sum / daysForDow.length : 0;
-      avgs.push({ dow, avg, position: labels.length - daysForDow.length + Math.floor(daysForDow.length / 2) });
-    });
-
-    // Build line data: avg at the center position of each cluster
-    const lineData = labels.map((_, i) => {
-      const pos = avgs.find(a => a.position === i);
-      return pos ? pos.avg : null;
-    });
-
-    dailyChart = new Chart(dailyCtx, {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [
-          {
-            type: 'bar',
-            label: 'Guests',
-            data: counts,
-            backgroundColor: '#f5a854',
-            borderRadius: 4,
-          },
-          {
-            type: 'line',
-            label: 'Day-of-week avg',
-            data: lineData,
-            borderColor: 'rgba(245,168,84,0.5)',
-            backgroundColor: 'transparent',
-            borderWidth: 2,
-            pointRadius: 0,
-            spanGaps: true,
-            tension: 0.3,
-          },
-        ],
-      },
-      options: chartBaseOptions(),
-    });
+    dailyChart = buildClusterChart(dailyCtx, analyticsData.daily, 'count', 'Guest parties');
   }
 
-  // Hours chart
-  const hoursCtx = document.getElementById('hoursChart').getContext('2d');
-  if (hoursChart) hoursChart.destroy();
-  hoursChart = new Chart(hoursCtx, {
-    type: 'bar',
-    data: {
-      labels: data.hours.map((_, i) => i + ':00'),
-      datasets: [{
-        data: data.hours,
-        backgroundColor: '#f5a854',
-        borderRadius: 4,
-      }],
-    },
-    options: chartBaseOptions({ noLegend: true }),
-  });
+  // === Hours chart (filtered by selected DOWs) ===
+  renderHoursChart();
 
-  // Party size chart — same cluster grouping
+  // === Party size chart ===
   const partyCtx = document.getElementById('partyChart').getContext('2d');
   if (partyChart) partyChart.destroy();
 
@@ -1143,77 +1109,143 @@ async function loadAnalytics() {
     partyChart = new Chart(partyCtx, {
       type: 'bar',
       data: {
-        labels: data.daily.map(d => DAY_NAMES[d.dayOfWeek] + ' ' + new Date(d.date).getDate()),
+        labels: analyticsData.daily.map(d => DAY_NAMES[d.dayOfWeek] + ' ' + new Date(d.date).getDate()),
         datasets: [{
           label: 'Avg party size',
-          data: data.daily.map(d => d.avgPartySize),
+          data: analyticsData.daily.map(d => d.avgPartySize),
           backgroundColor: '#f5a854',
           borderRadius: 4,
         }],
       },
-      options: chartBaseOptions(),
+      options: chartBaseOptions({ noLegend: true }),
     });
   } else {
-    const labels = [];
-    const partyData = [];
-    const partyAvgs = [];
-    const orderedDays = [1, 2, 3, 4, 5, 6, 0];
-    orderedDays.forEach(dow => {
-      const daysForDow = data.daily.filter(d => d.dayOfWeek === dow);
-      daysForDow.forEach((d, idx) => {
-        labels.push(DAY_NAMES[dow]);
-        partyData.push(d.avgPartySize);
-      });
-      const withData = daysForDow.filter(d => d.avgPartySize > 0);
-      const avg = withData.length > 0
-        ? withData.reduce((s, d) => s + d.avgPartySize, 0) / withData.length
-        : 0;
-      partyAvgs.push({ dow, avg, position: labels.length - daysForDow.length + Math.floor(daysForDow.length / 2) });
-    });
-
-    const lineData = labels.map((_, i) => {
-      const pos = partyAvgs.find(a => a.position === i);
-      return pos ? pos.avg : null;
-    });
-
-    partyChart = new Chart(partyCtx, {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [
-          {
-            type: 'bar',
-            label: 'Avg party size',
-            data: partyData,
-            backgroundColor: '#f5a854',
-            borderRadius: 4,
-          },
-          {
-            type: 'line',
-            label: 'Day-of-week avg',
-            data: lineData,
-            borderColor: 'rgba(245,168,84,0.5)',
-            backgroundColor: 'transparent',
-            borderWidth: 2,
-            pointRadius: 0,
-            spanGaps: true,
-            tension: 0.3,
-          },
-        ],
-      },
-      options: chartBaseOptions(),
-    });
+    partyChart = buildClusterChart(partyCtx, analyticsData.daily, 'avgPartySize', 'Avg party size');
   }
+}
+
+function buildClusterChart(ctx, daily, valueKey, datasetLabel) {
+  const labels = [];
+  const values = [];
+  const orderedDays = [1, 2, 3, 4, 5, 6, 0]; // Mon..Sun
+  const clusterMidpoints = [];
+  const dowAverages = [];
+
+  orderedDays.forEach(dow => {
+    const daysForDow = daily.filter(d => d.dayOfWeek === dow);
+    daysForDow.forEach((d, idx) => {
+      labels.push(idx === 0 ? DAY_NAMES[dow] : '');
+      values.push(d[valueKey]);
+    });
+    // Average excluding 0 values
+    const nonZero = daysForDow.filter(d => d[valueKey] > 0);
+    const avg = nonZero.length > 0
+      ? nonZero.reduce((s, d) => s + d[valueKey], 0) / nonZero.length
+      : null;
+    const start = labels.length - daysForDow.length;
+    const mid = start + Math.floor(daysForDow.length / 2);
+    clusterMidpoints.push(mid);
+    dowAverages.push(avg);
+  });
+
+  // Build line data: only place the avg at cluster midpoints, null elsewhere
+  const lineData = labels.map((_, i) => {
+    const cIdx = clusterMidpoints.indexOf(i);
+    if (cIdx === -1) return null;
+    return dowAverages[cIdx];
+  });
+
+  return new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'bar',
+          label: datasetLabel,
+          data: values,
+          backgroundColor: '#f5a854',
+          borderRadius: 3,
+        },
+        {
+          type: 'line',
+          label: 'Day-of-week avg',
+          data: lineData,
+          borderColor: 'rgba(245,168,84,0.45)',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: 'rgba(245,168,84,0.7)',
+          spanGaps: true,
+          tension: 0.3,
+        },
+      ],
+    },
+    options: chartBaseOptions(),
+  });
+}
+
+function renderHoursChart() {
+  if (!analyticsData) return;
+  const hoursCtx = document.getElementById('hoursChart').getContext('2d');
+  if (hoursChart) hoursChart.destroy();
+
+  const dows = ['0','1','2','3','4','5','6'].filter(d => selectedDows.has(d)).map(d => parseInt(d));
+  
+  // For each hour, compute weighted avg per occurrence of those days
+  // Weighted avg = total parties across selected days / total days seen for selected dows
+  const result = Array(24).fill(0);
+  if (dows.length > 0) {
+    const totalDays = dows.reduce((s, d) => s + (analyticsData.dowDayCounts[d] || 0), 0);
+    if (totalDays > 0) {
+      for (let h = 0; h < 24; h++) {
+        let totalParties = 0;
+        dows.forEach(d => {
+          totalParties += (analyticsData.hoursByDow[d]?.[h] || 0);
+        });
+        result[h] = totalParties / totalDays;
+      }
+    }
+  }
+
+  hoursChart = new Chart(hoursCtx, {
+    type: 'bar',
+    data: {
+      labels: result.map((_, i) => i + ':00'),
+      datasets: [{
+        label: 'Avg guest parties',
+        data: result.map(v => parseFloat(v.toFixed(2))),
+        backgroundColor: '#f5a854',
+        borderRadius: 3,
+      }],
+    },
+    options: chartBaseOptions({ noLegend: true }),
+  });
 }
 
 function chartBaseOptions(opts = {}) {
   return {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { display: !opts.noLegend, labels: { color: 'rgba(245,234,212,0.6)', font: { size: 11 } } } },
+    plugins: {
+      legend: {
+        display: !opts.noLegend,
+        position: 'bottom',
+        labels: { color: 'rgba(245,234,212,0.5)', font: { size: 10 }, boxWidth: 12, padding: 12 },
+      },
+    },
     scales: {
-      y: { beginAtZero: true, ticks: { color: 'rgba(245,234,212,0.6)' }, grid: { color: 'rgba(245,234,212,0.06)' } },
-      x: { ticks: { color: 'rgba(245,234,212,0.6)', font: { size: 10 } }, grid: { display: false } },
+      y: {
+        beginAtZero: true,
+        ticks: { color: 'rgba(245,234,212,0.4)', font: { size: 10 } },
+        grid: { color: 'rgba(245,234,212,0.04)' },
+        border: { display: false },
+      },
+      x: {
+        ticks: { color: 'rgba(245,234,212,0.5)', font: { size: 10 }, autoSkip: false },
+        grid: { display: false },
+        border: { color: 'rgba(245,234,212,0.1)' },
+      },
     },
   };
 }
