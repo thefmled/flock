@@ -1108,18 +1108,24 @@ function buildClusterChart(ctx, daily, valueKey, datasetLabel) {
   const clusterMidpoints = [];
   const dowAverages = [];
 
-  orderedDays.forEach(dow => {
+  orderedDays.forEach((dow, dowIdx) => {
     const daysForDow = daily.filter(d => d.dayOfWeek === dow);
     daysForDow.forEach((d, idx) => {
       labels.push(idx === 0 ? DAY_NAMES[dow] : '');
       values.push(d[valueKey]);
     });
+    // Add gap bar after each cluster except the last
+    if (dowIdx < orderedDays.length - 1) {
+      labels.push('');
+      values.push(null);
+    }
     // Average excluding 0 values
     const nonZero = daysForDow.filter(d => d[valueKey] > 0);
     const avg = nonZero.length > 0
       ? nonZero.reduce((s, d) => s + d[valueKey], 0) / nonZero.length
       : null;
-    const start = labels.length - daysForDow.length;
+    const offset = dowIdx < orderedDays.length - 1 ? 1 : 0;
+    const start = labels.length - daysForDow.length - offset;
     const mid = start + Math.floor(daysForDow.length / 2);
     clusterMidpoints.push(mid);
     dowAverages.push(avg);
