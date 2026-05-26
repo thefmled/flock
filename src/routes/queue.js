@@ -419,13 +419,14 @@ router.get('/stats/:venueId', requireAuth, requireActiveSubscription, async (req
 
     const totalGuests = entries.length;
     const seated = entries.filter(e => e.status === 'seated' && e.seatedAt);
+    const cancelled = entries.filter(e => e.status === 'cancelled');
     const avgWaitMinutes = seated.length > 0
       ? Math.round(
           seated.reduce((sum, e) => sum + (new Date(e.seatedAt) - new Date(e.joinedAt)) / 60000, 0) / seated.length
         )
       : 0;
 
-    res.json({ totalGuests, seatedCount: seated.length, avgWaitMinutes });
+    res.json({ totalGuests, seatedCount: seated.length, cancelledCount: cancelled.length, avgWaitMinutes });
   } catch (error) {
     console.error('Stats error:', error);
     res.status(500).json({ error: 'Failed to fetch stats' });
