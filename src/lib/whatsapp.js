@@ -5,7 +5,6 @@ const APP_NAME = process.env.GUPSHUP_APP_NAME;
 const SOURCE = process.env.GUPSHUP_SOURCE_NUMBER;
 
 async function sendTemplate(toPhone, templateName, params) {
-  console.log('WA SEND ATTEMPT:', { toPhone, templateName, params, hasKey: !!API_KEY, hasApp: !!APP_NAME, hasSource: !!SOURCE });
   if (!API_KEY || !APP_NAME || !SOURCE) {
     console.warn('Gupshup not configured, skipping WhatsApp send');
     return null;
