@@ -399,4 +399,28 @@ router.get('/stats/:venueId', requireAuth, async (req, res) => {
   }
 });
 
+// Get audit log for a queue entry
+router.get('/audit/:entryId', requireAuth, async (req, res) => {
+  try {
+    const entry = await prisma.queueEntry.findUnique({
+      where: { id: req.params.entryId },
+      include: { venue: true },
+    });
+    if (!entry) return res.status(404).json({ error: 'Entry not found' });
+    if (entry.venue.ownerId !== req.ownerId) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    const logs = await prisma.auditLog.findMany({
+      where: { queueEntryId: req.params.entryId },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    res.json({ entry, logs });
+  } catch (error) {
+    console.error('Audit fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch audit log' });
+  }
+});
+
 module.exports = router;
