@@ -1109,22 +1109,28 @@ function buildClusterChart(ctx, daily, valueKey, datasetLabel) {
   const dowAverages = [];
 
   orderedDays.forEach((dow, dowIdx) => {
-    const daysForDow = daily.filter(d => d.dayOfWeek === dow);
+    // Only include days that have data (non-zero value)
+    const daysForDow = daily.filter(d => d.dayOfWeek === dow && d[valueKey] > 0);
     const clusterStartIdx = labels.length;
     const midIdx = clusterStartIdx + Math.floor(daysForDow.length / 2);
-    daysForDow.forEach((d, idx) => {
-      // Put day name at the cluster midpoint
-      labels.push((clusterStartIdx + idx) === midIdx ? DAY_NAMES[dow] : '');
-      values.push(d[valueKey]);
-    });
-    // Average excluding 0 values
-    const nonZero = daysForDow.filter(d => d[valueKey] > 0);
-    const avg = nonZero.length > 0
-      ? nonZero.reduce((s, d) => s + d[valueKey], 0) / nonZero.length
-      : null;
-    clusterMidpoints.push(midIdx);
-    dowAverages.push(avg);
-    // Add gap bar after each cluster except the last
+    
+    if (daysForDow.length === 0) {
+      // Empty cluster — show one zero bar with the day name
+      labels.push(DAY_NAMES[dow]);
+      values.push(0);
+      clusterMidpoints.push(clusterStartIdx);
+      dowAverages.push(null);
+    } else {
+      daysForDow.forEach((d, idx) => {
+        labels.push((clusterStartIdx + idx) === midIdx ? DAY_NAMES[dow] : '');
+        values.push(d[valueKey]);
+      });
+      const avg = daysForDow.reduce((s, d) => s + d[valueKey], 0) / daysForDow.length;
+      clusterMidpoints.push(midIdx);
+      dowAverages.push(avg);
+    }
+    
+    // Gap bar after each cluster except the last
     if (dowIdx < orderedDays.length - 1) {
       labels.push('');
       values.push(null);
