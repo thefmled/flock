@@ -8,6 +8,21 @@ function generateId() {
   return 'c' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
 
+async function logAudit(queueEntryId, action, details = null) {
+  try {
+    await prisma.auditLog.create({
+      data: {
+        id: generateId(),
+        queueEntryId,
+        action,
+        details,
+      },
+    });
+  } catch (e) {
+    console.error('Audit log error:', e);
+  }
+}
+
 async function computeWaitTimes(entries, venue) {
   const waitTimes = [];
 
@@ -165,6 +180,8 @@ router.post('/join/:slug', async (req, res) => {
       },
     });
 
+    await logAudit(entry.id, 'joined', `Party of ${partySize}`);
+    
     // Calculate guest's position
     const count = await prisma.queueEntry.count({
       where: { venueId: venue.id, status: 'waiting', joinedAt: { lte: entry.joinedAt } },
@@ -254,6 +271,8 @@ router.post('/notify/:entryId', requireAuth, async (req, res) => {
       data: { notifiedAt: new Date(), status: 'notified' },
     });
 
+    await logAudit(entry.id, 'notified');
+
     // TODO: trigger WhatsApp via Gupshup (we'll add this next)
 
     res.json({ success: true });
@@ -280,6 +299,8 @@ router.post('/seat/:entryId', requireAuth, async (req, res) => {
       data: { seatedAt: new Date(), status: 'seated' },
     });
 
+    await logAudit(entry.id, 'seated');
+
     res.json({ success: true });
   } catch (error) {
     console.error('Seat error:', error);
@@ -294,6 +315,7 @@ router.post('/cancel/:entryId', async (req, res) => {
       where: { id: req.params.entryId },
       data: { cancelledAt: new Date(), status: 'cancelled' },
     });
+    await logAudit(req.params.entryId, 'cancelled');
     res.json({ success: true });
   } catch (error) {
     console.error('Cancel error:', error);
