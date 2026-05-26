@@ -91,9 +91,18 @@
         localStorage.setItem('flock_owner', JSON.stringify(data.owner));
 
         if (data.isNewUser) {
-          window.location.href = '/setup.html';
+          window.location.href = '/subscribe.html';
         } else {
-          window.location.href = '/dashboard.html';
+          // Check subscription status to decide where to go
+          const statusRes = await fetch('/api/subscription/status', {
+            headers: { 'Authorization': 'Bearer ' + data.token },
+          });
+          const statusData = await statusRes.json();
+          if (!statusData.hasSubscription) {
+            window.location.href = '/subscribe.html';
+          } else {
+            window.location.href = '/dashboard.html';
+          }
         }
       } catch (err) {
         errorEl.textContent = err.message;
