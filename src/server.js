@@ -24,6 +24,17 @@ app.use('/api/venues', require('./routes/venues'));
 app.use('/api/queue', require('./routes/queue'));
 app.use('/api/subscription', require('./routes/subscription'));
 
+// 404 handler for any unmatched /api/* request
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'Endpoint not found' });
+});
+
+// Generic error handler — catches any unhandled error
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: 'Something went wrong on our end. Please try again.' });
+});
+
 const http = require('http');
 const realtime = require('./lib/realtime');
 
