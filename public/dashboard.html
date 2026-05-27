@@ -712,7 +712,6 @@ async function loadHistory() {
   });
   const data = await res.json();
   historyCache = data.entries || [];
-  const list = document.getElementById('historyList');
   if (!data.entries || data.entries.length === 0) {
     list.innerHTML = '<div class="empty">No queue activity today.</div>';
     return;
