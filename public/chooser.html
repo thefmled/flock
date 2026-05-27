@@ -77,10 +77,6 @@ function rememberChoice(dest) {
   localStorage.setItem('flock_last_destination', dest);
 }
 
-// If they've made this choice before, auto-redirect
-const lastChoice = localStorage.getItem('flock_last_destination');
-if (lastChoice === 'dashboard') window.location.replace('/dashboard.html');
-else if (lastChoice === 'main') window.location.replace('/main.html');
 </script>
 </body>
 </html>
