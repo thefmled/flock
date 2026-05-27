@@ -952,6 +952,7 @@ function chartBaseOptions(opts={}) {
 
 // Settings & subscription placeholders
 let settingsSeating = [];
+let settingsNotes = [];
 
 let activeSettingsSub = 'venue';
 
@@ -1061,6 +1062,7 @@ async function saveSettings() {
     floorManagerName: document.getElementById('settingsManager').value.trim(),
     googleReviewsUrl: document.getElementById('settingsReviews').value.trim() || null,
     seatingOptions: settingsSeating.filter(o => o.selected).map(o => o.name).join(',') || 'Indoor,Outdoor,No preference',
+    noteOptions: settingsNotes.filter(o => o.selected).map(o => o.name).join(',') || '',
     waitTimeBase: parseInt(document.getElementById('settingsBase').value) || 8,
     waitTimeIncrement: parseInt(document.getElementById('settingsIncrement').value) || 3,
     waitTimeCap: parseInt(document.getElementById('settingsCap').value) || 60,
@@ -1478,6 +1480,35 @@ function buildReportCsv(data, guestFields, from, to) {
   });
 
   return lines.join('\n');
+}
+
+function renderNotesChips() {
+  const c = document.getElementById('notesChips');
+  if (!c) return;
+  c.innerHTML = settingsNotes.map((opt, i) => `
+    <button class="chip ${opt.selected ? 'selected' : ''}" onclick="toggleNoteChip(${i})">
+      ${escapeHtml(opt.name)}
+      <span class="chip-remove" onclick="removeNoteChip(${i}); event.stopPropagation();">×</span>
+    </button>
+  `).join('') + '<button class="chip add-chip" onclick="addNoteChip()">+ Add option</button>';
+}
+
+function toggleNoteChip(i) {
+  settingsNotes[i].selected = !settingsNotes[i].selected;
+  renderNotesChips();
+}
+
+function removeNoteChip(i) {
+  settingsNotes.splice(i, 1);
+  renderNotesChips();
+}
+
+function addNoteChip() {
+  const name = prompt('New note option:');
+  if (name && name.trim()) {
+    settingsNotes.push({ name: name.trim(), selected: true });
+    renderNotesChips();
+  }
 }
   
 loadVenue().then(() => {
