@@ -523,14 +523,15 @@ document.addEventListener('click', (e) => {
   }
 });
 
+let queueEverLoaded = false;
+
 async function loadQueue() {
   if (!venue) return;
   if (pendingActions.size > 0) return;
   
-  // Show skeleton on first load
   const listEl = document.getElementById('queueList');
   const hasContent = listEl.querySelector('.queue-entry');
-  if (listEl.innerHTML === '' && !hasContent) {
+  if (!queueEverLoaded && listEl.innerHTML === '' && !hasContent) {
     listEl.innerHTML = `
       <div class="skeleton-card" style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid var(--border);">
         <div style="height:18px;width:55%;background:var(--card-hover);border-radius:4px;margin-bottom:8px;"></div>
@@ -543,6 +544,7 @@ async function loadQueue() {
     headers: { 'Authorization': 'Bearer ' + token },
   });
   const data = await res.json();
+  queueEverLoaded = true;
   const list = document.getElementById('queueList');
   const empty = document.getElementById('emptyState');
 
