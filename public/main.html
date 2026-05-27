@@ -901,6 +901,13 @@ async function saveSettings() {
     waitTimeIncrement: parseInt(document.getElementById('settingsIncrement').value) || 3,
     waitTimeCap: parseInt(document.getElementById('settingsCap').value) || 60,
   };
+
+  // Optimistic: show "Saved" immediately
+  okEl.textContent = 'Saved.';
+  // Update local venue copy
+  Object.assign(venue, payload);
+  localStorage.setItem('flock_venue', JSON.stringify(venue));
+  
   try {
     const res = await fetch('/api/venues/' + venue.id, {
       method: 'PATCH',
