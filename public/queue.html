@@ -17,6 +17,21 @@
     } catch(e) {}
   })();
 </script>
+
+  <style>body{opacity:0;}body.theme-loaded{opacity:1;transition:opacity 0.15s;}</style>
+  <script>
+    (function() {
+      try {
+        const venueSlug = new URLSearchParams(window.location.search).get('venue');
+        const cached = venueSlug ? sessionStorage.getItem('flock_venue_theme_' + venueSlug) : null;
+        document.addEventListener('DOMContentLoaded', function() {
+          if (cached) {
+            document.body.className = 'theme-' + cached + ' theme-loaded';
+          }
+        });
+      } catch(e) {}
+    })();
+  </script>
   
 </head>
 <body>
@@ -90,7 +105,8 @@
         const res = await fetch('/api/venues/by-slug/' + slug);
         const data = await res.json();
         if (data.venue) {
-          document.body.className = 'theme-' + (data.venue.theme || 'dark-premium');
+          document.body.className = 'theme-' + (data.venue.theme || 'dark-premium') + ' theme-loaded';
+          sessionStorage.setItem('flock_venue_theme_' + (params.get('venue') || ''), data.venue.theme || 'dark-premium');
           sessionStorage.setItem('flock_venue_data', JSON.stringify(data.venue));
           document.getElementById('venueLabel').textContent = data.venue.name;
           document.getElementById('venueAddress').textContent = data.venue.address || '';
