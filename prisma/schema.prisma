@@ -35,6 +35,7 @@ model Venue {
   waitTimeCap       Int           @default(30)
   theme             String        @default("dark-premium")
   seatingOptions    String        @default("Indoor,Outdoor,No preference")
+  noteOptions            String        @default("Birthday,Anniversary,First visit,Allergies,Kids menu,Wheelchair access")
   qrMarkedPlaced       Boolean       @default(false)
   onboardingDismissed  Boolean       @default(false)
   
