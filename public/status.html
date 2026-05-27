@@ -64,13 +64,7 @@
     <button class="leave-btn" id="leaveBtn" onclick="cancelEntry()">Leave waitlist</button>
   </div>
 
-  <a href="#" class="card action-card" id="menuCard" style="display:none;" target="_blank">
-    <div>
-      <h4>Explore the menu</h4>
-      <p>See what's on offer while you wait</p>
-    </div>
-    <span class="action-card-arrow">&rarr;</span>
-  </a>
+  <div id="menuCardsContainer"></div>
 
   <a href="#" class="card action-card" id="reviewCard" style="display:none;" target="_blank">
     <div>
@@ -147,10 +141,17 @@ async function loadStatus() {
       document.getElementById('leaveBtn').style.display = 'block';
     }
 
-    const menuCard = document.getElementById('menuCard');
-    if (venue.menuPdfUrl) {
-      menuCard.style.display = 'flex';
-      menuCard.href = venue.menuPdfUrl;
+    const menuContainer = document.getElementById('menuCardsContainer');
+    if (venue.menus && venue.menus.length > 0) {
+      menuContainer.innerHTML = venue.menus.map(m => `
+        <a href="${m.url}" class="card action-card" target="_blank">
+          <div>
+            <h4>${escapeHtml(m.name)}</h4>
+            <p>See what's on offer while you wait</p>
+          </div>
+          <span class="action-card-arrow">→</span>
+        </a>
+      `).join('');
     }
 
     const reviewCard = document.getElementById('reviewCard');
