@@ -822,6 +822,7 @@ function downloadCsv() {
 }
 
 let settingsSeating = [];
+let settingsNotes = [];
 
 function loadSettings() {
   if (!venue) return;
@@ -857,6 +858,35 @@ function renderSettingsChips() {
     </button>
   `).join('') + '<button class="chip add-chip" onclick="addSettingsChip()">+ Add option</button>';
 }
+
+function renderNotesChips() {
+  const c = document.getElementById('notesChips');
+  if (!c) return;
+  c.innerHTML = settingsNotes.map((opt, i) => `
+    <button class="chip ${opt.selected ? 'selected' : ''}" onclick="toggleNoteChip(${i})">
+      ${escapeHtml(opt.name)}
+      <span class="chip-remove" onclick="removeNoteChip(${i}); event.stopPropagation();">×</span>
+    </button>
+  `).join('') + '<button class="chip add-chip" onclick="addNoteChip()">+ Add option</button>';
+}
+
+function toggleNoteChip(i) {
+  settingsNotes[i].selected = !settingsNotes[i].selected;
+  renderNotesChips();
+}
+
+function removeNoteChip(i) {
+  settingsNotes.splice(i, 1);
+  renderNotesChips();
+}
+
+function addNoteChip() {
+  const name = prompt('New note option:');
+  if (name && name.trim()) {
+    settingsNotes.push({ name: name.trim(), selected: true });
+    renderNotesChips();
+  }
+}  
 
 function toggleSettingsChip(i) {
   settingsSeating[i].selected = !settingsSeating[i].selected;
