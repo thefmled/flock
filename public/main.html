@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>flock — main</title>
+<link rel="stylesheet" href="/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+body { margin: 0; }
+.app {
+  display: flex;
+  min-height: 100vh;
+}
+.sidebar {
+  width: 240px;
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  padding: 24px 16px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  transition: width 0.2s;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+.sidebar.collapsed { width: 64px; }
+.sidebar-logo {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 28px;
+  color: var(--text);
+  padding: 0 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sidebar-logo .accent { color: var(--accent); }
+.sidebar.collapsed .sidebar-logo span:first-child { display: none; }
+.sidebar-toggle {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+}
+.sidebar-toggle:hover { color: var(--accent); }
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+.sidebar-item {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.sidebar-item:hover { background: var(--card-hover); color: var(--text); }
+.sidebar-item.active { background: var(--accent-soft); color: var(--accent); }
+.sidebar-item-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.sidebar.collapsed .sidebar-item-label { display: none; }
+.sidebar-footer { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; }
+
+.main-content {
+  flex: 1;
+  min-width: 0;
+}
+.main-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.main-topbar-left { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.go-live-btn {
+  background: var(--accent);
+  color: var(--accent-text);
+  text-decoration: none;
+  padding: 10px 22px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 14px;
+  font-family: inherit;
+}
+.go-live-btn:hover { opacity: 0.9; color: var(--accent-text); }
+
+.main-tab-content { padding: 24px; max-width: 1100px; }
+
+.range-btn {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-strong);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+.range-btn:hover { color: var(--text); border-color: var(--accent); }
+.range-btn.active {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
+
+.venue-button {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+.venue-button:hover { border-color: var(--accent); }
+#venueDropdown { position: relative; }
+.venue-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  overflow: hidden;
+  z-index: 100;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  min-width: 220px;
+}
+.venue-menu-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.venue-menu-item:hover { background: var(--card-hover); }
+.venue-menu-item.add {
+  border-top: 1px solid var(--border);
+  color: var(--accent);
+  font-weight: 500;
+}
+.venue-delete { opacity: 0.5; font-size: 16px; padding: 4px 6px; cursor: pointer; }
+.venue-delete:hover { opacity: 1; color: var(--error); }
+
+@media (max-width: 768px) {
+  .sidebar { width: 64px; }
+  .sidebar-item-label, .sidebar-logo span:first-child { display: none; }
+  .main-tab-content { padding: 16px; }
+}
+</style>
+</head>
+<body class="theme-dark-premium">
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span>fl<span class="accent">o</span>ck</span>
+      <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">☰</button>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="sidebar-item active" data-section="analytics" onclick="showSection('analytics')">
+        <span class="sidebar-item-icon">📊</span>
+        <span class="sidebar-item-label">Analytics</span>
+      </button>
+      <button class="sidebar-item" data-section="settings" onclick="showSection('settings')">
+        <span class="sidebar-item-icon">⚙️</span>
+        <span class="sidebar-item-label">Settings</span>
+      </button>
+      <button class="sidebar-item" data-section="subscription" onclick="showSection('subscription')">
+        <span class="sidebar-item-icon">💳</span>
+        <span class="sidebar-item-label">Subscription</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="sidebar-item" onclick="logout()">
+        <span class="sidebar-item-icon">↩</span>
+        <span class="sidebar-item-label">Log out</span>
+      </button>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="main-topbar">
+      <div class="main-topbar-left">
+        <div id="venueDropdown">
+          <button id="venueButton" class="venue-button" onclick="toggleDropdown(event)">
+            <span id="venueButtonLabel"></span>
+            <span style="font-size:10px;opacity:0.5;">▼</span>
+          </button>
+          <div id="venueMenu" class="venue-menu" style="display:none;"></div>
+        </div>
+        <div id="subStatus" style="font-size:11px;color:var(--text-muted);letter-spacing:0.05em;text-transform:uppercase;"></div>
+      </div>
+      <a href="/dashboard.html" class="go-live-btn">Go to live queue →</a>
+    </div>
+
+    <div class="main-tab-content" id="analyticsSection">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+        <h2 class="heading" style="margin:0;font-size:24px;">Analytics</h2>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;" id="rangeToggle">
+          <button class="range-btn" data-range="LM" title="Last month" onclick="setRange('LM')">LM</button>
+          <button class="range-btn active" data-range="L7D" title="Last 7 days" onclick="setRange('L7D')">L7D</button>
+          <button class="range-btn" data-range="MTD" title="Month to date" onclick="setRange('MTD')">MTD</button>
+          <button class="range-btn" data-range="L3M" title="Last 3 months" onclick="setRange('L3M')">L3M</button>
+          <button class="range-btn" data-range="L6M" title="Last 6 months" onclick="setRange('L6M')">L6M</button>
+          <button class="range-btn" data-range="YTD" title="Year to date" onclick="setRange('YTD')">YTD</button>
+          <button class="range-btn" data-range="L1Y" title="Last 1 year" onclick="setRange('L1Y')">L1Y</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="heading" id="dailyChartTitle">Guest parties</h2>
+        <p class="subheading" id="dailyChartSub">Past 7 days</p>
+        <div style="overflow-x:auto;">
+          <canvas id="dailyChart" style="min-width:600px;height:280px;"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="heading">Busiest hours</h2>
+        <p class="subheading">Average guest parties per hour, by day of week</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0;" id="dowFilterChips">
+          <button class="chip selected" data-dow="all" onclick="toggleDow('all')">All</button>
+          <button class="chip selected" data-dow="1" onclick="toggleDow('1')">Mon</button>
+          <button class="chip selected" data-dow="2" onclick="toggleDow('2')">Tue</button>
+          <button class="chip selected" data-dow="3" onclick="toggleDow('3')">Wed</button>
+          <button class="chip selected" data-dow="4" onclick="toggleDow('4')">Thu</button>
+          <button class="chip selected" data-dow="5" onclick="toggleDow('5')">Fri</button>
+          <button class="chip selected" data-dow="6" onclick="toggleDow('6')">Sat</button>
+          <button class="chip selected" data-dow="0" onclick="toggleDow('0')">Sun</button>
+        </div>
+        <canvas id="hoursChart" style="max-height:240px;"></canvas>
+      </div>
+
+      <div class="card">
+        <h2 class="heading">Average party size by day</h2>
+        <div style="overflow-x:auto;">
+          <canvas id="partyChart" style="min-width:600px;height:240px;"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-tab-content" id="settingsSection" style="display:none;">
+      <h2 class="heading" style="font-size:24px;">Settings</h2>
+      <div id="settingsContent"></div>
+    </div>
+
+    <div class="main-tab-content" id="subscriptionSection" style="display:none;">
+      <h2 class="heading" style="font-size:24px;">Subscription</h2>
+      <div id="subscriptionContent"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('flock_token');
+let venue = JSON.parse(localStorage.getItem('flock_venue') || 'null');
+if (!token) window.location.href = '/login.html';
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+function showSection(s) {
+  ['analytics','settings','subscription'].forEach(name => {
+    document.getElementById(name + 'Section').style.display = (name === s) ? 'block' : 'none';
+    const btn = document.querySelector('[data-section="' + name + '"]');
+    if (btn) btn.classList.toggle('active', name === s);
+  });
+  if (s === 'analytics') loadAnalytics();
+  if (s === 'settings') loadSettings();
+  if (s === 'subscription') loadSubscription();
+}
+
+async function loadVenue() {
+  const res = await fetch('/api/venues', {
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
+  const data = await res.json();
+  if (!data.venues || data.venues.length === 0) {
+    window.location.href = '/setup.html';
+    return;
+  }
+  const savedId = venue ? venue.id : null;
+  venue = data.venues.find(v => v.id === savedId) || data.venues[0];
+  localStorage.setItem('flock_venue', JSON.stringify(venue));
+  document.getElementById('venueButtonLabel').textContent = venue.name;
+
+  const menu = document.getElementById('venueMenu');
+  menu.innerHTML = data.venues.map(v =>
+    '<div class="venue-menu-item" onclick="selectVenue(\'' + v.id + '\')">' +
+    '<span>' + escapeHtml(v.name) + '</span>' +
+    '<span class="venue-delete" onclick="deleteVenue(\'' + v.id + '\', \'' + escapeHtml(v.name) + '\'); event.stopPropagation();">🗑</span>' +
+    '</div>'
+  ).join('') + '<div class="venue-menu-item add" onclick="window.location.href=\'/setup.html\'">+ Add new venue</div>';
+}
+
+function toggleDropdown(e) {
+  if (e) e.stopPropagation();
+  const m = document.getElementById('venueMenu');
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+
+async function selectVenue(id) {
+  const res = await fetch('/api/venues', {
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
+  const data = await res.json();
+  venue = data.venues.find(v => v.id === id);
+  if (venue) {
+    localStorage.setItem('flock_venue', JSON.stringify(venue));
+    document.getElementById('venueButtonLabel').textContent = venue.name;
+    document.getElementById('venueMenu').style.display = 'none';
+    loadAnalytics();
+  }
+}
+
+async function deleteVenue(id, name) {
+  if (!confirm('Delete "' + name + '"? This cannot be undone.')) return;
+  const res = await fetch('/api/venues/' + id, {
+    method: 'DELETE',
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
+  if (res.ok) {
+    if (venue && venue.id === id) {
+      localStorage.removeItem('flock_venue');
+      venue = null;
+    }
+    loadVenue().then(() => loadAnalytics());
+  }
+}
+
+document.addEventListener('click', (e) => {
+  const d = document.getElementById('venueDropdown');
+  if (d && !d.contains(e.target)) {
+    const m = document.getElementById('venueMenu');
+    if (m) m.style.display = 'none';
+  }
+});
+
+function logout() {
+  localStorage.clear();
+  window.location.href = '/';
+}
+
+function escapeHtml(str) {
+  return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function loadSubStatus() {
+  const res = await fetch('/api/subscription/status', {
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
+  const data = await res.json();
+  const el = document.getElementById('subStatus');
+  const billing = data.venueQuantity > 0 ? ' · ₹' + data.monthlyAmount + '/mo (' + data.venueQuantity + ' venue' + (data.venueQuantity !== 1 ? 's' : '') + ')' : '';
+  if (data.status === 'trial' && data.trialEndsAt) {
+    const daysLeft = Math.floor((new Date(data.trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24));
+    el.innerHTML = '<span style="color:var(--accent);">Trial · ' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : '') + ' left' + billing + '</span>';
+  } else if (data.status === 'active') {
+    el.innerHTML = '<span style="color:var(--success);">● Active' + billing + '</span>';
+  } else if (data.status === 'expired') {
+    el.innerHTML = '<span style="color:var(--error);">Subscription expired</span>';
+  } else if (data.status === 'cancelled') {
+    el.innerHTML = '<span style="color:var(--error);">Cancelled</span>';
+  }
+}
+
+// Analytics — copied from dashboard
+let dailyChart=null, hoursChart=null, partyChart=null, analyticsData=null;
+let selectedDows = new Set(['all','0','1','2','3','4','5','6']);
+let currentRange = 'L7D';
+const RANGE_LABELS = { LM:'Last month', L7D:'Past 7 days', MTD:'Month to date', L3M:'Last 3 months', L6M:'Last 6 months', YTD:'Year to date', L1Y:'Last 1 year' };
+const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function setRange(r) {
+  currentRange = r;
+  document.querySelectorAll('.range-btn').forEach(b => b.classList.toggle('active', b.dataset.range === r));
+  loadAnalytics();
+}
+
+function toggleDow(dow) {
+  if (dow === 'all') {
+    if (selectedDows.has('all')) selectedDows = new Set();
+    else selectedDows = new Set(['all','0','1','2','3','4','5','6']);
+  } else {
+    if (selectedDows.has(dow)) { selectedDows.delete(dow); selectedDows.delete('all'); }
+    else {
+      selectedDows.add(dow);
+      if (['0','1','2','3','4','5','6'].every(d => selectedDows.has(d))) selectedDows.add('all');
+    }
+  }
+  document.querySelectorAll('#dowFilterChips .chip').forEach(b => b.classList.toggle('selected', selectedDows.has(b.dataset.dow)));
+  if (analyticsData) renderHoursChart();
+}
+
+async function loadAnalytics() {
+  if (!venue) return;
+  const res = await fetch('/api/queue/analytics/' + venue.id + '?range=' + currentRange, {
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
+  analyticsData = await res.json();
+  document.getElementById('dailyChartSub').textContent = RANGE_LABELS[currentRange];
+  const grouped = currentRange !== 'L7D';
+  const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+  if (dailyChart) dailyChart.destroy();
+  if (!grouped) {
+    dailyChart = new Chart(dailyCtx, { type:'bar', data: { labels: analyticsData.daily.map(d => DAY_NAMES[d.dayOfWeek]+' '+new Date(d.date).getDate()), datasets:[{label:'Guest parties', data: analyticsData.daily.map(d => d.count), backgroundColor:'#f5a854', borderRadius:4}]}, options: chartBaseOptions({noLegend:true})});
+  } else {
+    dailyChart = buildClusterChart(dailyCtx, analyticsData.daily, 'count', 'Guest parties');
+  }
+  renderHoursChart();
+  const partyCtx = document.getElementById('partyChart').getContext('2d');
+  if (partyChart) partyChart.destroy();
+  if (!grouped) {
+    partyChart = new Chart(partyCtx, { type:'bar', data: { labels: analyticsData.daily.map(d => DAY_NAMES[d.dayOfWeek]+' '+new Date(d.date).getDate()), datasets:[{label:'Avg party size', data: analyticsData.daily.map(d => d.avgPartySize), backgroundColor:'#f5a854', borderRadius:4}]}, options: chartBaseOptions({noLegend:true})});
+  } else {
+    partyChart = buildClusterChart(partyCtx, analyticsData.daily, 'avgPartySize', 'Avg party size');
+  }
+}
+
+function buildClusterChart(ctx, daily, valueKey, datasetLabel) {
+  const labels = [], values = [], clusterMidpoints = [], dowAverages = [];
+  const orderedDays = [1,2,3,4,5,6,0];
+  orderedDays.forEach((dow, dowIdx) => {
+    const daysForDow = daily.filter(d => d.dayOfWeek === dow && d[valueKey] > 0);
+    const clusterStartIdx = labels.length;
+    const midIdx = clusterStartIdx + Math.floor(daysForDow.length / 2);
+    if (daysForDow.length === 0) {
+      labels.push(DAY_NAMES[dow]); values.push(0);
+      clusterMidpoints.push(clusterStartIdx); dowAverages.push(null);
+    } else {
+      daysForDow.forEach((d, idx) => {
+        labels.push((clusterStartIdx + idx) === midIdx ? DAY_NAMES[dow] : '');
+        values.push(d[valueKey]);
+      });
+      const avg = daysForDow.reduce((s, d) => s + d[valueKey], 0) / daysForDow.length;
+      clusterMidpoints.push(midIdx); dowAverages.push(avg);
+    }
+    if (dowIdx < orderedDays.length - 1) { labels.push(''); values.push(null); }
+  });
+  const lineData = labels.map((_, i) => {
+    const c = clusterMidpoints.indexOf(i);
+    return c === -1 ? null : dowAverages[c];
+  });
+  return new Chart(ctx, {
+    type:'bar',
+    data: { labels, datasets:[
+      { type:'bar', label: datasetLabel, data: values, backgroundColor:'#f5a854', borderRadius: 3 },
+      { type:'line', label:'Day-of-week avg', data: lineData, borderColor:'rgba(245,168,84,0.45)', backgroundColor:'transparent', borderWidth:2, pointRadius: 3, pointBackgroundColor:'rgba(245,168,84,0.7)', spanGaps:true, tension:0.3 }
+    ]},
+    options: chartBaseOptions(),
+  });
+}
+
+function renderHoursChart() {
+  if (!analyticsData) return;
+  const hoursCtx = document.getElementById('hoursChart').getContext('2d');
+  if (hoursChart) hoursChart.destroy();
+  const dows = ['0','1','2','3','4','5','6'].filter(d => selectedDows.has(d)).map(d => parseInt(d));
+  const result = Array(24).fill(0);
+  if (dows.length > 0) {
+    const totalDays = dows.reduce((s, d) => s + (analyticsData.dowDayCounts[d] || 0), 0);
+    if (totalDays > 0) {
+      for (let h = 0; h < 24; h++) {
+        let totalParties = 0;
+        dows.forEach(d => { totalParties += (analyticsData.hoursByDow[d]?.[h] || 0); });
+        result[h] = totalParties / totalDays;
+      }
+    }
+  }
+  hoursChart = new Chart(hoursCtx, {
+    type:'bar',
+    data: { labels: result.map((_, i) => i + ':00'), datasets:[{ label:'Avg guest parties', data: result.map(v => parseFloat(v.toFixed(2))), backgroundColor:'#f5a854', borderRadius:3 }]},
+    options: chartBaseOptions({noLegend:true}),
+  });
+}
+
+function chartBaseOptions(opts={}) {
+  return {
+    responsive:true, maintainAspectRatio:false,
+    plugins: { legend: { display: !opts.noLegend, position:'bottom', labels:{color:'rgba(245,234,212,0.5)', font:{size:10}, boxWidth:12, padding:12 } } },
+    scales: {
+      y: { beginAtZero:true, ticks:{color:'rgba(245,234,212,0.4)', font:{size:10}}, grid:{color:'rgba(245,234,212,0.04)'}, border:{display:false} },
+      x: { ticks:{color:'rgba(245,234,212,0.5)', font:{size:10}, autoSkip:false}, grid:{display:false}, border:{color:'rgba(245,234,212,0.1)'} },
+    },
+  };
+}
+
+// Settings & subscription placeholders
+function loadSettings() {
+  document.getElementById('settingsContent').innerHTML = '<p style="color:var(--text-muted);padding:24px;">Settings UI coming next — for now use the live queue settings link.</p>';
+}
+
+async function loadSubscription() {
+  const res = await fetch('/api/subscription/status', {
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
+  const data = await res.json();
+  const el = document.getElementById('subscriptionContent');
+  let html = '<div class="card"><h2 class="heading">Current plan</h2>';
+  html += '<p class="subheading">flock standard · ₹999 per venue per month</p>';
+  html += '<div style="margin-top:16px;">';
+  if (data.status === 'trial') {
+    const daysLeft = Math.floor((new Date(data.trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24));
+    html += '<div style="color:var(--accent);font-weight:500;">Trial · ' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : '') + ' left</div>';
+  } else if (data.status === 'active') {
+    html += '<div style="color:var(--success);">● Active</div>';
+  } else if (data.status === 'cancelled') {
+    html += '<div style="color:var(--error);">Cancelled</div>';
+  }
+  html += '<div style="font-family:Fraunces,serif;font-style:italic;font-size:48px;color:var(--accent);margin-top:12px;">₹' + (data.monthlyAmount || 0) + '<span style="font-size:14px;color:var(--text-muted);font-style:normal;font-family:Inter;"> /month</span></div>';
+  html += '<div style="font-size:13px;color:var(--text-muted);">' + (data.venueQuantity || 0) + ' venue' + (data.venueQuantity !== 1 ? 's' : '') + ' × ₹999</div>';
+  html += '</div></div>';
+
+  if (data.status !== 'cancelled') {
+    html += '<div class="card"><h2 class="heading">Cancel subscription</h2><p class="subheading">Your access will continue until the end of the current billing cycle.</p><button class="button" style="background:transparent;color:var(--error);border:1px solid var(--error);margin-top:12px;" onclick="cancelSubscription()">Cancel subscription</button></div>';
+  }
+
+  el.innerHTML = html;
+}
+
+async function cancelSubscription() {
+  if (!confirm('Cancel your flock subscription? You\'ll keep access until the end of the current billing cycle.')) return;
+  const res = await fetch('/api/subscription/cancel', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
+  if (res.ok) {
+    alert('Subscription cancelled. You\'ll keep access until the end of your current cycle.');
+    loadSubscription();
+    loadSubStatus();
+  } else {
+    alert('Failed to cancel. Please email us at rushali.c1710@gmail.com.');
+  }
+}
+
+loadVenue().then(() => {
+  loadAnalytics();
+  loadSubStatus();
+});
+
+setInterval(() => fetch('/health'), 5 * 60 * 1000);
+</script>
+</body>
+</html>
