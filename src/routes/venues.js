@@ -4,7 +4,16 @@ const multer = require('multer');
 const { createClient } = require('@supabase/supabase-js');
 const { updateSubscriptionQuantity } = require('./subscription');
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB max
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype !== 'application/pdf') {
+      return cb(new Error('Only PDF files allowed'));
+    }
+    cb(null, true);
+  },
+});
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
 const prisma = require('../lib/prisma');
