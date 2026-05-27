@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — flock</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+.legal {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 80px 24px 60px;
+  color: var(--text);
+  line-height: 1.7;
+}
+.legal h1 {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 48px;
+  margin-bottom: 8px;
+}
+.legal .updated {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-bottom: 40px;
+}
+.legal h2 {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 24px;
+  margin-top: 36px;
+  margin-bottom: 12px;
+  color: var(--accent);
+}
+.legal p, .legal li {
+  font-size: 15px;
+  color: var(--text);
+}
+.legal ul {
+  padding-left: 20px;
+  margin: 12px 0;
+}
+.legal li { margin-bottom: 8px; }
+.legal a { color: var(--accent); }
+.legal-back {
+  display: inline-block;
+  margin-bottom: 32px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 13px;
+}
+.legal-back:hover { color: var(--accent); }
+</style>
+</head>
+<body class="theme-dark-premium">
+<div class="legal">
+  <a href="/" class="legal-back">← Back to home</a>
+  <h1>Privacy Policy</h1>
+  <p class="updated">Last updated: May 27, 2026</p>
+
+  <p>flock ("we", "us", "our") is committed to protecting the privacy of venue owners, floor managers, and guests who use our queue management product. This policy explains what data we collect, how we use it, and your rights.</p>
+
+  <h2>What we collect</h2>
+  <p>We collect the following categories of information:</p>
+  <ul>
+    <li><strong>Account data</strong>: Email address, name, and venue details you provide during signup.</li>
+    <li><strong>Guest data</strong>: When a guest joins a queue, we collect their name, phone number, party size, seating preference, and any notes they submit.</li>
+    <li><strong>Usage data</strong>: How you interact with the dashboard, including timestamps of actions like notify, call, seated, and cancelled.</li>
+    <li><strong>Billing data</strong>: Payment information is processed by our payment partner (Razorpay) and never stored on our servers.</li>
+  </ul>
+
+  <h2>How we use it</h2>
+  <ul>
+    <li>To deliver the core service — manage queues, send WhatsApp notifications, display history and analytics.</li>
+    <li>To bill you for the subscription.</li>
+    <li>To respond to support requests.</li>
+    <li>To improve the product based on aggregated usage patterns.</li>
+  </ul>
+
+  <h2>What we don't do</h2>
+  <ul>
+    <li>We never sell guest data to third parties.</li>
+    <li>We never use guest contact information to market to your guests.</li>
+    <li>We never share data with other venues.</li>
+  </ul>
+
+  <h2>Third parties we use</h2>
+  <p>To run flock, we rely on the following service providers, who process limited data on our behalf:</p>
+  <ul>
+    <li><strong>Supabase</strong> — database and file storage (servers in Mumbai, India).</li>
+    <li><strong>Render</strong> — hosting and server infrastructure (servers in Singapore).</li>
+    <li><strong>Razorpay</strong> — subscription billing.</li>
+    <li><strong>Gupshup</strong> — WhatsApp message delivery.</li>
+    <li><strong>Resend</strong> — transactional email (login OTPs).</li>
+  </ul>
+
+  <h2>Data retention</h2>
+  <p>We retain your account and guest data for as long as your subscription is active. If you cancel, we retain your data for 30 days before permanent deletion, in case you reactivate. You can request earlier deletion by emailing us.</p>
+
+  <h2>Your rights</h2>
+  <p>You can:</p>
+  <ul>
+    <li>Export all your queue data as CSV from the dashboard at any time.</li>
+    <li>Delete a venue (and all associated guest data) from settings.</li>
+    <li>Request a full data export or deletion by emailing <a href="mailto:rushali.c1710@gmail.com">rushali.c1710@gmail.com</a>.</li>
+  </ul>
+
+  <h2>Cookies and tracking</h2>
+  <p>flock uses a single authentication cookie (your JWT token) stored in your browser's local storage to keep you logged in. We do not use third-party tracking, analytics cookies, or advertising pixels.</p>
+
+  <h2>Children</h2>
+  <p>flock is a business product. We do not knowingly collect data from anyone under 18 years of age.</p>
+
+  <h2>Changes to this policy</h2>
+  <p>If we make material changes, we'll notify you by email. The "last updated" date at the top of this page will always reflect the latest version.</p>
+
+  <h2>Contact</h2>
+  <p>For questions about this policy or your data, email <a href="mailto:rushali.c1710@gmail.com">rushali.c1710@gmail.com</a>.</p>
+
+  <h2>Governing law</h2>
+  <p>This policy is governed by the laws of India, with jurisdiction in Bengaluru, Karnataka.</p>
+</div>
+<script>
+setInterval(() => fetch('/health'), 5 * 60 * 1000);
+</script>
+</body>
+</html>
