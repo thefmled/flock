@@ -37,13 +37,14 @@ async function computeWaitTimes(entries, venue) {
     const updateData = {};
 
     if (entry.lastPosition !== currentPos) {
+      // Preserve previous lockedWait as a ceiling — wait never increases
+      const previousLock = entry.lockedWait;
       updateData.lastPosition = currentPos;
       updateData.positionEnteredAt = new Date();
-      updateData.lockedWait = null;
-      updateData.startingWait = null;
+      updateData.lockedWait = previousLock;
+      updateData.startingWait = null; // will re-snapshot based on new chainStart
       entry.lastPosition = currentPos;
       entry.positionEnteredAt = new Date();
-      entry.lockedWait = null;
       entry.startingWait = null;
     }
 
