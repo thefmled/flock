@@ -979,6 +979,94 @@ function escapeHtml(str) {
   return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+let venueMenus = [];
+
+async function loadMenus() {
+  if (!venue) return;
+  try {
+    const res = await fetch('/api/venues/' + venue.id + '/menus', {
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    const data = await res.json();
+    venueMenus = data.menus || [];
+    renderMenuList();
+  } catch (e) {
+    console.error('Load menus failed:', e);
+  }
+}
+
+function renderMenuList() {
+  const el = document.getElementById('menuList');
+  if (!el) return;
+  if (venueMenus.length === 0) {
+    el.innerHTML = '<p class="subheading" style="font-size:12px;">No menus yet. Add your first one below.</p>';
+    return;
+  }
+  el.innerHTML = venueMenus.map(m => `
+    <div class="menu-row">
+      <input type="text" value="${escapeHtml(m.name)}" data-id="${m.id}" onblur="renameMenu('${m.id}', this.value)" style="flex:1;padding:8px 10px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:13px;">
+      <a href="${m.url}" target="_blank" class="menu-action menu-view">View</a>
+      <button class="menu-action menu-delete" onclick="deleteMenu('${m.id}', '${escapeHtml(m.name).replace(/'/g, "\\'")}')">Delete</button>
+    </div>
+  `).join('');
+}
+
+async function uploadMenu() {
+  const nameInput = document.getElementById('newMenuName');
+  const fileInput = document.getElementById('newMenuFile');
+  const errEl = document.getElementById('menuUploadError');
+  errEl.textContent = '';
+  if (!fileInput.files.length) {
+    errEl.textContent = 'Pick a PDF first.';
+    return;
+  }
+  const formData = new FormData();
+  formData.append('menu', fileInput.files[0]);
+  formData.append('name', nameInput.value.trim() || 'Menu');
+  try {
+    const res = await fetch('/api/venues/' + venue.id + '/menus', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token },
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
+    venueMenus.push(data.menu);
+    nameInput.value = '';
+    fileInput.value = '';
+    renderMenuList();
+  } catch (err) {
+    errEl.textContent = err.message;
+  }
+}
+
+async function renameMenu(id, newName) {
+  const trimmed = newName.trim();
+  if (!trimmed) return loadMenus();
+  const menu = venueMenus.find(m => m.id === id);
+  if (menu && menu.name === trimmed) return;
+  try {
+    await fetch('/api/venues/' + venue.id + '/menus/' + id, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ name: trimmed }),
+    });
+    if (menu) menu.name = trimmed;
+  } catch (e) { console.error(e); }
+}
+
+async function deleteMenu(id, name) {
+  if (!confirm('Delete "' + name + '"?')) return;
+  venueMenus = venueMenus.filter(m => m.id !== id);
+  renderMenuList();
+  try {
+    await fetch('/api/venues/' + venue.id + '/menus/' + id, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+  } catch (e) { console.error(e); loadMenus(); }
+}
+
 function timeAgo(dateStr) {
   const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
   if (diff < 1) return 'just now';
