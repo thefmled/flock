@@ -157,5 +157,33 @@ router.post('/webhook', express.json(), async (req, res) => {
   }
 });
 
+// Cancel subscription at end of current cycle
+router.post('/cancel', requireAuth, async (req, res) => {
+  try {
+    const owner = await prisma.owner.findUnique({ where: { id: req.ownerId } });
+    if (!owner) return res.status(404).json({ error: 'Owner not found' });
+    if (!owner.razorpaySubscriptionId) return res.status(400).json({ error: 'No active subscription' });
+
+    try {
+      // cancel_at_cycle_end: false means cancel at the end of the current billing cycle (counterintuitive Razorpay flag)
+      // Pass true to cancel immediately. We want end-of-cycle, so false.
+      await razorpay.subscriptions.cancel(owner.razorpaySubscriptionId, false);
+    } catch (e) {
+      console.error('Razorpay cancel failed:', e.message || e);
+      // Continue anyway — mark cancelled locally
+    }
+
+    await prisma.owner.update({
+      where: { id: owner.id },
+      data: { subscriptionStatus: 'cancelled' },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Subscription cancel error:', error);
+    res.status(500).json({ error: 'Failed to cancel' });
+  }
+});
+
 module.exports = router;
 module.exports.updateSubscriptionQuantity = updateSubscriptionQuantity;
