@@ -467,7 +467,7 @@ body { margin: 0; }
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
         <h2 class="heading" style="margin:0;font-size:24px;">Analytics</h2>
         <div style="display:flex;gap:6px;flex-wrap:wrap;" id="rangeToggle">
-          <button class="range-btn" data-range="LM" title="Last month" onclick="setRange('LM')">LM</button>
+          <button class="range-btn" data-range="LM" title="Last 30 days" onclick="setRange('LM')">LM</button>
           <button class="range-btn active" data-range="L7D" title="Last 7 days" onclick="setRange('L7D')">L7D</button>
           <button class="range-btn" data-range="MTD" title="Month to date" onclick="setRange('MTD')">MTD</button>
           <button class="range-btn" data-range="L3M" title="Last 3 months" onclick="setRange('L3M')">L3M</button>
@@ -1200,8 +1200,7 @@ function getRangeDateLabel() {
   } else if (currentRange === 'L1Y') {
     end = new Date(now); start = new Date(now); start.setDate(start.getDate() - 365);
   } else if (currentRange === 'LM') {
-    start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    end = new Date(now.getFullYear(), now.getMonth(), 0);
+    end = new Date(now); start = new Date(now); start.setDate(start.getDate() - 30);
   }
   return fmt(start) + ' → ' + fmt(end);
 }
