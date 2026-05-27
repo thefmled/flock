@@ -514,8 +514,9 @@ router.get('/analytics/:venueId', requireAuth, requireActiveSubscription, async 
       startDate.setDate(startDate.getDate() - 365);
       startDate.setHours(0, 0, 0, 0);
     } else if (range === 'LM') {
-      startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      endDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      startDate = new Date(now);
+      startDate.setDate(startDate.getDate() - 30);
+      startDate.setHours(0, 0, 0, 0);
     } else {
       startDate = new Date(now);
       startDate.setDate(startDate.getDate() - 6);
