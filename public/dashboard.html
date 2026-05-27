@@ -519,13 +519,13 @@ async function loadQueue() {
   data.entries = (data.entries || []).filter(e => !hiddenEntries.has(e.id));
   
   if (!data.entries || data.entries.length === 0) {
-    listE1.innerHTML = '';
+    listEl.innerHTML = '';
     empty.style.display = 'block';
     return;
   }
   empty.style.display = 'none';
 
-  listE1.innerHTML = data.entries.map(e => {
+  listEl.innerHTML = data.entries.map(e => {
     const notified = !!e.notifiedAt || notifiedLocally.has(e.id);
     const called = !!e.calledAt || calledLocally.has(e.id);
     return `
