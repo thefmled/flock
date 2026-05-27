@@ -13,6 +13,8 @@ function init(server) {
 
   wss.on('connection', (ws) => {
     ws.subscriptions = new Set();
+    ws.isAlive = true;
+    ws.on('pong', () => { ws.isAlive = true; });
 
     ws.on('message', (raw) => {
       try {
@@ -47,6 +49,29 @@ function init(server) {
   });
 
   console.log('WebSocket server initialized on /ws');
+  // Periodic cleanup — remove dead sockets every minute
+  setInterval(() => {
+    subscribers.forEach((set, key) => {
+      const dead = [];
+      set.forEach(ws => {
+        if (ws.readyState !== 1) dead.push(ws);
+      });
+      dead.forEach(ws => set.delete(ws));
+      if (set.size === 0) subscribers.delete(key);
+    });
+  }, 60 * 1000);
+
+  // Heartbeat
+  setInterval(() => {
+    wss.clients.forEach(ws => {
+      if (ws.isAlive === false) {
+        try { ws.terminate(); } catch(e) {}
+        return;
+      }
+      ws.isAlive = false;
+      try { ws.ping(); } catch(e) {}
+    });
+  }, 30 * 1000);
 }
 
 function broadcast(key, message) {
