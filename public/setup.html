@@ -145,8 +145,8 @@
 
     async function createVenue() {
       const errorEl = document.getElementById('setupError');
+      const btn = document.querySelector('.button');
       errorEl.textContent = '';
-
       const payload = {
         floorManagerName: document.getElementById('floorManagerName').value.trim(),
         name: document.getElementById('venueName').value.trim(),
@@ -154,12 +154,15 @@
         googleReviewsUrl: document.getElementById('googleReviewsUrl').value.trim() || null,
         seatingOptions: seatingOptions.filter(o => o.selected).map(o => o.name).join(',') || 'Indoor,Outdoor,No preference',
       };
-
       if (!payload.floorManagerName || !payload.name || !payload.address) {
         errorEl.textContent = 'Please fill in name, venue name, and address.';
         return;
       }
-
+      
+      // Optimistic: disable button + show loading state
+      btn.disabled = true;
+      btn.textContent = 'Creating…';
+      
       try {
         const res = await fetch('/api/venues', {
           method: 'POST',
@@ -171,24 +174,27 @@
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to create venue');
-
-        // Upload menu PDF if provided
+        
+        localStorage.setItem('flock_venue', JSON.stringify(data.venue));
+        localStorage.setItem('flock_last_destination', 'main');
+        
+        // Navigate immediately — menu PDF upload happens in background
         const fileInput = document.getElementById('menuPdf');
         if (fileInput.files.length > 0) {
           const formData = new FormData();
           formData.append('menu', fileInput.files[0]);
-          await fetch('/api/venues/' + data.venue.id + '/menu', {
+          fetch('/api/venues/' + data.venue.id + '/menu', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + localStorage.getItem('flock_token') },
             body: formData,
           });
         }
-
-        localStorage.setItem('flock_venue', JSON.stringify(data.venue));
-        localStorage.setItem('flock_last_destination', 'main');
-        window.location.href = '/main.html';
+        
+        window.location.replace('/main.html');
       } catch (err) {
         errorEl.textContent = err.message;
+        btn.disabled = false;
+        btn.textContent = 'Create venue';
       }
     }
 
