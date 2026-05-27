@@ -913,11 +913,13 @@ async function loadSubStatus() {
   const data = await res.json();
   const el = document.getElementById('subStatus');
   
+  const billing = data.venueQuantity > 0 ? ' · ₹' + data.monthlyAmount + '/mo (' + data.venueQuantity + ' venue' + (data.venueQuantity !== 1 ? 's' : '') + ')' : '';
+
   if (data.status === 'trial' && data.trialEndsAt) {
     const daysLeft = Math.ceil((new Date(data.trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24));
-    el.innerHTML = '<span style="color:var(--accent);">Trial · ' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : '') + ' left</span>';
+    el.innerHTML = '<span style="color:var(--accent);">Trial · ' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : '') + ' left' + billing + '</span>';
   } else if (data.status === 'active') {
-    el.innerHTML = '<span style="color:var(--success);">● Active</span>';
+    el.innerHTML = '<span style="color:var(--success);">● Active' + billing + '</span>';
   } else if (data.status === 'expired') {
     el.innerHTML = '<span style="color:var(--error);">Subscription expired</span>';
   } else if (data.status === 'cancelled') {
