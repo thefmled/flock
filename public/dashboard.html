@@ -509,7 +509,7 @@ async function loadQueue() {
   empty.style.display = 'none';
 
   list.innerHTML = data.entries.map(e => {
-    const notified = !!e.notifiedAt;
+    const notified = !!e.notifiedAt || notifiedLocally.has(e.id);
     const called = !!e.calledAt || calledLocally.has(e.id);
     return `
     <div class="queue-entry" data-entry-id="${e.id}">
@@ -537,15 +537,25 @@ async function loadQueue() {
   }).join('');
 }
 
+const notifiedLocally = new Set();
+
 async function notifyGuest(id) {
   const reportingTime = await pickReportingTime();
   if (!reportingTime) return;
 
-  // Optimistic: visually mark as notified immediately
+  notifiedLocally.add(id);
+  
+  // Optimistic: flip Notify button to ✓ Notified instantly
   const card = document.querySelector(`[data-entry-id="${id}"]`);
-  if (card) card.style.opacity = '0.5';
+  if (card) {
+    const notifyBtn = card.querySelectorAll('.btn-notify')[0];
+    if (notifyBtn) {
+      notifyBtn.classList.add('btn-done');
+      notifyBtn.textContent = '✓ Notified';
+    }
+  }
 
-  await fetch('/api/queue/notify/' + id, {
+  fetch('/api/queue/notify/' + id, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -553,7 +563,6 @@ async function notifyGuest(id) {
     },
     body: JSON.stringify({ reportingTime }),
   });
-  loadQueue();
 }
 
 function pickReportingTime() {
