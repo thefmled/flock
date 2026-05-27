@@ -984,7 +984,6 @@ async function loadSubscription() {
     headers: { 'Authorization': 'Bearer ' + token },
   });
   const data = await res.json();
-  const el = document.getElementById('subscriptionContent');
   let html = '<div class="card"><h2 class="heading">Current plan</h2>';
   html += '<p class="subheading">flock standard · ₹999 per venue per month</p>';
   html += '<div style="margin-top:16px;">';
