@@ -468,6 +468,129 @@ body[class*="theme-brick-birch"] input[type="date"]::-webkit-calendar-picker-ind
 body[class*="theme-cloud-mint"] input[type="date"]::-webkit-calendar-picker-indicator {
   filter: none;
 }
+
+.sub-hero {
+  background: linear-gradient(135deg, var(--card) 0%, var(--card-hover) 100%);
+  border: 1px solid var(--accent);
+  position: relative;
+  overflow: hidden;
+}
+.sub-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.sub-badge-trial { background: var(--accent-soft); color: var(--accent); }
+.sub-badge-active { background: rgba(74,170,106,0.12); color: var(--success); }
+.sub-badge-cancelled { background: rgba(229,115,115,0.12); color: var(--error); }
+.sub-badge-expired { background: rgba(229,115,115,0.12); color: var(--error); }
+.sub-amount {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 56px;
+  color: var(--accent);
+  line-height: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.sub-currency { font-size: 32px; }
+.sub-period {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-size: 14px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.sub-amount-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+.sub-charge-next {
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.sub-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.sub-features li {
+  padding: 8px 0 8px 24px;
+  font-size: 14px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.sub-features li:last-child { border-bottom: none; }
+.sub-features li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.sub-venue-list { display: flex; flex-direction: column; gap: 0; }
+.sub-venue-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  font-size: 14px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.sub-venue-price { color: var(--text-muted); }
+.sub-venue-total {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.sub-manage {
+  margin-top: 24px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+.sub-manage summary {
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 8px 0;
+  list-style: none;
+}
+.sub-manage summary::-webkit-details-marker { display: none; }
+.sub-manage summary::before { content: "▸ "; font-size: 10px; }
+.sub-manage[open] summary::before { content: "▾ "; }
+.sub-manage-content { padding: 12px 0 0 16px; }
+.sub-cancel-btn {
+  background: transparent;
+  color: var(--error);
+  border: 1px solid var(--error);
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+}
+.sub-cancel-btn:hover {
+  background: var(--error);
+  color: var(--card);
+}
   
 </style>
 
@@ -1122,27 +1245,72 @@ async function loadSubscription() {
       <div style="height:60px;width:50%;background:var(--card-hover);border-radius:4px;"></div>
     </div>
   `;
-  const res = await fetch('/api/subscription/status', {
-    headers: { 'Authorization': 'Bearer ' + token },
-  });
-  const data = await res.json();
-  let html = '<div class="card"><h2 class="heading">Current plan</h2>';
-  html += '<p class="subheading">flock standard · ₹999 per venue per month</p>';
-  html += '<div style="margin-top:16px;">';
-  if (data.status === 'trial') {
-    const daysLeft = Math.floor((new Date(data.trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24));
-    html += '<div style="color:var(--accent);font-weight:500;">Trial · ' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : '') + ' left</div>';
-  } else if (data.status === 'active') {
-    html += '<div style="color:var(--success);">● Active</div>';
-  } else if (data.status === 'cancelled') {
-    html += '<div style="color:var(--error);">Cancelled</div>';
-  }
-  html += '<div style="font-family:Fraunces,serif;font-style:italic;font-size:48px;color:var(--accent);margin-top:12px;">₹' + (data.monthlyAmount || 0) + '<span style="font-size:14px;color:var(--text-muted);font-style:normal;font-family:Inter;"> /month</span></div>';
-  html += '<div style="font-size:13px;color:var(--text-muted);">' + (data.venueQuantity || 0) + ' venue' + (data.venueQuantity !== 1 ? 's' : '') + ' × ₹999</div>';
-  html += '</div></div>';
+  
+  const [statusRes, venuesRes] = await Promise.all([
+    fetch('/api/subscription/status', { headers: { 'Authorization': 'Bearer ' + token } }),
+    fetch('/api/venues', { headers: { 'Authorization': 'Bearer ' + token } }),
+  ]);
+  const data = await statusRes.json();
+  const venuesData = await venuesRes.json();
+  const venues = venuesData.venues || [];
 
+  let html = '';
+
+  // Hero card — current bill
+  html += '<div class="card sub-hero">';
+  if (data.status === 'trial' && data.trialEndsAt) {
+    const daysLeft = Math.floor((new Date(data.trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24));
+    html += '<div class="sub-badge sub-badge-trial">Free trial · ' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : '') + ' left</div>';
+  } else if (data.status === 'active') {
+    html += '<div class="sub-badge sub-badge-active">● Active</div>';
+  } else if (data.status === 'cancelled') {
+    html += '<div class="sub-badge sub-badge-cancelled">Cancelled · access continues until cycle end</div>';
+  } else if (data.status === 'expired') {
+    html += '<div class="sub-badge sub-badge-expired">Subscription expired</div>';
+  }
+
+  html += '<div class="sub-amount"><span class="sub-currency">₹</span>' + (data.monthlyAmount || 0) + '<span class="sub-period"> / month</span></div>';
+  html += '<div class="sub-amount-sub">' + (data.venueQuantity || 0) + ' venue' + (data.venueQuantity !== 1 ? 's' : '') + ' × ₹999</div>';
+  
+  if (data.status === 'trial' && data.trialEndsAt) {
+    html += '<div class="sub-charge-next">First charge on ' + new Date(data.trialEndsAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) + '</div>';
+  }
+  html += '</div>';
+
+  // What's included
+  html += '<div class="card">';
+  html += '<h3 class="heading" style="font-size:16px;margin-bottom:12px;">What\'s included</h3>';
+  html += '<ul class="sub-features">';
+  html += '<li>Live queue management with QR-based guest joining</li>';
+  html += '<li>WhatsApp notifications when tables are ready</li>';
+  html += '<li>Real-time wait-time predictions for guests</li>';
+  html += '<li>Staff dashboard with full guest history + audit logs</li>';
+  html += '<li>Analytics — daily counts, busiest hours, party-size trends</li>';
+  html += '<li>Custom reports with date range + guest field selection</li>';
+  html += '<li>12 theme options across venues</li>';
+  html += '<li>Unlimited staff devices per venue</li>';
+  html += '</ul>';
+  html += '</div>';
+
+  // Venues breakdown
+  if (venues.length > 0) {
+    html += '<div class="card">';
+    html += '<h3 class="heading" style="font-size:16px;margin-bottom:12px;">Your venues</h3>';
+    html += '<div class="sub-venue-list">';
+    venues.forEach(v => {
+      html += '<div class="sub-venue-row"><span>' + escapeHtml(v.name) + '</span><span class="sub-venue-price">₹999/mo</span></div>';
+    });
+    html += '<div class="sub-venue-total"><span>Total</span><span>₹' + (data.monthlyAmount || 0) + '/mo</span></div>';
+    html += '</div></div>';
+  }
+
+  // Manage subscription
   if (data.status !== 'cancelled') {
-    html += '<div class="card"><h2 class="heading">Cancel subscription</h2><p class="subheading">Your access will continue until the end of the current billing cycle.</p><button class="button" style="background:transparent;color:var(--error);border:1px solid var(--error);margin-top:12px;" onclick="cancelSubscription()">Cancel subscription</button></div>';
+    html += '<details class="sub-manage"><summary>Manage subscription</summary>';
+    html += '<div class="sub-manage-content">';
+    html += '<p class="subheading" style="font-size:13px;margin-bottom:16px;">If you cancel, you\'ll keep access until the end of your current billing cycle. Your data and venue settings are preserved if you choose to come back.</p>';
+    html += '<button class="sub-cancel-btn" onclick="cancelSubscription()">Cancel subscription</button>';
+    html += '</div></details>';
   }
 
   el.innerHTML = html;
