@@ -1,5 +1,6 @@
 const express = require('express');
 const prisma = require('../lib/prisma');
+const { broadcast } = require('../lib/realtime');
 const { requireAuth, requireActiveSubscription } = require('../middleware/auth');
 const { sendTemplate } = require('../lib/whatsapp');
 
@@ -181,6 +182,8 @@ router.post('/join/:slug', async (req, res) => {
 
     // Fire WhatsApp queue-joined message (non-blocking)
     const statusUrl = `${process.env.PUBLIC_URL || 'https://flock-wdz3.onrender.com'}/status.html?id=${entry.id}`;
+    broadcast('venue:' + venue.id, { type: 'queue_changed' });
+    broadcast('entry:' + entry.id, { type: 'entry_changed' });
     sendTemplate(phoneClean, process.env.GUPSHUP_TEMPLATE_QUEUE_JOIN, [
       venue.name,
       guestName,
@@ -280,6 +283,8 @@ router.post('/notify/:entryId', requireAuth, requireActiveSubscription, async (r
     });
 
     await logAudit(entry.id, 'notified', reportingTime ? `Reporting time: ${reportingTime} mins` : null);
+    broadcast('venue:' + entry.venueId, { type: 'queue_changed' });
+    broadcast('entry:' + entry.id, { type: 'entry_changed' });
 
     // Fire WhatsApp table-ready message (non-blocking)
     sendTemplate(entry.guestPhone, process.env.GUPSHUP_TEMPLATE_TABLE_READY, [
@@ -325,6 +330,8 @@ router.post('/seat/:entryId', requireAuth, requireActiveSubscription, async (req
     });
 
     await logAudit(entry.id, 'seated');
+    broadcast('venue:' + entry.venueId, { type: 'queue_changed' });
+    broadcast('entry:' + entry.id, { type: 'entry_changed' });
 
     res.json({ success: true });
   } catch (error) {
@@ -341,6 +348,11 @@ router.post('/cancel/:entryId', async (req, res) => {
       data: { cancelledAt: new Date(), status: 'cancelled' },
     });
     await logAudit(req.params.entryId, 'cancelled');
+    const cancelledEntry = await prisma.queueEntry.findUnique({ where: { id: req.params.entryId } });
+    if (cancelledEntry) {
+      broadcast('venue:' + cancelledEntry.venueId, { type: 'queue_changed' });
+      broadcast('entry:' + cancelledEntry.id, { type: 'entry_changed' });
+    }
     res.json({ success: true });
   } catch (error) {
     console.error('Cancel error:', error);
@@ -391,7 +403,7 @@ router.post('/clear/:venueId', requireAuth, requireActiveSubscription, async (re
       },
       data: { status: 'cancelled', cancelledAt: new Date() },
     });
-
+    broadcast('venue:' + req.params.venueId, { type: 'queue_changed' });
     res.json({ success: true });
   } catch (error) {
     console.error('Clear queue error:', error);
@@ -472,6 +484,8 @@ router.post('/call/:entryId', requireAuth, requireActiveSubscription, async (req
     });
 
     await logAudit(entry.id, 'called');
+    broadcast('venue:' + entry.venueId, { type: 'queue_changed' });
+    broadcast('entry:' + entry.id, { type: 'entry_changed' });
 
     res.json({ success: true });
   } catch (error) {
