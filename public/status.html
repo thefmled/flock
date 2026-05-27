@@ -32,6 +32,21 @@
     } catch(e) {}
   })();
 </script>
+
+<style>body{opacity:0;}body.theme-loaded{opacity:1;transition:opacity 0.15s;}</style>
+<script>
+  (function() {
+    try {
+      const v = JSON.parse(sessionStorage.getItem('flock_venue_data') || 'null');
+      const t = v && v.theme ? v.theme : null;
+      document.addEventListener('DOMContentLoaded', function() {
+        if (t) {
+          document.body.className = 'theme-' + t + ' theme-loaded';
+        }
+      });
+    } catch(e) {}
+  })();
+</script>
   
 </head>
 <body>
@@ -90,7 +105,8 @@ async function loadStatus() {
     const res = await fetch('/api/queue/status/' + entryId);
     const data = await res.json();
     if (data.entry && data.entry.venue) {
-      document.body.className = 'theme-' + (data.entry.venue.theme || 'dark-premium');
+      document.body.className = 'theme-' + (data.entry.venue.theme || 'dark-premium') + ' theme-loaded';
+      sessionStorage.setItem('flock_venue_data', JSON.stringify(data.entry.venue));
     }
     if (!res.ok) throw new Error(data.error);
 
