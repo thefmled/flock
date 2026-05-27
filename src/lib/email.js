@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM_EMAIL = 'Flock <onboarding@resend.dev>';
+const FROM_EMAIL = 'flock <noreply@getflock.in>';
 
 async function sendOtpEmail(toEmail, code) {
   try {
