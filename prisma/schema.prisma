@@ -36,6 +36,7 @@ model Venue {
   theme             String        @default("dark-premium")
   seatingOptions    String        @default("Indoor,Outdoor,No preference")
   qrMarkedPlaced       Boolean       @default(false)
+  theme                  String        @default("dark-premium")
   onboardingDismissed  Boolean       @default(false)
   
   ownerId           String
