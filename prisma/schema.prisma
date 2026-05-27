@@ -45,6 +45,7 @@ model Venue {
   
   staff             Staff[]
   queueEntries      QueueEntry[]
+  menus              Menu[]
   
   createdAt         DateTime      @default(now())
 }
