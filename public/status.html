@@ -172,6 +172,10 @@ async function cancelEntry() {
   fetch('/api/queue/cancel/' + entryId, { method: 'POST' });
 }
 
+function escapeHtml(str) {
+  return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 loadStatus();
 setInterval(loadStatus, 2000);
 setInterval(() => fetch('/health'), 5 * 60 * 1000);
