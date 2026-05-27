@@ -577,10 +577,11 @@ router.get('/analytics/:venueId', requireAuth, requireActiveSubscription, async 
     const daysSeen = Array.from({ length: 7 }, () => new Set());
     allInRange.forEach(e => {
       const d = new Date(e.joinedAt);
-      const dow = d.getDay();
-      const hr = d.getHours();
+      const istDate = new Date(d.getTime() + 5.5 * 60 * 60 * 1000);
+      const dow = istDate.getUTCDay();
+      const hr = istDate.getUTCHours();
       hoursByDow[dow][hr]++;
-      daysSeen[dow].add(d.toISOString().split('T')[0]);
+      daysSeen[dow].add(istDate.toISOString().split('T')[0]);
     });
     const dowDayCounts = daysSeen.map(s => s.size);
 
@@ -693,10 +694,11 @@ router.get('/report/:venueId', requireAuth, requireActiveSubscription, async (re
     const daysSeen = Array.from({ length: 7 }, () => new Set());
     entries.forEach(e => {
       const d = new Date(e.joinedAt);
-      const dow = d.getDay();
-      const hr = d.getHours();
+      const istDate = new Date(d.getTime() + 5.5 * 60 * 60 * 1000);
+      const dow = istDate.getUTCDay();
+      const hr = istDate.getUTCHours();
       hoursByDow[dow][hr]++;
-      daysSeen[dow].add(d.toISOString().split('T')[0]);
+      daysSeen[dow].add(istDate.toISOString().split('T')[0]);
     });
     const dowDayCounts = daysSeen.map(s => s.size);
 
