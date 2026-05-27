@@ -71,13 +71,16 @@
       const code = document.getElementById('code').value.trim();
       const email = sessionStorage.getItem('flock_email');
       const errorEl = document.getElementById('otpError');
+      const btn = document.querySelector('.button');
       errorEl.textContent = '';
-
       if (!code || code.length !== 6) {
         errorEl.textContent = 'Enter the 6-digit code.';
         return;
       }
-
+      
+      btn.disabled = true;
+      btn.textContent = 'Verifying…';
+      
       try {
         const res = await fetch(API + '/api/auth/verify-otp', {
           method: 'POST',
@@ -86,35 +89,34 @@
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Invalid code');
-
         localStorage.setItem('flock_token', data.token);
         localStorage.setItem('flock_owner', JSON.stringify(data.owner));
-
+        
         if (data.isNewUser) {
-          window.location.href = '/subscribe.html';
+          window.location.replace('/subscribe.html');
+          return;
+        }
+        
+        btn.textContent = 'Loading…';
+        
+        // Parallel-fire both checks
+        const [statusRes, venuesRes] = await Promise.all([
+          fetch('/api/subscription/status', { headers: { 'Authorization': 'Bearer ' + data.token } }),
+          fetch('/api/venues', { headers: { 'Authorization': 'Bearer ' + data.token } }),
+        ]);
+        const [statusData, venuesData] = await Promise.all([statusRes.json(), venuesRes.json()]);
+        
+        if (!statusData.hasSubscription || statusData.status === 'cancelled' || statusData.status === 'expired') {
+          window.location.replace('/subscribe.html');
+        } else if (!venuesData.venues || venuesData.venues.length === 0) {
+          window.location.replace('/setup.html');
         } else {
-          const statusRes = await fetch('/api/subscription/status', {
-            headers: { 'Authorization': 'Bearer ' + data.token },
-          });
-          const statusData = await statusRes.json();
-          // No active subscription OR cancelled → subscribe again
-          if (!statusData.hasSubscription || statusData.status === 'cancelled' || statusData.status === 'expired') {
-            window.location.href = '/subscribe.html';
-          } else {
-            // Check if they have any venues
-            const venuesRes = await fetch('/api/venues', {
-              headers: { 'Authorization': 'Bearer ' + data.token },
-            });
-            const venuesData = await venuesRes.json();
-            if (!venuesData.venues || venuesData.venues.length === 0) {
-              window.location.href = '/setup.html';
-            } else {
-              window.location.href = '/chooser.html';
-            }
-          }
+          window.location.replace('/chooser.html');
         }
       } catch (err) {
         errorEl.textContent = err.message;
+        btn.disabled = false;
+        btn.textContent = 'Verify';
       }
     }
 
