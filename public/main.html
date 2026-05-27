@@ -697,12 +697,26 @@ function hexToRgba(hex, alpha) {
 }
 
 async function loadAnalytics() {
-  document.getElementById('rangeLabel').textContent = getRangeDateLabel();
   if (!venue) return;
+  
+  // Show skeleton on charts while loading (only if no chart exists yet)
+  if (!dailyChart) {
+    ['dailyChart', 'hoursChart', 'partyChart'].forEach(id => {
+      const canvas = document.getElementById(id);
+      if (canvas && canvas.parentElement) {
+        canvas.style.opacity = '0.4';
+      }
+    });
+  }
+  
   const res = await fetch('/api/queue/analytics/' + venue.id + '?range=' + currentRange, {
     headers: { 'Authorization': 'Bearer ' + token },
   });
   analyticsData = await res.json();
+  ['dailyChart', 'hoursChart', 'partyChart'].forEach(id => {
+    const canvas = document.getElementById(id);
+    if (canvas) canvas.style.opacity = '1';
+  });
   document.getElementById('dailyChartSub').textContent = RANGE_LABELS[currentRange];
   const grouped = currentRange !== 'L7D';
   const colors = getThemeColors();
@@ -958,6 +972,14 @@ async function saveSettings() {
 }
 
 async function loadSubscription() {
+  const el = document.getElementById('subscriptionContent');
+  el.innerHTML = `
+    <div class="card">
+      <div style="height:20px;width:40%;background:var(--card-hover);border-radius:4px;margin-bottom:12px;"></div>
+      <div style="height:14px;width:60%;background:var(--card-hover);border-radius:4px;margin-bottom:24px;opacity:0.6;"></div>
+      <div style="height:60px;width:50%;background:var(--card-hover);border-radius:4px;"></div>
+    </div>
+  `;
   const res = await fetch('/api/subscription/status', {
     headers: { 'Authorization': 'Bearer ' + token },
   });
