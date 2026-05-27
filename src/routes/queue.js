@@ -612,4 +612,23 @@ router.get('/analytics/:venueId', requireAuth, requireActiveSubscription, async 
   }
 });
 
+// Lightweight check — does this venue have at least one queue entry?
+router.get('/has-any/:venueId', requireAuth, requireActiveSubscription, async (req, res) => {
+  try {
+    const venue = await prisma.venue.findFirst({
+      where: { id: req.params.venueId, ownerId: req.ownerId },
+    });
+    if (!venue) return res.status(404).json({ error: 'Venue not found' });
+
+    const count = await prisma.queueEntry.count({
+      where: { venueId: venue.id },
+    });
+
+    res.json({ hasAny: count > 0 });
+  } catch (error) {
+    console.error('Has-any error:', error);
+    res.status(500).json({ error: 'Failed to check' });
+  }
+});
+
 module.exports = router;
