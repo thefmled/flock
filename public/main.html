@@ -179,6 +179,31 @@ body { margin: 0; }
   .sidebar-item-label, .sidebar-logo span:first-child { display: none; }
   .main-tab-content { padding: 16px; }
 }
+
+.settings-subnav {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin: 16px 0 20px;
+}
+.settings-subnav-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  letter-spacing: 0.02em;
+}
+.settings-subnav-btn:hover { color: var(--text); }
+.settings-subnav-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+  
 </style>
 </head>
 <body>
@@ -273,8 +298,13 @@ body { margin: 0; }
 
     <div class="main-tab-content" id="settingsSection" style="display:none;">
       <h2 class="heading" style="font-size:24px;">Settings</h2>
-      <div id="settingsContent"></div>
+      <div class="settings-subnav">
+        <button class="settings-subnav-btn active" data-sub="venue" onclick="showSettingsSub('venue')">Venue settings</button>
+        <button class="settings-subnav-btn" data-sub="themes" onclick="showSettingsSub('themes')">Themes</button>
+        <button class="settings-subnav-btn" data-sub="qr" onclick="showSettingsSub('qr')">QR code</button>
     </div>
+  <div id="settingsContent"></div>
+</div>
 
     <div class="main-tab-content" id="subscriptionSection" style="display:none;">
       <h2 class="heading" style="font-size:24px;">Subscription</h2>
@@ -522,7 +552,23 @@ function chartBaseOptions(opts={}) {
 // Settings & subscription placeholders
 let settingsSeating = [];
 
+let activeSettingsSub = 'venue';
+
+function showSettingsSub(sub) {
+  activeSettingsSub = sub;
+  document.querySelectorAll('.settings-subnav-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.sub === sub);
+  });
+  if (sub === 'venue') loadVenueSettings();
+  if (sub === 'themes') loadThemesSettings();
+  if (sub === 'qr') loadQrSettings();
+}
+
 function loadSettings() {
+  showSettingsSub(activeSettingsSub);
+}
+  
+  function loadVenueSettings() {
   if (!venue) return;
   document.getElementById('settingsContent').innerHTML = `
     <div class="card">
