@@ -593,18 +593,6 @@ body { margin: 0; }
   </div>
 
   <div class="card">
-    <h3 class="heading" style="font-size:16px;">Metrics to include</h3>
-    <p class="subheading" style="font-size:12px;margin-bottom:12px;">Summary tables to add to the report.</p>
-    <div class="report-checks" id="reportMetrics">
-      <label><input type="checkbox" value="daily" checked> Daily counts (date, day, guest parties, avg party size)</label>
-      <label><input type="checkbox" value="hours" checked> Hourly distribution</label>
-      <label><input type="checkbox" value="wait"> Wait time stats (avg, median, by party size)</label>
-      <label><input type="checkbox" value="cancel"> Cancellation rate</label>
-      <label><input type="checkbox" value="dow"> Day-of-week summary</label>
-    </div>
-  </div>
-
-  <div class="card">
     <h3 class="heading" style="font-size:16px;">Guest details to include</h3>
     <p class="subheading" style="font-size:12px;margin-bottom:12px;">Per-guest rows to add to the report.</p>
     <div class="report-checks" id="reportGuestFields">
@@ -1391,10 +1379,9 @@ async function generateReport() {
     return;
   }
 
-  const metrics = Array.from(document.querySelectorAll('#reportMetrics input:checked')).map(c => c.value);
   const guestFields = Array.from(document.querySelectorAll('#reportGuestFields input:checked')).map(c => c.value);
-  if (metrics.length === 0 && guestFields.length === 0) {
-    errEl.textContent = 'Select at least one metric or guest field.';
+  if (guestFields.length === 0) {
+    errEl.textContent = 'Select at least one guest field.';
     return;
   }
 
@@ -1409,7 +1396,7 @@ async function generateReport() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to fetch data');
 
-    const csv = buildReportCsv(data, metrics, guestFields, from, to);
+    const csv = buildReportCsv(data, guestFields, from, to);
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1424,96 +1411,32 @@ async function generateReport() {
   }
 }
 
-function buildReportCsv(data, metrics, guestFields, from, to) {
-  const lines = [];
+function buildReportCsv(data, guestFields, from, to) {
   const esc = s => '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"';
   const row = arr => arr.map(esc).join(',');
+  const lines = [];
 
-  lines.push(row(['flock report']));
-  lines.push(row(['Venue', venue.name]));
-  lines.push(row(['Date range', from + ' to ' + to]));
-  lines.push(row(['Generated', new Date().toLocaleString()]));
-  lines.push('');
+  const headers = guestFields.map(f => ({
+    guestName: 'Name', guestPhone: 'Phone', partySize: 'Party size',
+    seatingPreference: 'Seating preference', notes: 'Notes',
+    joinedAt: 'Joined', seatedAt: 'Seated', cancelledAt: 'Cancelled',
+    waitDuration: 'Wait duration (min)', status: 'Status',
+    notifiedAt: 'Notified', calledAt: 'Called',
+  }[f] || f));
+  lines.push(row(headers));
 
-  if (metrics.includes('daily') && data.daily) {
-    lines.push(row(['DAILY COUNTS']));
-    lines.push(row(['Date', 'Day of week', 'Guest parties', 'Avg party size']));
-    data.daily.forEach(d => lines.push(row([d.date, DAY_NAMES[d.dayOfWeek], d.count, d.avgPartySize])));
-    lines.push('');
-  }
-
-  if (metrics.includes('hours') && data.hoursByDow) {
-    lines.push(row(['HOURLY DISTRIBUTION (avg parties per hour by day of week)']));
-    lines.push(row(['Hour', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']));
-    for (let h = 0; h < 24; h++) {
-      const r = [h + ':00'];
-      [1,2,3,4,5,6,0].forEach(dow => {
-        const days = data.dowDayCounts[dow] || 0;
-        const parties = data.hoursByDow[dow]?.[h] || 0;
-        r.push(days > 0 ? (parties / days).toFixed(2) : '0');
-      });
-      lines.push(row(r));
-    }
-    lines.push('');
-  }
-
-  if (metrics.includes('wait') && data.waitStats) {
-    lines.push(row(['WAIT TIME STATS']));
-    lines.push(row(['Metric', 'Value']));
-    lines.push(row(['Average wait (min)', data.waitStats.avg]));
-    lines.push(row(['Median wait (min)', data.waitStats.median]));
-    lines.push('');
-    lines.push(row(['Wait by party size']));
-    lines.push(row(['Party size', 'Count', 'Avg wait (min)']));
-    (data.waitStats.byPartySize || []).forEach(r => lines.push(row([r.partySize, r.count, r.avgWait])));
-    lines.push('');
-  }
-
-  if (metrics.includes('cancel') && data.cancelStats) {
-    lines.push(row(['CANCELLATION RATE']));
-    lines.push(row(['Total guests', data.cancelStats.total]));
-    lines.push(row(['Cancelled', data.cancelStats.cancelled]));
-    lines.push(row(['Cancellation rate (%)', data.cancelStats.rate]));
-    lines.push('');
-  }
-
-  if (metrics.includes('dow') && data.daily) {
-    lines.push(row(['DAY-OF-WEEK SUMMARY']));
-    lines.push(row(['Day', 'Total parties', 'Avg parties per day', 'Avg party size']));
-    [1,2,3,4,5,6,0].forEach(dow => {
-      const days = data.daily.filter(d => d.dayOfWeek === dow);
-      const total = days.reduce((s, d) => s + d.count, 0);
-      const avgCount = days.length > 0 ? (total / days.length).toFixed(2) : '0';
-      const sizes = days.filter(d => d.avgPartySize > 0);
-      const avgSize = sizes.length > 0 ? (sizes.reduce((s, d) => s + d.avgPartySize, 0) / sizes.length).toFixed(2) : '0';
-      lines.push(row([DAY_NAMES[dow], total, avgCount, avgSize]));
+  (data.entries || []).forEach(e => {
+    const r = guestFields.map(f => {
+      if (f === 'waitDuration') {
+        if (e.seatedAt) return Math.round((new Date(e.seatedAt) - new Date(e.joinedAt)) / 60000);
+        if (e.cancelledAt) return Math.round((new Date(e.cancelledAt) - new Date(e.joinedAt)) / 60000);
+        return '';
+      }
+      if (f.endsWith('At') && e[f]) return new Date(e[f]).toLocaleString();
+      return e[f] || '';
     });
-    lines.push('');
-  }
-
-  if (guestFields.length > 0 && data.entries) {
-    lines.push(row(['GUEST DETAILS']));
-    const headers = guestFields.map(f => ({
-      guestName: 'Name', guestPhone: 'Phone', partySize: 'Party size',
-      seatingPreference: 'Seating preference', notes: 'Notes',
-      joinedAt: 'Joined', seatedAt: 'Seated', cancelledAt: 'Cancelled',
-      waitDuration: 'Wait duration (min)', status: 'Status',
-      notifiedAt: 'Notified', calledAt: 'Called',
-    }[f] || f));
-    lines.push(row(headers));
-    data.entries.forEach(e => {
-      const r = guestFields.map(f => {
-        if (f === 'waitDuration') {
-          if (e.seatedAt) return Math.round((new Date(e.seatedAt) - new Date(e.joinedAt)) / 60000);
-          if (e.cancelledAt) return Math.round((new Date(e.cancelledAt) - new Date(e.joinedAt)) / 60000);
-          return '';
-        }
-        if (f.endsWith('At') && e[f]) return new Date(e[f]).toLocaleString();
-        return e[f] || '';
-      });
-      lines.push(row(r));
-    });
-  }
+    lines.push(row(r));
+  });
 
   return lines.join('\n');
 }
