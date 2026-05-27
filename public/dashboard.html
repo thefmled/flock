@@ -249,9 +249,9 @@
     <div id="venueMenu" class="venue-menu" style="display:none;"></div>
   </div>
   <div class="topbar-actions">
+    <a href="/main.html" style="background:transparent;color:var(--text-muted);text-decoration:none;border:1px solid var(--border-strong);padding:8px 12px;border-radius:8px;font-family:inherit;font-size:12px;font-weight:500;letter-spacing:0.03em;">← Main</a>
     <button onclick="clearQueue()">Clear queue</button>
     <button onclick="showQr()">QR for guests</button>
-    <button onclick="switchTab('settings')">Queue settings</button>
     <button onclick="logout()">Log out</button>
   </div>
 </div>
@@ -259,7 +259,6 @@
 <div class="tabs">
   <button class="tab active" data-tab="live" onclick="switchTab('live')">Live queue</button>
   <button class="tab" data-tab="history" onclick="switchTab('history')">History</button>
-  <button class="tab" data-tab="analytics" onclick="switchTab('analytics')">Analytics</button>
 </div>
 
 <div class="tab-content" id="liveTab">
