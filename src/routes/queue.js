@@ -188,8 +188,7 @@ router.post('/join/:slug', async (req, res) => {
       guestName,
       String(position),
       String(waitMinutes),
-      statusUrl,
-    ]).then(result => {
+    ], [entry.id]).then(result => {
       if (result) {
         prisma.notification.create({
           data: {
