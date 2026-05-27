@@ -576,12 +576,24 @@ function pickReportingTime() {
 }
 
 async function callGuest(id, phone) {
-  await fetch('/api/queue/call/' + id, {
+  // Optimistic: flip button to ✓ Called instantly
+  const card = document.querySelector(`[data-entry-id="${id}"]`);
+  if (card) {
+    const callBtn = card.querySelectorAll('.btn-notify')[1]; // second btn-notify = Call
+    if (callBtn) {
+      callBtn.classList.add('btn-done');
+      callBtn.textContent = '✓ Called';
+    }
+  }
+  
+  // Fire backend in background
+  fetch('/api/queue/call/' + id, {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + token },
   });
+  
+  // Open dialer
   window.location.href = 'tel:' + phone;
-  loadQueue();
 }
 
 const pendingActions = new Set();
@@ -846,12 +858,19 @@ function timeAgo(dateStr) {
 
 async function clearQueue() {
   if (!confirm('Clear the entire queue? Everyone currently waiting will be cancelled.')) return;
-  await fetch('/api/queue/clear/' + venue.id, {
+  
+  // Optimistic: empty the list instantly
+  document.getElementById('queueList').innerHTML = '';
+  document.getElementById('emptyState').style.display = 'block';
+  
+  // Fire backend
+  fetch('/api/queue/clear/' + venue.id, {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + token },
+  }).then(() => {
+    loadQueue();
+    loadStats();
   });
-  loadQueue();
-  loadStats();
 }
 
 async function loadStats() {
