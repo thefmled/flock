@@ -125,7 +125,7 @@ router.patch('/:id', requireAuth, requireActiveSubscription, async (req, res) =>
     });
     if (!venue) return res.status(404).json({ error: 'Venue not found' });
 
-    const allowed = ['name', 'address', 'floorManagerName', 'menuPdfUrl', 'googleReviewsUrl', 'seatingOptions', 'waitTimeBase', 'waitTimeIncrement', 'waitTimeCap', 'theme'];
+    const allowed = ['name', 'address', 'floorManagerName', 'menuPdfUrl', 'googleReviewsUrl', 'seatingOptions', 'noteOptions', 'waitTimeBase', 'waitTimeIncrement', 'waitTimeCap', 'theme'];
     const data = {};
     for (const key of allowed) {
       if (key in req.body) data[key] = req.body[key];
