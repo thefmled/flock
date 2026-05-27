@@ -302,6 +302,47 @@ footer a:hover { color: var(--text); }
   opacity: 0.9;
 }
 .hero-visual svg { width: 100%; height: auto; }
+
+.faq-list {
+  max-width: 720px;
+  margin: 0 auto;
+}
+.faq-item {
+  border-bottom: 1px solid var(--border);
+  padding: 0;
+}
+.faq-question {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  text-align: left;
+  padding: 22px 0;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.faq-question:hover { color: var(--accent); }
+.faq-icon {
+  color: var(--accent);
+  font-size: 20px;
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+.faq-item.open .faq-icon { transform: rotate(45deg); }
+.faq-answer {
+  display: none;
+  padding: 0 0 22px;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.faq-item.open .faq-answer { display: block; }
   
 </style>
 </head>
@@ -313,6 +354,7 @@ footer a:hover { color: var(--text); }
     <a href="#how">How it works</a>
     <a href="#why">Why flock</a>
     <a href="#pricing">Pricing</a>
+    <a href="#faq">FAQs</a>
     <a href="/login.html" class="nav-cta">Log in / Sign up</a>
   </div>
 </nav>
@@ -474,7 +516,77 @@ footer a:hover { color: var(--text); }
   </div>
 </section>
 
-<section class="cta-section">
+<section class="section" id="faq">
+  <p class="section-eyebrow">FAQs</p>
+  <h2 class="section-title">Things venues ask us.</h2>
+  <div class="faq-list">
+    <div class="faq-item">
+      <button class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+        <span>Do guests need to download an app?</span>
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-answer">No. Guests scan a QR at the door, fill in their details on a mobile-friendly web page, and that's it. No apps, no logins, no downloads.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+        <span>How will my guests be notified?</span>
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-answer">When you tap Notify on the staff dashboard, the guest gets a WhatsApp message saying their table is ready. You can also tap Call to dial them directly from the dashboard. Guests also see live updates on the status page they get after joining the queue — no app needed.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+        <span>Can I change wait times whenever I want?</span>
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-answer">Yes. You configure the base wait, the per-position increment, and the cap from settings — and you can change any of these whenever you want. The displayed wait time updates in real time without disrupting guests already in the queue. A guest's quoted wait will never suddenly increase, even if you change settings mid-shift.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+        <span>How long does setup take?</span>
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-answer">Under 10 minutes. Sign up, add your venue details, upload your menu, print your QR. You'll be taking guests by the time your next service starts.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+        <span>Can I run flock at multiple venues?</span>
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-answer">Yes. One account can manage as many venues as you want. Each venue gets its own QR, settings, and queue. Pricing is per venue.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+        <span>Is there a contract or lock-in?</span>
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-answer">No. flock is a month-to-month subscription. Cancel anytime from your dashboard. No contracts, no exit fees.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+        <span>What insights does flock give me about my venue?</span>
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-answer">A dedicated analytics tab shows trends by day of the week — busiest hours, busiest days, average party size, total guest parties — across any time range from last 7 days to the past year. See exactly when to staff up and when to plan promotions.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+        <span>Is my guest data safe?</span>
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-answer">Yes. Guest data is stored securely and is only ever visible to you. We never share or sell data to third parties. You can export or delete your data anytime.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+        <span>Can I export my queue data?</span>
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-answer">Yes. The history tab includes a one-click CSV export of every guest party from any date range. Perfect for your own analytics, reporting, or marketing list building.</div>
+    </div>
+  </div>
+</section>
+  
+  <section class="cta-section">
   <h2>Ready to ditch the clipboard?</h2>
   <p>14-day free trial. ₹999/month after. Cancel anytime.</p>
   <a href="/login.html" class="cta">Start your free trial</a>
