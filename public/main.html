@@ -433,6 +433,41 @@ body { margin: 0; }
   padding: 6px 0;
 }
 .report-checks input[type="checkbox"] { accent-color: var(--accent); }  
+
+input[type="date"] {
+  color-scheme: dark;
+  position: relative;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+  opacity: 0.6;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* For light themes, the calendar icon needs to be dark instead of inverted */
+body[class*="theme-warm-editorial"] input[type="date"],
+body[class*="theme-crisp-modern"] input[type="date"],
+body[class*="theme-terracotta-bistro"] input[type="date"],
+body[class*="theme-sun-sand"] input[type="date"],
+body[class*="theme-spice-market"] input[type="date"],
+body[class*="theme-charcoal-linen"] input[type="date"],
+body[class*="theme-brick-birch"] input[type="date"],
+body[class*="theme-cloud-mint"] input[type="date"] {
+  color-scheme: light;
+}
+body[class*="theme-warm-editorial"] input[type="date"]::-webkit-calendar-picker-indicator,
+body[class*="theme-crisp-modern"] input[type="date"]::-webkit-calendar-picker-indicator,
+body[class*="theme-terracotta-bistro"] input[type="date"]::-webkit-calendar-picker-indicator,
+body[class*="theme-sun-sand"] input[type="date"]::-webkit-calendar-picker-indicator,
+body[class*="theme-spice-market"] input[type="date"]::-webkit-calendar-picker-indicator,
+body[class*="theme-charcoal-linen"] input[type="date"]::-webkit-calendar-picker-indicator,
+body[class*="theme-brick-birch"] input[type="date"]::-webkit-calendar-picker-indicator,
+body[class*="theme-cloud-mint"] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: none;
+}
   
 </style>
 
