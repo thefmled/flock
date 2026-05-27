@@ -1154,24 +1154,28 @@ async function renderOnboarding() {
 }
 
 async function markQrPlaced() {
-  await fetch('/api/venues/' + venue.id + '/qr-placed', {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + token },
-  });
+  // Optimistic: update local + UI instantly
   venue.qrMarkedPlaced = true;
   localStorage.setItem('flock_venue', JSON.stringify(venue));
   renderOnboarding();
+  
+  fetch('/api/venues/' + venue.id + '/qr-placed', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
 }
 
 async function dismissOnboarding() {
   if (!confirm('Hide the setup checklist? You can\'t bring it back.')) return;
-  await fetch('/api/venues/' + venue.id + '/dismiss-onboarding', {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + token },
-  });
+  // Optimistic
   venue.onboardingDismissed = true;
   localStorage.setItem('flock_venue', JSON.stringify(venue));
   renderOnboarding();
+  
+  fetch('/api/venues/' + venue.id + '/dismiss-onboarding', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
 }  
   
 loadVenue().then(() => {
