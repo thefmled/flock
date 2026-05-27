@@ -93,7 +93,6 @@
         if (data.isNewUser) {
           window.location.href = '/subscribe.html';
         } else {
-          // Check subscription status to decide where to go
           const statusRes = await fetch('/api/subscription/status', {
             headers: { 'Authorization': 'Bearer ' + data.token },
           });
@@ -101,7 +100,7 @@
           if (!statusData.hasSubscription) {
             window.location.href = '/subscribe.html';
           } else {
-            window.location.href = '/dashboard.html';
+            window.location.href = '/chooser.html';
           }
         }
       } catch (err) {
