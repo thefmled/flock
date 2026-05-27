@@ -1763,11 +1763,119 @@ function addNoteChip() {
     renderNotesChips();
   }
 }
+
+const TOUR_MAIN_STEPS = [
+  {
+    selector: '.sidebar-nav',
+    title: 'Sidebar',
+    body: 'Switch between Analytics, Settings, Subscription, and Reports using the sidebar.',
+  },
+  {
+    selector: '#venueDropdown',
+    title: 'Your venues',
+    body: 'Switch between venues here. Click the + to add a new one — each gets its own queue, settings, and analytics.',
+  },
+  {
+    selector: '#subStatus',
+    title: 'Subscription status',
+    body: 'Your trial countdown and monthly bill show here. Tap Subscription in the sidebar to manage your plan.',
+  },
+  {
+    selector: '.go-live-btn',
+    title: 'Go to live queue',
+    body: 'When you\'re at the venue, click here to manage the queue in real time.',
+  },
+  {
+    selector: '#onboardingBox',
+    title: 'Get set up',
+    body: 'Complete these steps to get your first guest in. The checklist disappears once you\'re ready.',
+  },
+];
+
+let tourStep = 0;
+
+function startTourIfNeeded() {
+  if (localStorage.getItem('flock_tour_main_done') === '1') return;
+  // Small delay so the page can render
+  setTimeout(() => startTour(), 600);
+}
+
+function startTour() {
+  tourStep = 0;
+  showTourStep();
+}
+
+function showTourStep() {
+  cleanupTour();
+  const step = TOUR_MAIN_STEPS[tourStep];
+  if (!step) { endTour(); return; }
+  const el = document.querySelector(step.selector);
+  if (!el) { tourStep++; showTourStep(); return; }
+
+  el.classList.add('tour-highlight');
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  // Tooltip positioned below the element
+  const rect = el.getBoundingClientRect();
+  const tooltip = document.createElement('div');
+  tooltip.className = 'tour-tooltip';
+  tooltip.id = 'tourTooltip';
+  tooltip.innerHTML = `
+    <h3>${step.title}</h3>
+    <p>${step.body}</p>
+    <div class="tour-actions">
+      <div class="tour-step-count">${tourStep + 1} of ${TOUR_MAIN_STEPS.length}</div>
+      <div class="tour-btn-group">
+        ${tourStep > 0 ? '<button class="tour-btn tour-btn-secondary" onclick="prevTourStep()">Back</button>' : ''}
+        <button class="tour-btn" onclick="nextTourStep()">${tourStep === TOUR_MAIN_STEPS.length - 1 ? 'Done' : 'Next'}</button>
+      </div>
+    </div>
+    <div style="margin-top:12px;text-align:center;">
+      <button class="tour-skip" onclick="endTour()">Skip tour</button>
+    </div>
+  `;
+  document.body.appendChild(tooltip);
+
+  // Position tooltip
+  const tt = tooltip.getBoundingClientRect();
+  let top = rect.bottom + 12;
+  let left = rect.left + (rect.width / 2) - (tt.width / 2);
+  // Keep within viewport
+  if (top + tt.height > window.innerHeight - 12) top = rect.top - tt.height - 12;
+  if (left < 12) left = 12;
+  if (left + tt.width > window.innerWidth - 12) left = window.innerWidth - tt.width - 12;
+  tooltip.style.top = top + 'px';
+  tooltip.style.left = left + 'px';
+}
+
+function nextTourStep() {
+  tourStep++;
+  if (tourStep >= TOUR_MAIN_STEPS.length) endTour();
+  else showTourStep();
+}
+
+function prevTourStep() {
+  tourStep--;
+  if (tourStep < 0) tourStep = 0;
+  showTourStep();
+}
+
+function cleanupTour() {
+  document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+  const tt = document.getElementById('tourTooltip');
+  if (tt) tt.remove();
+}
+
+function endTour() {
+  cleanupTour();
+  localStorage.setItem('flock_tour_main_done', '1');
+}  
   
 loadVenue().then(() => {
   loadAnalytics();
   loadSubStatus();
   renderOnboarding();
+  startTourIfNeeded();
 });
 
 let onboardingInterval = setInterval(renderOnboarding, 10000);
