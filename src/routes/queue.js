@@ -632,4 +632,101 @@ router.get('/has-any/:venueId', requireAuth, requireActiveSubscription, async (r
   }
 });
 
+// Report data — full export with metrics + guest entries for the given range
+router.get('/report/:venueId', requireAuth, requireActiveSubscription, async (req, res) => {
+  try {
+    const venue = await prisma.venue.findFirst({
+      where: { id: req.params.venueId, ownerId: req.ownerId },
+    });
+    if (!venue) return res.status(404).json({ error: 'Venue not found' });
+
+    const from = req.query.from ? new Date(req.query.from) : null;
+    const to = req.query.to ? new Date(req.query.to) : null;
+    if (!from || !to) return res.status(400).json({ error: 'from and to required' });
+
+    // Make 'to' inclusive of the whole day
+    const toEnd = new Date(to);
+    toEnd.setHours(23, 59, 59, 999);
+
+    const entries = await prisma.queueEntry.findMany({
+      where: { venueId: venue.id, joinedAt: { gte: from, lte: toEnd } },
+      orderBy: { joinedAt: 'asc' },
+    });
+
+    // Daily buckets
+    const daily = [];
+    const dayMs = 86400000;
+    const start = new Date(from); start.setHours(0,0,0,0);
+    const end = new Date(toEnd); end.setHours(0,0,0,0);
+    const numDays = Math.ceil((end - start) / dayMs) + 1;
+    for (let i = 0; i < numDays; i++) {
+      const d = new Date(start.getTime() + i * dayMs);
+      const next = new Date(d.getTime() + dayMs);
+      const dayEntries = entries.filter(e => new Date(e.joinedAt) >= d && new Date(e.joinedAt) < next);
+      const avgParty = dayEntries.length > 0
+        ? dayEntries.reduce((s, e) => s + e.partySize, 0) / dayEntries.length
+        : 0;
+      daily.push({
+        date: d.toISOString().split('T')[0],
+        dayOfWeek: d.getDay(),
+        count: dayEntries.length,
+        avgPartySize: parseFloat(avgParty.toFixed(1)),
+      });
+    }
+
+    // Hours by day-of-week
+    const hoursByDow = Array.from({ length: 7 }, () => Array(24).fill(0));
+    const daysSeen = Array.from({ length: 7 }, () => new Set());
+    entries.forEach(e => {
+      const d = new Date(e.joinedAt);
+      const dow = d.getDay();
+      const hr = d.getHours();
+      hoursByDow[dow][hr]++;
+      daysSeen[dow].add(d.toISOString().split('T')[0]);
+    });
+    const dowDayCounts = daysSeen.map(s => s.size);
+
+    // Wait stats
+    const seated = entries.filter(e => e.seatedAt);
+    const waitTimes = seated.map(e => (new Date(e.seatedAt) - new Date(e.joinedAt)) / 60000);
+    waitTimes.sort((a, b) => a - b);
+    const avgWait = waitTimes.length > 0 ? Math.round(waitTimes.reduce((s, w) => s + w, 0) / waitTimes.length) : 0;
+    const median = waitTimes.length > 0 ? Math.round(waitTimes[Math.floor(waitTimes.length / 2)]) : 0;
+
+    const byPartySizeMap = {};
+    seated.forEach(e => {
+      if (!byPartySizeMap[e.partySize]) byPartySizeMap[e.partySize] = { total: 0, wait: 0 };
+      byPartySizeMap[e.partySize].total++;
+      byPartySizeMap[e.partySize].wait += (new Date(e.seatedAt) - new Date(e.joinedAt)) / 60000;
+    });
+    const byPartySize = Object.keys(byPartySizeMap)
+      .sort((a, b) => parseInt(a) - parseInt(b))
+      .map(ps => ({
+        partySize: parseInt(ps),
+        count: byPartySizeMap[ps].total,
+        avgWait: Math.round(byPartySizeMap[ps].wait / byPartySizeMap[ps].total),
+      }));
+
+    // Cancellation stats
+    const cancelled = entries.filter(e => e.status === 'cancelled').length;
+    const cancelStats = {
+      total: entries.length,
+      cancelled,
+      rate: entries.length > 0 ? ((cancelled / entries.length) * 100).toFixed(1) : '0.0',
+    };
+
+    res.json({
+      entries,
+      daily,
+      hoursByDow,
+      dowDayCounts,
+      waitStats: { avg: avgWait, median, byPartySize },
+      cancelStats,
+    });
+  } catch (error) {
+    console.error('Report error:', error);
+    res.status(500).json({ error: 'Failed to generate report' });
+  }
+});
+
 module.exports = router;
