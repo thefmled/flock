@@ -21,6 +21,11 @@ app.use('/api/venues', require('./routes/venues'));
 app.use('/api/queue', require('./routes/queue'));
 app.use('/api/subscription', require('./routes/subscription'));
 
-app.listen(PORT, () => {
+const http = require('http');
+const realtime = require('./lib/realtime');
+
+const server = http.createServer(app);
+realtime.init(server);
+server.listen(PORT, () => {
   console.log(`Flock server running on port ${PORT}`);
 });
