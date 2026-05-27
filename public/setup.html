@@ -38,6 +38,19 @@
       opacity: 0.6;
     }
   </style>
+
+<script>
+  (function() {
+    try {
+      const v = JSON.parse(localStorage.getItem('flock_venue') || 'null');
+      const t = (v && v.theme) ? v.theme : 'dark-premium';
+      document.addEventListener('DOMContentLoaded', function() {
+        document.body.className = 'theme-' + t;
+      });
+    } catch(e) {}
+  })();
+</script>
+  
 </head>
 <body class="theme-dark-premium">
   <main class="container" style="max-width: 560px; padding-top: 64px;">
