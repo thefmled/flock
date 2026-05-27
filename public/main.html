@@ -591,6 +591,82 @@ body[class*="theme-cloud-mint"] input[type="date"]::-webkit-calendar-picker-indi
   background: var(--error);
   color: var(--card);
 }
+
+.tour-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 9998;
+  pointer-events: none;
+}
+.tour-highlight {
+  position: relative;
+  z-index: 9999;
+  box-shadow: 0 0 0 4px var(--accent), 0 0 0 9999px rgba(0,0,0,0.7);
+  border-radius: 12px;
+  pointer-events: auto;
+}
+.tour-tooltip {
+  position: fixed;
+  background: var(--card);
+  border: 1px solid var(--accent);
+  border-radius: 14px;
+  padding: 20px 24px;
+  max-width: 320px;
+  z-index: 10000;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.5);
+  pointer-events: auto;
+}
+.tour-tooltip h3 {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 20px;
+  margin: 0 0 8px;
+  color: var(--accent);
+}
+.tour-tooltip p {
+  font-size: 14px;
+  color: var(--text);
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+.tour-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.tour-step-count { font-size: 11px; color: var(--text-muted); letter-spacing: 0.05em; }
+.tour-btn-group { display: flex; gap: 8px; }
+.tour-btn {
+  background: var(--accent);
+  color: var(--accent-text);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+.tour-btn-secondary {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-strong);
+}
+.tour-btn-secondary:hover { color: var(--text); }
+.tour-skip {
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 6px 8px;
+  text-decoration: underline;
+}
   
 </style>
 
