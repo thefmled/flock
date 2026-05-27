@@ -497,7 +497,7 @@ async function loadQueue() {
 
   list.innerHTML = data.entries.map(e => {
     const notified = !!e.notifiedAt;
-    const called = !!e.calledAt;
+    const called = !!e.calledAt || calledLocally.has(e.id);
     return `
     <div class="queue-entry" data-entry-id="${e.id}">
       <div class="queue-entry-row">
@@ -579,24 +579,25 @@ function pickReportingTime() {
   });
 }
 
+const calledLocally = new Set();
+
 async function callGuest(id, phone) {
+  calledLocally.add(id);
   // Optimistic: flip button to ✓ Called instantly
   const card = document.querySelector(`[data-entry-id="${id}"]`);
   if (card) {
-    const callBtn = card.querySelectorAll('.btn-notify')[1]; // second btn-notify = Call
+    const callBtn = card.querySelectorAll('.btn-notify')[1];
     if (callBtn) {
       callBtn.classList.add('btn-done');
       callBtn.textContent = '✓ Called';
     }
   }
   
-  // Fire backend in background
-  fetch('/api/queue/call/' + id, {
+  await fetch('/api/queue/call/' + id, {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + token },
   });
   
-  // Open dialer
   window.location.href = 'tel:' + phone;
 }
 
