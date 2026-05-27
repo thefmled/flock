@@ -76,7 +76,6 @@
       <div class="input-group" id="notesGroup" style="display:none;">
         <label>Anything to note?</label>
         <div class="seating-chips" id="notesChips"></div>
-        <textarea id="notesText" rows="2" placeholder="Anything else?" style="width:100%;margin-top:8px;padding:10px 12px;background:var(--card);border:1px solid var(--border-strong);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;resize:vertical;"></textarea>
       </div>
 
       <button class="button" onclick="joinQueue()">Join queue</button>
@@ -191,8 +190,7 @@
 
       const selectedSeating = seatingState.find(o => o.selected);
       const selectedNotes = notesState.filter(o => o.selected).map(o => o.name);
-      const freeNote = (document.getElementById('notesText')?.value || '').trim();
-      const allNotes = [...selectedNotes, freeNote].filter(Boolean).join(', ');
+      const allNotes = selectedNotes.join(', ');
       const payload = {
         guestName: document.getElementById('guestName').value.trim(),
         guestPhone: phone,
