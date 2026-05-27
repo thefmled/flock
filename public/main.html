@@ -972,17 +972,27 @@ async function loadSubscription() {
 
 async function cancelSubscription() {
   if (!confirm('Cancel your flock subscription? You\'ll keep access until the end of the current billing cycle.')) return;
-  const res = await fetch('/api/subscription/cancel', {
+  
+  // Optimistic: show cancelled state immediately
+  const content = document.getElementById('subscriptionContent');
+  const status = content.querySelector('div[style*="color:var(--success)"], div[style*="color:var(--accent)"]');
+  if (status) {
+    status.outerHTML = '<div style="color:var(--error);">Cancelled · access continues until cycle end</div>';
+  }
+  
+  // Fire backend
+  fetch('/api/subscription/cancel', {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + token },
+  }).then(res => {
+    if (res.ok) {
+      loadSubscription();
+      loadSubStatus();
+    } else {
+      alert('Failed to cancel. Please email us at rushali.c1710@gmail.com.');
+      loadSubscription();
+    }
   });
-  if (res.ok) {
-    alert('Subscription cancelled. You\'ll keep access until the end of your current cycle.');
-    loadSubscription();
-    loadSubStatus();
-  } else {
-    alert('Failed to cancel. Please email us at rushali.c1710@gmail.com.');
-  }
 }
 
 const THEMES = [
