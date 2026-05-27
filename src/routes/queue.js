@@ -170,16 +170,13 @@ router.post('/join/:slug', async (req, res) => {
     await logAudit(entry.id, 'joined', `Party of ${partySize}`);
     
     // Calculate guest's position
-    const count = await prisma.queueEntry.count({
-      where: { venueId: venue.id, status: { in: ['waiting', 'notified'] }, joinedAt: { lte: entry.joinedAt } },
+    const allWaiting = await prisma.queueEntry.findMany({
+      where: { venueId: venue.id, status: { in: ['waiting', 'notified'] } },
+      orderBy: { joinedAt: 'asc' },
     });
-    const position = count;
-    // Simple position-based estimate — full recalc happens on next dashboard poll
-    const baseFloor = venue.waitTimeBase;
-    const waitMinutes = Math.min(
-      baseFloor + venue.waitTimeIncrement * (position - 1),
-      venue.waitTimeCap
-    );
+    const position = allWaiting.findIndex(e => e.id === entry.id) + 1;
+    const waitTimes = await computeWaitTimes(allWaiting, venue);
+    const waitMinutes = waitTimes[position - 1];
 
     // Fire WhatsApp queue-joined message (non-blocking)
     const statusUrl = `${process.env.PUBLIC_URL || 'https://flock-wdz3.onrender.com'}/status.html?id=${entry.id}`;
