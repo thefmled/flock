@@ -639,6 +639,30 @@ body[class*="theme-cloud-mint"] input[type="date"]::-webkit-calendar-picker-indi
   line-height: 1.5;
   margin: 0;
 }
+
+.menu-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 8px;
+  background: var(--card-hover);
+  border-radius: 8px;
+}
+.menu-action {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  text-decoration: none;
+  font-weight: 500;
+}
+.menu-action.menu-view { color: var(--accent); border-color: var(--accent); }
+.menu-action.menu-delete:hover { color: var(--error); border-color: var(--error); }
   
 </style>
 
@@ -1220,6 +1244,7 @@ function loadSettings() {
     return { name: trimmed, selected: true };
   });
   renderNotesChips();
+  loadMenus();
 }
 
 function renderSettingsChips() {
@@ -1784,6 +1809,101 @@ function getSeverityIcon(severity) {
   if (severity === 'good') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
   if (severity === 'warning') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
+}
+
+let venueMenus = [];
+
+async function loadMenus() {
+  if (!venue) return;
+  try {
+    const res = await fetch('/api/venues/' + venue.id + '/menus', {
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    const data = await res.json();
+    venueMenus = data.menus || [];
+    renderMenuList();
+  } catch (e) {
+    console.error('Load menus failed:', e);
+  }
+}
+
+function renderMenuList() {
+  const el = document.getElementById('menuList');
+  if (!el) return;
+  if (venueMenus.length === 0) {
+    el.innerHTML = '<p class="subheading" style="font-size:12px;">No menus yet. Add your first one below.</p>';
+    return;
+  }
+  el.innerHTML = venueMenus.map(m => `
+    <div class="menu-row">
+      <input type="text" value="${escapeHtml(m.name)}" data-id="${m.id}" onblur="renameMenu('${m.id}', this.value)" style="flex:1;padding:8px 10px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:13px;">
+      <a href="${m.url}" target="_blank" class="menu-action menu-view">View</a>
+      <button class="menu-action menu-delete" onclick="deleteMenu('${m.id}', '${escapeHtml(m.name).replace(/'/g, "\\'")}')">Delete</button>
+    </div>
+  `).join('');
+}
+
+async function uploadMenu() {
+  const nameInput = document.getElementById('newMenuName');
+  const fileInput = document.getElementById('newMenuFile');
+  const errEl = document.getElementById('menuUploadError');
+  errEl.textContent = '';
+  if (!fileInput.files.length) {
+    errEl.textContent = 'Pick a PDF first.';
+    return;
+  }
+  const formData = new FormData();
+  formData.append('menu', fileInput.files[0]);
+  formData.append('name', nameInput.value.trim() || 'Menu');
+
+  const btn = document.querySelector('#settingsContent .button');
+  if (btn) { btn.disabled = true; btn.textContent = 'Uploading…'; }
+
+  try {
+    const res = await fetch('/api/venues/' + venue.id + '/menus', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token },
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
+    venueMenus.push(data.menu);
+    nameInput.value = '';
+    fileInput.value = '';
+    renderMenuList();
+  } catch (err) {
+    errEl.textContent = err.message;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Add menu'; }
+  }
+}
+
+async function renameMenu(id, newName) {
+  const trimmed = newName.trim();
+  if (!trimmed) return loadMenus();
+  const menu = venueMenus.find(m => m.id === id);
+  if (menu && menu.name === trimmed) return;
+  try {
+    await fetch('/api/venues/' + venue.id + '/menus/' + id, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ name: trimmed }),
+    });
+    if (menu) menu.name = trimmed;
+  } catch (e) { console.error(e); }
+}
+
+async function deleteMenu(id, name) {
+  if (!confirm('Delete "' + name + '"?')) return;
+  // Optimistic remove
+  venueMenus = venueMenus.filter(m => m.id !== id);
+  renderMenuList();
+  try {
+    await fetch('/api/venues/' + venue.id + '/menus/' + id, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+  } catch (e) { console.error(e); loadMenus(); }
 }
   
 loadVenue().then(() => {
