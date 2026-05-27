@@ -1093,7 +1093,11 @@ async function renderOnboarding() {
   ];
   const doneCount = steps.filter(s => s.done).length;
   const total = steps.length;
-  if (doneCount === total) { box.innerHTML = ''; return; }
+  if (doneCount === total || venue.onboardingDismissed) {
+    box.innerHTML = '';
+    if (onboardingInterval) { clearInterval(onboardingInterval); onboardingInterval = null; }
+    return;
+  }
   box.innerHTML = `
     <div class="onboarding">
       <div class="onboarding-header">
@@ -1142,7 +1146,7 @@ loadVenue().then(() => {
   renderOnboarding();
 });
 
-setInterval(renderOnboarding, 10000);
+let onboardingInterval = setInterval(renderOnboarding, 10000);
 
 setInterval(() => fetch('/health'), 5 * 60 * 1000);
 </script>
