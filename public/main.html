@@ -591,6 +591,54 @@ body[class*="theme-cloud-mint"] input[type="date"]::-webkit-calendar-picker-indi
   background: var(--error);
   color: var(--card);
 }
+
+.insight-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 14px;
+  padding: 20px 22px;
+  margin-bottom: 14px;
+}
+.insight-card.insight-good { border-left-color: var(--success); }
+.insight-card.insight-warning { border-left-color: var(--error); }
+.insight-card.insight-info { border-left-color: var(--accent); }
+
+.insight-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.insight-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.insight-icon svg { width: 100%; height: 100%; }
+.insight-card.insight-good .insight-icon { color: var(--success); }
+.insight-card.insight-warning .insight-icon { color: var(--error); }
+.insight-card.insight-info .insight-icon { color: var(--accent); }
+.insight-title {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 19px;
+  margin: 0;
+  color: var(--text);
+}
+.insight-metric {
+  font-size: 13px;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.insight-body {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0;
+}
   
 </style>
 
@@ -1699,6 +1747,50 @@ function addNoteChip() {
     settingsNotes.push({ name: name.trim(), selected: true });
     renderNotesChips();
   }
+}
+
+async function loadInsights() {
+  if (!venue) return;
+  const el = document.getElementById('insightsContent');
+  el.innerHTML = `
+    <div class="card">
+      <div style="height:20px;width:50%;background:var(--card-hover);border-radius:4px;margin-bottom:12px;"></div>
+      <div style="height:14px;width:30%;background:var(--card-hover);border-radius:4px;margin-bottom:12px;opacity:0.6;"></div>
+      <div style="height:12px;width:80%;background:var(--card-hover);border-radius:4px;opacity:0.5;"></div>
+    </div>
+    <div class="card">
+      <div style="height:20px;width:45%;background:var(--card-hover);border-radius:4px;margin-bottom:12px;"></div>
+      <div style="height:14px;width:35%;background:var(--card-hover);border-radius:4px;margin-bottom:12px;opacity:0.6;"></div>
+      <div style="height:12px;width:75%;background:var(--card-hover);border-radius:4px;opacity:0.5;"></div>
+    </div>
+  `;
+  
+  const res = await fetch('/api/queue/insights/' + venue.id, {
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
+  const data = await res.json();
+  
+  if (!data.insights || data.insights.length === 0) {
+    el.innerHTML = '<div class="card"><h3 class="heading" style="font-size:16px;">No insights yet</h3><p class="subheading">Insights will appear as you get more guests through the queue.</p></div>';
+    return;
+  }
+  
+  el.innerHTML = data.insights.map(ins => `
+    <div class="insight-card insight-${ins.severity}">
+      <div class="insight-header">
+        <div class="insight-icon">${getSeverityIcon(ins.severity)}</div>
+        <h3 class="insight-title">${escapeHtml(ins.title)}</h3>
+      </div>
+      <div class="insight-metric">${escapeHtml(ins.metric)}</div>
+      <p class="insight-body">${escapeHtml(ins.body)}</p>
+    </div>
+  `).join('');
+}
+
+function getSeverityIcon(severity) {
+  if (severity === 'good') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+  if (severity === 'warning') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
 }
   
 loadVenue().then(() => {
