@@ -29,18 +29,18 @@
 .topbar-logo .accent { color: var(--accent); }
 .topbar-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .topbar-actions button {
-  background: transparent;
-  color: var(--text);
-  border: 1px solid var(--border-strong);
-  padding: 8px 12px;
-  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-text);
+  border: none;
+  padding: 9px 16px;
+  border-radius: 999px;
   cursor: pointer;
   font-family: inherit;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.03em;
 }
-.topbar-actions button:hover { border-color: var(--accent); color: var(--accent); }
+.topbar-actions button:hover { opacity: 0.9; }
 .venue-button {
   background: transparent;
   color: var(--text);
@@ -249,7 +249,7 @@
     <div id="venueMenu" class="venue-menu" style="display:none;"></div>
   </div>
   <div class="topbar-actions">
-    <a href="/main.html" style="background:transparent;color:var(--text-muted);text-decoration:none;border:1px solid var(--border-strong);padding:8px 12px;border-radius:8px;font-family:inherit;font-size:12px;font-weight:500;letter-spacing:0.03em;">← Main</a>
+    <a href="/main.html" style="background:var(--accent);color:var(--accent-text);text-decoration:none;border:none;padding:9px 16px;border-radius:999px;font-family:inherit;font-size:12px;font-weight:600;letter-spacing:0.03em;">← Main</a>
     <button onclick="clearQueue()">Clear queue</button>
     <button onclick="showQr()">QR for guests</button>
     <button onclick="logout()">Log out</button>
@@ -421,9 +421,8 @@ async function loadVenue() {
   menu.innerHTML = data.venues.map(v =>
     '<div class="venue-menu-item" onclick="selectVenue(\'' + v.id + '\')">' +
     '<span>' + escapeHtml(v.name) + '</span>' +
-    '<span class="venue-delete" onclick="deleteVenue(\'' + v.id + '\', \'' + escapeHtml(v.name) + '\'); event.stopPropagation();">🗑</span>' +
     '</div>'
-  ).join('') + '<div class="venue-menu-item add" onclick="window.location.href=\'/setup.html\'">+ Add new venue</div>';
+  ).join('');
 }
 
 function toggleDropdown(e) {
