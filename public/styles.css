@@ -11,18 +11,17 @@ html, body {
   line-height: 1.5;
 }
 
-/* Default: Dark Premium */
-body {
+body.theme-dark-premium {
   --bg: #0f0d0a;
   --text: #f5ead4;
-  --text-muted: rgba(245, 234, 212, 0.55);
+  --text-muted: rgba(245,234,212,0.55);
   --accent: #f5a854;
   --accent-text: #0f0d0a;
-  --accent-soft: rgba(245, 168, 84, 0.12);
+  --accent-soft: rgba(245,168,84,0.12);
   --card: #1a1714;
   --card-hover: #221d18;
-  --border: rgba(245, 234, 212, 0.08);
-  --border-strong: rgba(245, 234, 212, 0.18);
+  --border: rgba(245,234,212,0.08);
+  --border-strong: rgba(245,234,212,0.18);
   --error: #e57373;
   --success: #81c784;
 }
@@ -42,7 +41,22 @@ body.theme-warm-editorial {
   --success: #4a7c4a;
 }
 
-body.theme-bold-restaurant {
+body.theme-crisp-modern {
+  --bg: #ffffff;
+  --text: #0a0a0a;
+  --text-muted: #6a6a6a;
+  --accent: #0a0a0a;
+  --accent-text: #ffffff;
+  --accent-soft: rgba(0,0,0,0.05);
+  --card: #fafafa;
+  --card-hover: #f4f4f4;
+  --border: #e8e8e8;
+  --border-strong: #d0d0d0;
+  --error: #c4422a;
+  --success: #2e7d32;
+}
+
+body.theme-forest-tavern {
   --bg: #1a3d2e;
   --text: #f5ead4;
   --text-muted: rgba(245,234,212,0.7);
@@ -57,17 +71,122 @@ body.theme-bold-restaurant {
   --success: #a8d5a8;
 }
 
-body.theme-crisp-modern {
-  --bg: #ffffff;
-  --text: #0a0a0a;
-  --text-muted: #6a6a6a;
-  --accent: #0a0a0a;
-  --accent-text: #ffffff;
-  --accent-soft: rgba(0,0,0,0.05);
-  --card: #fafafa;
-  --card-hover: #f4f4f4;
-  --border: #e8e8e8;
-  --border-strong: #d0d0d0;
+body.theme-terracotta-bistro {
+  --bg: #faf3eb;
+  --text: #3d2418;
+  --text-muted: #8a6a55;
+  --accent: #c4633a;
+  --accent-text: #faf3eb;
+  --accent-soft: rgba(196,99,58,0.08);
+  --card: #ffffff;
+  --card-hover: #fbf6ee;
+  --border: #ead9c4;
+  --border-strong: #d8c1a8;
+  --error: #c4422a;
+  --success: #5a8a4a;
+}
+
+body.theme-midnight-indigo {
+  --bg: #0e1230;
+  --text: #ebe2c9;
+  --text-muted: rgba(235,226,201,0.65);
+  --accent: #d4af6a;
+  --accent-text: #0e1230;
+  --accent-soft: rgba(212,175,106,0.08);
+  --card: #181d44;
+  --card-hover: #1f2654;
+  --border: rgba(235,226,201,0.1);
+  --border-strong: rgba(235,226,201,0.22);
+  --error: #f5a3a3;
+  --success: #a8d5a8;
+}
+
+body.theme-sun-sand {
+  --bg: #fff7e6;
+  --text: #4a3520;
+  --text-muted: #8a6a55;
+  --accent: #e8a64a;
+  --accent-text: #4a3520;
+  --accent-soft: rgba(232,166,74,0.1);
+  --card: #ffffff;
+  --card-hover: #fff3d6;
+  --border: #f1dfb8;
+  --border-strong: #e0c896;
+  --error: #c4422a;
+  --success: #6a8a4a;
+}
+
+body.theme-bombay-blue {
+  --bg: #0a3a4a;
+  --text: #f0e4c4;
+  --text-muted: rgba(240,228,196,0.7);
+  --accent: #d4a548;
+  --accent-text: #0a3a4a;
+  --accent-soft: rgba(212,165,72,0.08);
+  --card: #134353;
+  --card-hover: #1a4f60;
+  --border: rgba(240,228,196,0.1);
+  --border-strong: rgba(240,228,196,0.22);
+  --error: #f5a3a3;
+  --success: #a8d5a8;
+}
+
+body.theme-spice-market {
+  --bg: #faecdc;
+  --text: #5a1e10;
+  --text-muted: #8a4a35;
+  --accent: #b8421a;
+  --accent-text: #faecdc;
+  --accent-soft: rgba(184,66,26,0.08);
+  --card: #ffffff;
+  --card-hover: #fbf2e6;
+  --border: #ead0b8;
+  --border-strong: #d8b89a;
+  --error: #8a1a0a;
+  --success: #5a7a3a;
+}
+
+body.theme-charcoal-linen {
+  --bg: #f5f1ea;
+  --text: #2a2826;
+  --text-muted: #6a6864;
+  --accent: #3a3835;
+  --accent-text: #f5f1ea;
+  --accent-soft: rgba(58,56,53,0.06);
+  --card: #ffffff;
+  --card-hover: #faf6ef;
+  --border: #e0dcd2;
+  --border-strong: #cfcabe;
+  --error: #c4422a;
+  --success: #4a7c4a;
+}
+
+body.theme-brick-birch {
+  --bg: #fbf5e6;
+  --text: #4a1a12;
+  --text-muted: #8a5a4a;
+  --accent: #a8341e;
+  --accent-text: #fbf5e6;
+  --accent-soft: rgba(168,52,30,0.07);
+  --card: #ffffff;
+  --card-hover: #fbf0d8;
+  --border: #ead8b8;
+  --border-strong: #d8c094;
+  --error: #8a1a0a;
+  --success: #5a7a3a;
+}
+
+body.theme-cloud-mint {
+  --bg: #f0f7f1;
+  --text: #1a3d2a;
+  --text-muted: #5a7a6a;
+  --accent: #4a8a6a;
+  --accent-text: #f0f7f1;
+  --accent-soft: rgba(74,138,106,0.08);
+  --card: #ffffff;
+  --card-hover: #e8f3ea;
+  --border: #d4e8d8;
+  --border-strong: #b8d4be;
   --error: #c4422a;
   --success: #2e7d32;
 }
