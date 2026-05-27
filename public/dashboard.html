@@ -955,21 +955,6 @@ async function saveSettings() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to save');
         venue = data.venue;
-
-        // Upload menu if a new file was selected
-        const fileInput = document.getElementById('settingsMenuFile');
-        if (fileInput.files.length > 0) {
-          const formData = new FormData();
-          formData.append('menu', fileInput.files[0]);
-          const uploadRes = await fetch('/api/venues/' + venue.id + '/menu', {
-            method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + token },
-            body: formData,
-          });
-          const uploadData = await uploadRes.json();
-          if (uploadRes.ok) venue = uploadData.venue;
-        }
-
         localStorage.setItem('flock_venue', JSON.stringify(venue));
         okEl.textContent = 'Saved.';
         loadVenue();
