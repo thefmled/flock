@@ -242,7 +242,7 @@ router.get('/status/:entryId', async (req, res) => {
   try {
     const entry = await prisma.queueEntry.findUnique({
       where: { id: req.params.entryId },
-      include: { venue: true },
+      include: { venue: { include: { menus: { orderBy: { createdAt: 'asc' } } } } },
     });
     if (!entry) return res.status(404).json({ error: 'Entry not found' });
 
