@@ -267,30 +267,30 @@ body { margin: 0; }
 .theme-card-desc { color: var(--text-muted); font-size: 12px; }
 .theme-card-current { color: var(--accent); font-size: 12px; font-weight: 500; margin-top: 8px; }
 
-/* Theme-specific mockup styles */
+/* Theme-specific mockup styles — synced with styles.css */
 .theme-preview.theme-dark-premium .theme-preview-frame { background: #0f0d0a; color: #f5ead4; }
 .theme-preview.theme-dark-premium .theme-accent { color: #f5a854; }
 .theme-preview.theme-dark-premium .theme-mock-card { background: rgba(245,168,84,0.08); border: 1px solid rgba(245,168,84,0.18); }
 .theme-preview.theme-dark-premium .theme-mock-wait { color: #f5a854; }
 .theme-preview.theme-dark-premium .theme-mock-btn { background: #f5a854; color: #0f0d0a; }
 
-.theme-preview.theme-warm-editorial .theme-preview-frame { background: #f4ecdb; color: #2b1a10; }
-.theme-preview.theme-warm-editorial .theme-accent { color: #c44d2b; }
-.theme-preview.theme-warm-editorial .theme-mock-card { background: rgba(196,77,43,0.06); border: 1px solid rgba(196,77,43,0.2); }
-.theme-preview.theme-warm-editorial .theme-mock-wait { color: #c44d2b; }
-.theme-preview.theme-warm-editorial .theme-mock-btn { background: #c44d2b; color: #f4ecdb; }
+.theme-preview.theme-warm-editorial .theme-preview-frame { background: #f7f3ed; color: #2a2a2a; }
+.theme-preview.theme-warm-editorial .theme-accent { color: #2a2a2a; }
+.theme-preview.theme-warm-editorial .theme-mock-card { background: #ffffff; border: 1px solid #e0d9cf; }
+.theme-preview.theme-warm-editorial .theme-mock-wait { color: #2a2a2a; }
+.theme-preview.theme-warm-editorial .theme-mock-btn { background: #2a2a2a; color: #f7f3ed; }
 
-.theme-preview.theme-bold-restaurant .theme-preview-frame { background: #0a0a0a; color: #f5f5f5; }
-.theme-preview.theme-bold-restaurant .theme-accent { color: #e63946; }
-.theme-preview.theme-bold-restaurant .theme-mock-card { background: rgba(230,57,70,0.08); border: 1px solid rgba(230,57,70,0.25); }
-.theme-preview.theme-bold-restaurant .theme-mock-wait { color: #e63946; }
-.theme-preview.theme-bold-restaurant .theme-mock-btn { background: #e63946; color: #fff; }
+.theme-preview.theme-bold-restaurant .theme-preview-frame { background: #1a3d2e; color: #f5ead4; }
+.theme-preview.theme-bold-restaurant .theme-accent { color: #f5ead4; }
+.theme-preview.theme-bold-restaurant .theme-mock-card { background: #234538; border: 1px solid rgba(245,234,212,0.25); }
+.theme-preview.theme-bold-restaurant .theme-mock-wait { color: #f5ead4; }
+.theme-preview.theme-bold-restaurant .theme-mock-btn { background: #f5ead4; color: #1a3d2e; }
 
-.theme-preview.theme-crisp-modern .theme-preview-frame { background: #ffffff; color: #1a1a1a; }
-.theme-preview.theme-crisp-modern .theme-accent { color: #2563eb; }
-.theme-preview.theme-crisp-modern .theme-mock-card { background: rgba(37,99,235,0.05); border: 1px solid rgba(37,99,235,0.2); }
-.theme-preview.theme-crisp-modern .theme-mock-wait { color: #2563eb; }
-.theme-preview.theme-crisp-modern .theme-mock-btn { background: #2563eb; color: #fff; }  
+.theme-preview.theme-crisp-modern .theme-preview-frame { background: #ffffff; color: #0a0a0a; }
+.theme-preview.theme-crisp-modern .theme-accent { color: #0a0a0a; }
+.theme-preview.theme-crisp-modern .theme-mock-card { background: #fafafa; border: 1px solid #e8e8e8; }
+.theme-preview.theme-crisp-modern .theme-mock-wait { color: #0a0a0a; }
+.theme-preview.theme-crisp-modern .theme-mock-btn { background: #0a0a0a; color: #ffffff; }  
 
 .onboarding {
   background: var(--card);
@@ -887,9 +887,9 @@ async function cancelSubscription() {
 
 const THEMES = [
   { id: 'dark-premium', name: 'Dark Premium', desc: 'Warm cream on near-black, amber accents.' },
-  { id: 'warm-editorial', name: 'Warm Editorial', desc: 'Cream paper feel with deep terracotta.' },
-  { id: 'bold-restaurant', name: 'Bold Restaurant', desc: 'High-contrast black & red.' },
-  { id: 'crisp-modern', name: 'Crisp Modern', desc: 'Clean light theme with sharp accents.' },
+  { id: 'warm-editorial', name: 'Warm Editorial', desc: 'Cream paper feel with dark accents.' },
+  { id: 'bold-restaurant', name: 'Bold Restaurant', desc: 'Deep green with cream accents.' },
+  { id: 'crisp-modern', name: 'Crisp Modern', desc: 'Pure white with sharp black.' },
 ];
 
 function loadThemesSettings() {
