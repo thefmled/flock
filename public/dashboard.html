@@ -493,10 +493,10 @@ async function loadQueue() {
   if (pendingActions.size > 0) return;
   
   // Show skeleton on first load
-  const list = document.getElementById('queueList');
-  if (list.innerHTML === '' || list.querySelector('.skeleton-card')) {
-    if (list.innerHTML === '') {
-      list.innerHTML = `
+  const listEl = document.getElementById('queueList');
+  if (listEl.innerHTML === '' || listEl.querySelector('.skeleton-card')) {
+    if (listEl.innerHTML === '') {
+      listEl.innerHTML = `
         <div class="skeleton-card" style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid var(--border);">
           <div style="height:18px;width:55%;background:var(--card-hover);border-radius:4px;margin-bottom:8px;"></div>
           <div style="height:12px;width:35%;background:var(--card-hover);border-radius:4px;opacity:0.6;"></div>
@@ -519,13 +519,13 @@ async function loadQueue() {
   data.entries = (data.entries || []).filter(e => !hiddenEntries.has(e.id));
   
   if (!data.entries || data.entries.length === 0) {
-    list.innerHTML = '';
+    listE1.innerHTML = '';
     empty.style.display = 'block';
     return;
   }
   empty.style.display = 'none';
 
-  list.innerHTML = data.entries.map(e => {
+  listE1.innerHTML = data.entries.map(e => {
     const notified = !!e.notifiedAt || notifiedLocally.has(e.id);
     const called = !!e.calledAt || calledLocally.has(e.id);
     return `
