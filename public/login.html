@@ -97,10 +97,20 @@
             headers: { 'Authorization': 'Bearer ' + data.token },
           });
           const statusData = await statusRes.json();
-          if (!statusData.hasSubscription) {
+          // No active subscription OR cancelled → subscribe again
+          if (!statusData.hasSubscription || statusData.status === 'cancelled' || statusData.status === 'expired') {
             window.location.href = '/subscribe.html';
           } else {
-            window.location.href = '/chooser.html';
+            // Check if they have any venues
+            const venuesRes = await fetch('/api/venues', {
+              headers: { 'Authorization': 'Bearer ' + data.token },
+            });
+            const venuesData = await venuesRes.json();
+            if (!venuesData.venues || venuesData.venues.length === 0) {
+              window.location.href = '/setup.html';
+            } else {
+              window.location.href = '/chooser.html';
+            }
           }
         }
       } catch (err) {
