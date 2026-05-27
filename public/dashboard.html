@@ -259,6 +259,7 @@
 <div class="tabs">
   <button class="tab active" data-tab="live" onclick="switchTab('live')">Live queue</button>
   <button class="tab" data-tab="history" onclick="switchTab('history')">History</button>
+  <button class="tab" data-tab="settings" onclick="switchTab('settings')">Settings</button>
 </div>
 
 <div class="tab-content" id="liveTab">
@@ -627,14 +628,13 @@ async function cancelGuest(id) {
 }
 
 function switchTab(tab) {
-  ['live','history','settings','analytics'].forEach(t => {
+  ['live','history','settings'].forEach(t => {
     document.getElementById(t + 'Tab').style.display = (t === tab) ? 'block' : 'none';
     const btn = document.querySelector('[data-tab="' + t + '"]');
     if (btn) btn.classList.toggle('active', t === tab);
   });
   if (tab === 'history') loadHistory();
   if (tab === 'settings') loadSettings();
-  if (tab === 'analytics') loadAnalytics();
 }
 
 async function loadHistory() {
