@@ -6,7 +6,7 @@
   <title>Join the queue — flock</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
-<body class="theme-dark-premium">
+<body>
   <main class="container" style="max-width: 480px; padding-top: 48px;">
     <h1 class="logo" style="font-size: 48px; text-align: center; margin-bottom: 8px;">fl<span class="accent">o</span>ck</h1>
     <p style="text-align:center;color:var(--text-muted);font-size:14px;margin-bottom:4px;" id="venueLabel"></p>
@@ -77,6 +77,7 @@
         const res = await fetch('/api/venues/by-slug/' + slug);
         const data = await res.json();
         if (data.venue) {
+          document.body.className = 'theme-' + (data.venue.theme || 'dark-premium');
           sessionStorage.setItem('flock_venue_data', JSON.stringify(data.venue));
           document.getElementById('venueLabel').textContent = data.venue.name;
           document.getElementById('venueAddress').textContent = data.venue.address || '';
