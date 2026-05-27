@@ -872,6 +872,43 @@ async function selectTheme(themeId) {
     loadThemesSettings();
   }
 }
+
+function loadQrSettings() {
+  if (!venue) return;
+  const url = window.location.origin + '/queue.html?venue=' + venue.slug;
+  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=' + encodeURIComponent(url);
+  document.getElementById('settingsContent').innerHTML = `
+    <p class="subheading" style="margin-bottom:20px;">Print this QR and place it at your host stand. Guests scan it to join the queue.</p>
+    <div class="card" style="text-align:center;padding:32px;">
+      <img src="${qrUrl}" alt="QR code" style="width:280px;height:280px;background:white;padding:16px;border-radius:12px;" id="qrImage" />
+      <div style="font-size:13px;color:var(--text-muted);margin-top:16px;word-break:break-all;">${url}</div>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:24px;flex-wrap:wrap;">
+        <button class="button" onclick="downloadQr()" style="max-width:200px;">Download PNG</button>
+        <button class="button" onclick="window.print()" style="max-width:200px;background:transparent;color:var(--text);border:1px solid var(--border-strong);">Print</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3 class="heading" style="font-size:16px;">Tips</h3>
+      <ul style="color:var(--text-muted);font-size:14px;line-height:1.8;padding-left:20px;margin:8px 0;">
+        <li>Print on A5 or larger so guests can scan from 2-3 feet away.</li>
+        <li>Laminate it — host stands get spills.</li>
+        <li>Add "Scan to join the queue" text below the QR for clarity.</li>
+        <li>Keep one near the door, another at the host stand.</li>
+      </ul>
+    </div>
+  `;
+}
+
+function downloadQr() {
+  if (!venue) return;
+  const url = window.location.origin + '/queue.html?venue=' + venue.slug;
+  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=800x800&data=' + encodeURIComponent(url);
+  const a = document.createElement('a');
+  a.href = qrUrl;
+  a.download = 'flock-qr-' + venue.slug + '.png';
+  a.target = '_blank';
+  a.click();
+}  
   
 loadVenue().then(() => {
   loadAnalytics();
