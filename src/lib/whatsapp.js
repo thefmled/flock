@@ -17,13 +17,8 @@ async function sendTemplate(toPhone, templateName, params, buttonParams = null) 
   try {
     const template = {
       id: templateName,
-      params,
+      params: buttonParams ? [...params, ...buttonParams] : params,
     };
-    if (buttonParams) {
-      template.components = [
-        { type: 'button', sub_type: 'url', index: '0', parameters: buttonParams.map(p => ({ type: 'text', text: p })) },
-      ];
-    }
 
     const body = new URLSearchParams({
       channel: 'whatsapp',
