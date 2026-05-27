@@ -21,7 +21,7 @@
 .notified-banner { background: var(--accent); color: var(--accent-text); padding: 16px; border-radius: 12px; text-align: center; font-weight: 500; margin-bottom: 24px; }
 </style>
 </head>
-<body class="theme-dark-premium">
+<body>
 <main class="container" style="max-width: 480px; padding-top: 32px;">
   <h1 class="logo" style="font-size: 48px; text-align: center; margin-bottom: 8px;">fl<span class="accent">o</span>ck</h1>
   <p style="text-align:center;color:var(--text-muted);font-size:13px;margin-bottom:32px;" id="venueLabel"></p>
@@ -76,6 +76,9 @@ async function loadStatus() {
   try {
     const res = await fetch('/api/queue/status/' + entryId);
     const data = await res.json();
+    if (data.entry && data.entry.venue) {
+      document.body.className = 'theme-' + (data.entry.venue.theme || 'dark-premium');
+    }
     if (!res.ok) throw new Error(data.error);
 
     venue = data.entry.venue;
