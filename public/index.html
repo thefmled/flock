@@ -343,6 +343,46 @@ footer a:hover { color: var(--text); }
   line-height: 1.7;
 }
 .faq-item.open .faq-answer { display: block; }
+
+.compare-wrap {
+  max-width: 880px;
+  margin: 32px auto 0;
+  overflow-x: auto;
+}
+.compare {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 600px;
+}
+.compare th, .compare td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.compare th {
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.compare th.flock-col {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 8px 8px 0 0;
+}
+.compare td.flock-col {
+  background: var(--accent-soft);
+  color: var(--text);
+  font-weight: 500;
+}
+.compare td.flock-col:last-of-type {
+  border-radius: 0 0 8px 8px;
+}
+.compare td.feature { color: var(--text); font-weight: 500; }
+.compare td.miss { color: var(--text-muted); }
+.compare td.win { color: var(--accent); }
   
 </style>
 </head>
@@ -505,6 +545,75 @@ footer a:hover { color: var(--text); }
     </div>
     <a href="/login.html" class="cta" style="width:100%;display:inline-block;">Start 14-day free trial</a>
   </div>
+
+  <div class="compare-wrap">
+    <table class="compare">
+      <thead>
+        <tr>
+          <th></th>
+          <th>The old way</th>
+          <th class="flock-col">flock</th>
+          <th>Other queue tools</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="feature">Monthly cost per venue</td>
+          <td class="miss">Free (but costs you time)</td>
+          <td class="flock-col">₹999</td>
+          <td class="miss">₹3,000+</td>
+        </tr>
+        <tr>
+          <td class="feature">Setup time</td>
+          <td class="miss">None — you just yell names</td>
+          <td class="flock-col">Under 10 minutes</td>
+          <td class="miss">Days, often a salesperson</td>
+        </tr>
+        <tr>
+          <td class="feature">Real-time queue updates</td>
+          <td class="miss">No</td>
+          <td class="flock-col win">✓</td>
+          <td class="flock-col win">✓</td>
+        </tr>
+        <tr>
+          <td class="feature">WhatsApp notifications</td>
+          <td class="miss">No</td>
+          <td class="flock-col win">✓</td>
+          <td class="miss">Sometimes (extra cost)</td>
+        </tr>
+        <tr>
+          <td class="feature">Mobile-first staff dashboard</td>
+          <td class="miss">No</td>
+          <td class="flock-col win">✓</td>
+          <td class="miss">Desktop-heavy</td>
+        </tr>
+        <tr>
+          <td class="feature">Built-in analytics</td>
+          <td class="miss">No</td>
+          <td class="flock-col win">✓</td>
+          <td class="miss">Bolt-on or paid extra</td>
+        </tr>
+        <tr>
+          <td class="feature">Pricing model</td>
+          <td class="miss">—</td>
+          <td class="flock-col">Flat per venue</td>
+          <td class="miss">Per staff or per booking</td>
+        </tr>
+        <tr>
+          <td class="feature">Contract / lock-in</td>
+          <td class="miss">—</td>
+          <td class="flock-col">None — cancel anytime</td>
+          <td class="miss">Annual contracts common</td>
+        </tr>
+        <tr>
+          <td class="feature">Built for India</td>
+          <td class="miss">—</td>
+          <td class="flock-col win">✓</td>
+          <td class="miss">Mostly US/global</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </section>
 
 <section class="section">
@@ -597,7 +706,10 @@ footer a:hover { color: var(--text); }
     <a href="#features">Features</a>
     <a href="#how">How it works</a>
     <a href="#pricing">Pricing</a>
+    <a href="#faq">FAQs</a>
     <a href="mailto:rushali.c1710@gmail.com">Contact</a>
+    <a href="/privacy.html">Privacy</a>
+    <a href="/terms.html">Terms</a>
   </div>
   <div style="opacity:0.6;">© 2026 flock. Made in Bengaluru.</div>
 </footer>
