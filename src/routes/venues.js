@@ -226,4 +226,95 @@ router.post('/:id/dismiss-onboarding', requireAuth, requireActiveSubscription, a
   }
 });
 
+function genId() {
+  return 'm_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+}
+
+// List menus for a venue
+router.get('/:id/menus', requireAuth, requireActiveSubscription, async (req, res) => {
+  try {
+    const venue = await prisma.venue.findFirst({
+      where: { id: req.params.id, ownerId: req.ownerId },
+    });
+    if (!venue) return res.status(404).json({ error: 'Venue not found' });
+    const menus = await prisma.menu.findMany({
+      where: { venueId: venue.id },
+      orderBy: { createdAt: 'asc' },
+    });
+    res.json({ menus });
+  } catch (error) {
+    console.error('List menus error:', error);
+    res.status(500).json({ error: 'Failed to load menus' });
+  }
+});
+
+// Upload a new menu PDF
+router.post('/:id/menus', requireAuth, requireActiveSubscription, upload.single('menu'), async (req, res) => {
+  try {
+    const venue = await prisma.venue.findFirst({
+      where: { id: req.params.id, ownerId: req.ownerId },
+    });
+    if (!venue) return res.status(404).json({ error: 'Venue not found' });
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+    const name = (req.body.name || '').trim() || 'Menu';
+    const filename = `${venue.slug}-${Date.now()}.pdf`;
+    const { error } = await supabase.storage
+      .from('menus')
+      .upload(filename, req.file.buffer, { contentType: 'application/pdf', upsert: true });
+    if (error) throw error;
+    const { data: publicData } = supabase.storage.from('menus').getPublicUrl(filename);
+
+    const menu = await prisma.menu.create({
+      data: {
+        id: genId(),
+        venueId: venue.id,
+        name,
+        url: publicData.publicUrl,
+      },
+    });
+    res.json({ success: true, menu });
+  } catch (error) {
+    console.error('Menu upload error:', error);
+    if (error.code === 'LIMIT_FILE_SIZE') return res.status(400).json({ error: 'File too large. Max 20 MB.' });
+    if (error.message === 'Only PDF files allowed') return res.status(400).json({ error: 'Only PDF files are allowed.' });
+    res.status(500).json({ error: 'Failed to upload menu' });
+  }
+});
+
+// Rename a menu
+router.patch('/:venueId/menus/:menuId', requireAuth, requireActiveSubscription, async (req, res) => {
+  try {
+    const venue = await prisma.venue.findFirst({
+      where: { id: req.params.venueId, ownerId: req.ownerId },
+    });
+    if (!venue) return res.status(404).json({ error: 'Venue not found' });
+    const name = (req.body.name || '').trim();
+    if (!name) return res.status(400).json({ error: 'Name required' });
+    const menu = await prisma.menu.update({
+      where: { id: req.params.menuId },
+      data: { name },
+    });
+    res.json({ success: true, menu });
+  } catch (error) {
+    console.error('Menu rename error:', error);
+    res.status(500).json({ error: 'Failed to rename menu' });
+  }
+});
+
+// Delete a menu
+router.delete('/:venueId/menus/:menuId', requireAuth, requireActiveSubscription, async (req, res) => {
+  try {
+    const venue = await prisma.venue.findFirst({
+      where: { id: req.params.venueId, ownerId: req.ownerId },
+    });
+    if (!venue) return res.status(404).json({ error: 'Venue not found' });
+    await prisma.menu.delete({ where: { id: req.params.menuId } });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Menu delete error:', error);
+    res.status(500).json({ error: 'Failed to delete menu' });
+  }
+});
+
 module.exports = router;
