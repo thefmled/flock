@@ -402,6 +402,21 @@ body { margin: 0; }
   font-weight: 500;
 }
 .step-action:hover { opacity: 0.8; }
+
+.csv-btn {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--border-strong);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+.csv-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
   
 </style>
 
@@ -479,16 +494,26 @@ body { margin: 0; }
       <div id="rangeLabel" style="text-align:right;font-size:11px;color:var(--text-muted);margin-bottom:12px;letter-spacing:0.05em;text-transform:uppercase;"></div>
 
       <div class="card">
-        <h2 class="heading" id="dailyChartTitle">Guest parties</h2>
-        <p class="subheading" id="dailyChartSub">Past 7 days</p>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <h2 class="heading" id="dailyChartTitle">Guest parties</h2>
+            <p class="subheading" id="dailyChartSub">Past 7 days</p>
+          </div>
+          <button class="csv-btn" onclick="downloadAnalyticsCsv('daily')">CSV ↓</button>
+        </div>
         <div style="overflow-x:auto;">
           <canvas id="dailyChart" style="min-width:600px;height:280px;"></canvas>
         </div>
       </div>
 
       <div class="card">
-        <h2 class="heading">Busiest hours</h2>
-        <p class="subheading">Average guest parties per hour, by day of week</p>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <h2 class="heading">Busiest hours</h2>
+            <p class="subheading">Average guest parties per hour, by day of week</p>
+          </div>
+          <button class="csv-btn" onclick="downloadAnalyticsCsv('hours')">CSV ↓</button>
+        </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0;" id="dowFilterChips">
           <button class="chip selected" data-dow="all" onclick="toggleDow('all')">All</button>
           <button class="chip selected" data-dow="1" onclick="toggleDow('1')">Mon</button>
@@ -503,12 +528,16 @@ body { margin: 0; }
       </div>
 
       <div class="card">
-        <h2 class="heading">Average party size by day</h2>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <h2 class="heading">Average party size by day</h2>
+          </div>
+          <button class="csv-btn" onclick="downloadAnalyticsCsv('party')">CSV ↓</button>
+        </div>
         <div style="overflow-x:auto;">
           <canvas id="partyChart" style="min-width:600px;height:240px;"></canvas>
         </div>
       </div>
-    </div>
 
     <div class="main-tab-content" id="settingsSection" style="display:none;">
       <h2 class="heading" style="font-size:24px;">Settings</h2>
@@ -1224,6 +1253,46 @@ function getRangeDateLabel() {
     end = new Date(now); start = new Date(now); start.setDate(start.getDate() - 30);
   }
   return fmt(start) + ' → ' + fmt(end);
+}
+
+function downloadAnalyticsCsv(type) {
+  if (!analyticsData) return;
+  let rows = [];
+  let filename = '';
+  
+  if (type === 'daily') {
+    rows.push(['Date', 'Day', 'Guest parties', 'Avg party size']);
+    analyticsData.daily.forEach(d => {
+      rows.push([d.date, DAY_NAMES[d.dayOfWeek], d.count, d.avgPartySize]);
+    });
+    filename = 'flock-' + venue.slug + '-guest-parties-' + currentRange + '.csv';
+  } else if (type === 'hours') {
+    rows.push(['Hour', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
+    for (let h = 0; h < 24; h++) {
+      const row = [h + ':00'];
+      [1,2,3,4,5,6,0].forEach(dow => {
+        const dayCount = analyticsData.dowDayCounts[dow] || 0;
+        const partyCount = analyticsData.hoursByDow[dow]?.[h] || 0;
+        row.push(dayCount > 0 ? (partyCount / dayCount).toFixed(2) : '0');
+      });
+      rows.push(row);
+    }
+    filename = 'flock-' + venue.slug + '-busiest-hours-' + currentRange + '.csv';
+  } else if (type === 'party') {
+    rows.push(['Date', 'Day', 'Avg party size', 'Guest parties']);
+    analyticsData.daily.forEach(d => {
+      rows.push([d.date, DAY_NAMES[d.dayOfWeek], d.avgPartySize, d.count]);
+    });
+    filename = 'flock-' + venue.slug + '-avg-party-size-' + currentRange + '.csv';
+  }
+  
+  const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
 }
   
 loadVenue().then(() => {
