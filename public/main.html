@@ -1017,10 +1017,19 @@ function loadSettings() {
   document.getElementById('settingsIncrement').value = venue.waitTimeIncrement;
   document.getElementById('settingsCap').value = venue.waitTimeCap;
   const opts = (venue.seatingOptions || 'Indoor,Outdoor,No preference').split(',');
-  settingsSeating = opts.map(o => ({ name: o.trim(), selected: true }));
+  settingsSeating = opts.map(o => {
+    const trimmed = o.trim();
+    if (trimmed.startsWith('_')) return { name: trimmed.slice(1), selected: false };
+    return { name: trimmed, selected: true };
+  });
   renderSettingsChips();
+
   const noteOpts = (venue.noteOptions || 'Birthday,Anniversary,First visit,Allergies,Kids menu,Wheelchair access').split(',');
-  settingsNotes = noteOpts.map(o => ({ name: o.trim(), selected: true }));
+  settingsNotes = noteOpts.map(o => {
+    const trimmed = o.trim();
+    if (trimmed.startsWith('_')) return { name: trimmed.slice(1), selected: false };
+    return { name: trimmed, selected: true };
+  });
   renderNotesChips();
 }
 
@@ -1061,8 +1070,8 @@ async function saveSettings() {
     address: document.getElementById('settingsAddress').value.trim(),
     floorManagerName: document.getElementById('settingsManager').value.trim(),
     googleReviewsUrl: document.getElementById('settingsReviews').value.trim() || null,
-    seatingOptions: settingsSeating.filter(o => o.selected).map(o => o.name).join(',') || 'Indoor,Outdoor,No preference',
-    noteOptions: settingsNotes.filter(o => o.selected).map(o => o.name).join(',') || '',
+    seatingOptions: settingsSeating.map(o => (o.selected ? '' : '_') + o.name).join(',') || 'Indoor,Outdoor,No preference',
+    noteOptions: settingsNotes.map(o => (o.selected ? '' : '_') + o.name).join(',') || '',
     waitTimeBase: parseInt(document.getElementById('settingsBase').value) || 8,
     waitTimeIncrement: parseInt(document.getElementById('settingsIncrement').value) || 3,
     waitTimeCap: parseInt(document.getElementById('settingsCap').value) || 60,
