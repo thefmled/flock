@@ -727,6 +727,7 @@ function hexToRgba(hex, alpha) {
 
 async function loadAnalytics() {
   if (!venue) return;
+  document.getElementById('rangeLabel').textContent = getRangeDateLabel();
   
   // Show skeleton on charts while loading (only if no chart exists yet)
   if (!dailyChart) {
