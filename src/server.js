@@ -18,6 +18,24 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'flock', timestamp: new Date().toISOString() });
 });
 
+// Request logging middleware
+app.use((req, res, next) => {
+  const reqId = Math.random().toString(36).slice(2, 8);
+  const start = Date.now();
+  req.reqId = reqId;
+  
+  res.on('finish', () => {
+    const ms = Date.now() - start;
+    if (res.statusCode >= 400) {
+      console.error(`[${reqId}] ${req.method} ${req.path} ${res.statusCode} ${ms}ms`);
+    } else if (req.path.startsWith('/api')) {
+      console.log(`[${reqId}] ${req.method} ${req.path} ${res.statusCode} ${ms}ms`);
+    }
+  });
+  
+  next();
+});
+
 // Routes (we'll add these as we build)
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/venues', require('./routes/venues'));
