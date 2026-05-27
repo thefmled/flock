@@ -931,7 +931,20 @@ async function showAudit(entryId, guestName) {
   if (cached && cached.auditLogs) {
     logs = cached.auditLogs;
   } else {
-    content.innerHTML = '<p style="color:var(--text-muted);">Loading…</p>';
+    content.innerHTML = `
+      <div style="padding:12px 0;border-bottom:1px solid var(--border);">
+        <div style="height:14px;width:60%;background:var(--card-hover);border-radius:4px;margin-bottom:6px;"></div>
+        <div style="height:11px;width:40%;background:var(--card-hover);border-radius:4px;opacity:0.6;"></div>
+      </div>
+      <div style="padding:12px 0;border-bottom:1px solid var(--border);">
+        <div style="height:14px;width:50%;background:var(--card-hover);border-radius:4px;margin-bottom:6px;"></div>
+        <div style="height:11px;width:35%;background:var(--card-hover);border-radius:4px;opacity:0.6;"></div>
+      </div>
+      <div style="padding:12px 0;">
+        <div style="height:14px;width:55%;background:var(--card-hover);border-radius:4px;margin-bottom:6px;"></div>
+        <div style="height:11px;width:30%;background:var(--card-hover);border-radius:4px;opacity:0.6;"></div>
+      </div>
+    `;  
     const res = await fetch('/api/queue/audit/' + entryId, {
       headers: { 'Authorization': 'Bearer ' + token },
     });
