@@ -73,9 +73,10 @@
         <div class="seating-chips" id="seatingChips"></div>
       </div>
 
-      <div class="input-group">
-        <label>Any other notes? (optional)</label>
+      <div class="input-group" id="notesGroup" style="display:none;">
+        <label>Anything to note?</label>
         <div class="seating-chips" id="notesChips"></div>
+        <textarea id="notesText" rows="2" placeholder="Anything else?" style="width:100%;margin-top:8px;padding:10px 12px;background:var(--card);border:1px solid var(--border-strong);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;resize:vertical;"></textarea>
       </div>
 
       <button class="button" onclick="joinQueue()">Join queue</button>
@@ -91,6 +92,7 @@
     }
 
     let seatingState = [];
+    let notesState = [];
     let notesState = [
       { name: "I'm lactose intolerant", selected: false },
       { name: "Prefer Jain food", selected: false },
@@ -116,6 +118,11 @@
           const sorted = ['No preference', ...opts.map(o => o.trim()).filter(o => o !== 'No preference')];
           seatingState = sorted.map(o => ({ name: o, selected: o === 'No preference' }));
           renderSeatingChips();
+
+          // Notes options
+          const noteOpts = (data.venue.noteOptions || '').split(',').map(o => o.trim()).filter(Boolean);
+          notesState = noteOpts.map(o => ({ name: o, selected: false }));
+          document.getElementById('notesGroup').style.display = noteOpts.length > 0 ? 'block' : 'none';
           renderNotesChips();
         }
       } catch (e) {}
@@ -130,6 +137,21 @@
       `).join('');
     }
 
+    function renderNotesChips() {
+      const c = document.getElementById('notesChips');
+      if (!c) return;
+      c.innerHTML = notesState.map((opt, i) => `
+        <button type="button" class="chip ${opt.selected ? 'selected' : ''}" onclick="toggleNote(${i})">
+          ${escapeHtml(opt.name)}
+        </button>
+      `).join('');
+    }
+
+    function toggleNote(i) {
+      notesState[i].selected = !notesState[i].selected;
+      renderNotesChips();
+    }
+    
     function selectSeating(i) {
       // Single-select for seating
       seatingState = seatingState.map((o, idx) => ({ ...o, selected: idx === i }));
@@ -177,15 +199,15 @@
 
       const selectedSeating = seatingState.find(o => o.selected);
       const selectedNotes = notesState.filter(o => o.selected).map(o => o.name);
-
+      const freeNote = (document.getElementById('notesText')?.value || '').trim();
+      const allNotes = [...selectedNotes, freeNote].filter(Boolean).join(', ');
       const payload = {
         guestName: document.getElementById('guestName').value.trim(),
         guestPhone: phone,
         partySize: document.getElementById('partySize').value,
         seatingPreference: (selectedSeating && selectedSeating.name !== 'No preference') ? selectedSeating.name : null,
-        notes: selectedNotes.length ? selectedNotes.join(', ') : null,
+        notes: allNotes || null,
       };
-
       if (!payload.guestName) {
         errorEl.textContent = 'Name is required.';
         return;
