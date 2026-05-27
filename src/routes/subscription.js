@@ -129,6 +129,34 @@ async function retryFailedSyncs() {
 // Kick off retry interval at module load
 setInterval(retryFailedSyncs, 10 * 60 * 1000);
 
+// Mark expired trials — runs every hour
+async function expireOldTrials() {
+  try {
+    const now = new Date();
+    const owners = await prisma.owner.findMany({
+      where: {
+        subscriptionStatus: 'trial',
+        trialEndsAt: { lt: now },
+      },
+    });
+    for (const owner of owners) {
+      // Give 3 days grace after trial ends for the charge to come through
+      const graceMs = 3 * 24 * 60 * 60 * 1000;
+      if (now - new Date(owner.trialEndsAt) > graceMs) {
+        await prisma.owner.update({
+          where: { id: owner.id },
+          data: { subscriptionStatus: 'expired' },
+        });
+        console.log(`Trial expired for owner ${owner.id}`);
+      }
+    }
+  } catch (e) {
+    console.error('Expire trials error:', e);
+  }
+}
+
+setInterval(expireOldTrials, 60 * 60 * 1000);
+
 // Razorpay webhook to handle subscription events
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   try {
