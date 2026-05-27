@@ -1079,11 +1079,11 @@ async function renderOnboarding() {
     box.innerHTML = '';
     return;
   }
-  const histRes = await fetch('/api/queue/history/' + venue.id, {
+  const hasRes = await fetch('/api/queue/has-any/' + venue.id, {
     headers: { 'Authorization': 'Bearer ' + token },
   });
-  const histData = await histRes.json();
-  const hasFirstGuest = (histData.entries && histData.entries.length > 0);
+  const hasData = await hasRes.json();
+  const hasFirstGuest = !!hasData.hasAny;
   const steps = [
     { label: 'Create your venue', done: true, action: null },
     { label: 'Upload your menu', done: !!venue.menuPdfUrl, action: 'settings' },
