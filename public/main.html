@@ -417,6 +417,22 @@ body { margin: 0; }
   flex-shrink: 0;
 }
 .csv-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+.report-checks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+.report-checks label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  padding: 6px 0;
+}
+.report-checks input[type="checkbox"] { accent-color: var(--accent); }  
   
 </style>
 
@@ -558,6 +574,58 @@ body { margin: 0; }
       <h2 class="heading" style="font-size:24px;">Subscription</h2>
       <div id="subscriptionContent"></div>
     </div>
+    <div class="main-tab-content" id="reportsSection" style="display:none;">
+  <h2 class="heading" style="font-size:24px;">Reports</h2>
+  <p class="subheading" style="margin-bottom:20px;">Download a CSV report with the metrics and guest details you need.</p>
+
+  <div class="card">
+    <h3 class="heading" style="font-size:16px;">Date range</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
+      <div class="input-group" style="flex:1;min-width:140px;">
+        <label>From</label>
+        <input type="date" id="reportFrom">
+      </div>
+      <div class="input-group" style="flex:1;min-width:140px;">
+        <label>To</label>
+        <input type="date" id="reportTo">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 class="heading" style="font-size:16px;">Metrics to include</h3>
+    <p class="subheading" style="font-size:12px;margin-bottom:12px;">Summary tables to add to the report.</p>
+    <div class="report-checks" id="reportMetrics">
+      <label><input type="checkbox" value="daily" checked> Daily counts (date, day, guest parties, avg party size)</label>
+      <label><input type="checkbox" value="hours" checked> Hourly distribution</label>
+      <label><input type="checkbox" value="wait"> Wait time stats (avg, median, by party size)</label>
+      <label><input type="checkbox" value="cancel"> Cancellation rate</label>
+      <label><input type="checkbox" value="dow"> Day-of-week summary</label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 class="heading" style="font-size:16px;">Guest details to include</h3>
+    <p class="subheading" style="font-size:12px;margin-bottom:12px;">Per-guest rows to add to the report.</p>
+    <div class="report-checks" id="reportGuestFields">
+      <label><input type="checkbox" value="guestName" checked> Name</label>
+      <label><input type="checkbox" value="guestPhone" checked> Phone</label>
+      <label><input type="checkbox" value="partySize" checked> Party size</label>
+      <label><input type="checkbox" value="seatingPreference"> Seating preference</label>
+      <label><input type="checkbox" value="notes"> Notes</label>
+      <label><input type="checkbox" value="joinedAt" checked> Joined time</label>
+      <label><input type="checkbox" value="seatedAt"> Seated time</label>
+      <label><input type="checkbox" value="cancelledAt"> Cancelled time</label>
+      <label><input type="checkbox" value="waitDuration" checked> Wait duration (minutes)</label>
+      <label><input type="checkbox" value="status"> Status (waiting/notified/seated/cancelled)</label>
+      <label><input type="checkbox" value="notifiedAt"> Notified time</label>
+      <label><input type="checkbox" value="calledAt"> Called time</label>
+    </div>
+  </div>
+
+  <button class="button" onclick="generateReport()">Download CSV report</button>
+  <p class="error" id="reportError"></p>
+</div>
   </div>
 </div>
 
