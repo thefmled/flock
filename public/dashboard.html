@@ -367,10 +367,15 @@
       <input type="text" id="settingsManager">
     </div>
     <div class="input-group">
-        <label>Menu PDF</label>
-        <div id="menuStatus" style="margin-bottom:8px;"></div>
-        <input type="file" id="settingsMenuFile" accept="application/pdf" />
-        <p class="subheading" style="font-size:11px;margin-top:4px;">Choose a new file only if you want to replace the current menu.</p>
+        <label>Menus</label>
+        <p class="subheading" style="font-size:12px;margin-bottom:8px;">Upload multiple menus (Bar, Mango menu, Brunch, etc.). Guests will see them on the queue status page.</p>
+        <div id="menuList"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+          <input type="text" id="newMenuName" placeholder="Menu name (e.g. Bar menu)" style="flex:1;min-width:160px;padding:10px 12px;background:var(--card);border:1px solid var(--border-strong);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;">
+          <input type="file" id="newMenuFile" accept="application/pdf" style="flex:1;min-width:160px;">
+          <button class="button" style="max-width:140px;flex-shrink:0;" onclick="uploadMenu()">Add menu</button>
+        </div>
+        <p class="error" id="menuUploadError" style="margin-top:6px;"></p>
       </div>
     <div class="input-group">
       <label>Google reviews link</label>
