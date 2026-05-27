@@ -99,6 +99,7 @@ router.get('/by-slug/:slug', async (req, res) => {
   try {
     const venue = await prisma.venue.findUnique({
       where: { slug: req.params.slug },
+      include: { menus: { orderBy: { createdAt: 'asc' } } },
     });
     if (!venue) return res.status(404).json({ error: 'Venue not found' });
     res.json({ venue });
