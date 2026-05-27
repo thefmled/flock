@@ -149,8 +149,10 @@ async function loadStatus() {
 
 async function cancelEntry() {
   if (!confirm('Leave the queue?')) return;
-  await fetch('/api/queue/cancel/' + entryId, { method: 'POST' });
-  loadStatus();
+  // Optimistic: show "you've left" state instantly
+  document.body.innerHTML = '<div style="text-align:center;padding:60px 24px;color:var(--text-muted);font-size:16px;">You\'ve left the waitlist. <a href="/" style="color:var(--accent);">Back to home</a></div>';
+  
+  fetch('/api/queue/cancel/' + entryId, { method: 'POST' });
 }
 
 loadStatus();
