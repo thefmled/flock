@@ -106,13 +106,13 @@
           document.getElementById('venueAddress').textContent = data.venue.address || '';
           
           const opts = (data.venue.seatingOptions || 'Indoor,Outdoor,No preference').split(',');
-          // Put "No preference" first and pre-select it
-          const sorted = ['No preference', ...opts.map(o => o.trim()).filter(o => o !== 'No preference')];
+          const activeOpts = opts.map(o => o.trim()).filter(o => !o.startsWith('_'));
+          const sorted = ['No preference', ...activeOpts.filter(o => o !== 'No preference')];
           seatingState = sorted.map(o => ({ name: o, selected: o === 'No preference' }));
           renderSeatingChips();
 
           // Notes options
-          const noteOpts = (data.venue.noteOptions || '').split(',').map(o => o.trim()).filter(Boolean);
+          const noteOpts = (data.venue.noteOptions || '').split(',').map(o => o.trim()).filter(o => o && !o.startsWith('_'));
           notesState = noteOpts.map(o => ({ name: o, selected: false }));
           document.getElementById('notesGroup').style.display = noteOpts.length > 0 ? 'block' : 'none';
           renderNotesChips();
