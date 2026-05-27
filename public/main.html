@@ -619,6 +619,10 @@ body[class*="theme-cloud-mint"] input[type="date"]::-webkit-calendar-picker-indi
         <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
         <span class="sidebar-item-label">Analytics</span>
       </button>
+      <button class="sidebar-item" data-section="insights" onclick="showSection('insights')">
+        <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        <span class="sidebar-item-label">Insights</span>
+      </button>
       <button class="sidebar-item" data-section="settings" onclick="showSection('settings')">
         <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
         <span class="sidebar-item-label">Settings</span>
@@ -718,6 +722,14 @@ body[class*="theme-cloud-mint"] input[type="date"]::-webkit-calendar-picker-indi
         </div>
       </div>
 
+    <div class="main-tab-content" id="insightsSection" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+        <h2 class="heading" style="margin:0;font-size:24px;">Insights</h2>
+      </div>
+      <p class="subheading" style="margin-bottom:20px;">What your data is telling you — and what to do about it.</p>
+      <div id="insightsContent"></div>
+    </div>
+    
     <div class="main-tab-content" id="settingsSection" style="display:none;">
       <h2 class="heading" style="font-size:24px;">Settings</h2>
       <div class="settings-subnav">
@@ -785,12 +797,13 @@ function toggleSidebar() {
 }
 
 function showSection(s) {
-  ['analytics','settings','subscription','reports'].forEach(name => {
+  ['analytics','insights','settings','subscription','reports'].forEach(name => {
     document.getElementById(name + 'Section').style.display = (name === s) ? 'block' : 'none';
     const btn = document.querySelector('[data-section="' + name + '"]');
     if (btn) btn.classList.toggle('active', name === s);
   });
   if (s === 'analytics') loadAnalytics();
+  if (s === 'insights') loadInsights();
   if (s === 'settings') loadSettings();
   if (s === 'subscription') loadSubscription();
   if (s === 'reports') loadReports();
