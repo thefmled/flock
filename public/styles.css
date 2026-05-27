@@ -11,6 +11,21 @@ html, body {
   line-height: 1.5;
 }
 
+body:not([class*="theme-"]) {
+  --bg: #0f0d0a;
+  --text: #f5ead4;
+  --text-muted: rgba(245,234,212,0.55);
+  --accent: #f5a854;
+  --accent-text: #0f0d0a;
+  --accent-soft: rgba(245,168,84,0.12);
+  --card: #1a1714;
+  --card-hover: #221d18;
+  --border: rgba(245,234,212,0.08);
+  --border-strong: rgba(245,234,212,0.18);
+  --error: #e57373;
+  --success: #81c784;
+}
+
 body.theme-dark-premium {
   --bg: #0f0d0a;
   --text: #f5ead4;
