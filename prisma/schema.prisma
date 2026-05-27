@@ -16,6 +16,7 @@ model Owner {
   subscriptionStatus    String   @default("pending")
   trialEndsAt           DateTime?
   subscriptionStartedAt DateTime?
+  needsSubscriptionSync Boolean @default(false)
   venueQuantity         Int       @default(0)
   createdAt DateTime @default(now())
   venues    Venue[]
