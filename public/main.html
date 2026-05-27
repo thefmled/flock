@@ -986,6 +986,7 @@ function loadSettings() {
       </div>
       <div class="input-group"><label>Google reviews link</label><input type="url" id="settingsReviews" placeholder="https://g.page/..."></div>
       <div class="input-group"><label>Seating options</label><div class="seating-chips" id="settingsChips"></div></div>
+      <div class="input-group"><label>Note options</label><p class="subheading" style="font-size:11px;margin-bottom:8px;">Optional notes guests can pick when joining the queue.</p><div class="seating-chips" id="notesChips"></div></div>
     </div>
     <div class="card">
       <h2 class="heading">Wait time formula</h2>
@@ -1017,6 +1018,9 @@ function loadSettings() {
   const opts = (venue.seatingOptions || 'Indoor,Outdoor,No preference').split(',');
   settingsSeating = opts.map(o => ({ name: o.trim(), selected: true }));
   renderSettingsChips();
+  const noteOpts = (venue.noteOptions || 'Birthday,Anniversary,First visit,Allergies,Kids menu,Wheelchair access').split(',');
+  settingsNotes = noteOpts.map(o => ({ name: o.trim(), selected: true }));
+  renderNotesChips();
 }
 
 function renderSettingsChips() {
