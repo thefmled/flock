@@ -1185,6 +1185,7 @@ loadVenue().then(() => {
   
 setInterval(loadQueue, 2000);
 setInterval(loadStats, 10000);
+setInterval(loadVenue, 30000); // refresh venue (including theme) every 30s
 
 // Keep server warm
 setInterval(() => fetch('/health'), 5 * 60 * 1000);
