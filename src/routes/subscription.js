@@ -10,7 +10,7 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// Create a subscription with 14-day trial
+// Create a subscription with 14-day trial — starts at quantity 1
 router.post('/create', requireAuth, async (req, res) => {
   try {
     const owner = await prisma.owner.findUnique({ where: { id: req.ownerId } });
@@ -20,17 +20,17 @@ router.post('/create', requireAuth, async (req, res) => {
       return res.json({ subscriptionId: owner.razorpaySubscriptionId, alreadyExists: true });
     }
 
-    // Razorpay subscriptions accept start_at as unix timestamp in seconds
     const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
     const subscription = await razorpay.subscriptions.create({
       plan_id: process.env.RAZORPAY_PLAN_ID,
       customer_notify: 1,
-      total_count: 120, // 10 years of monthly billing
+      quantity: 1,
+      total_count: 120,
       start_at: Math.floor(trialEndsAt.getTime() / 1000),
       notes: {
         ownerId: owner.id,
-        email: owner.phone, // 'phone' field holds email in our schema
+        email: owner.phone,
       },
     });
 
@@ -40,6 +40,7 @@ router.post('/create', requireAuth, async (req, res) => {
         razorpaySubscriptionId: subscription.id,
         subscriptionStatus: 'trial',
         trialEndsAt,
+        venueQuantity: 1,
       },
     });
 
@@ -65,12 +66,38 @@ router.get('/status', requireAuth, async (req, res) => {
       trialEndsAt: owner.trialEndsAt,
       subscriptionStartedAt: owner.subscriptionStartedAt,
       hasSubscription: !!owner.razorpaySubscriptionId,
+      venueQuantity: owner.venueQuantity,
+      monthlyAmount: owner.venueQuantity * 999,
     });
   } catch (error) {
     console.error('Subscription status error:', error);
     res.status(500).json({ error: 'Failed to fetch status' });
   }
 });
+
+// Update subscription quantity (called when venues are added/removed)
+async function updateSubscriptionQuantity(ownerId, newQuantity) {
+  const owner = await prisma.owner.findUnique({ where: { id: ownerId } });
+  if (!owner || !owner.razorpaySubscriptionId) return;
+
+  // Update local count regardless
+  await prisma.owner.update({
+    where: { id: ownerId },
+    data: { venueQuantity: newQuantity },
+  });
+
+  // Only sync with Razorpay if subscription is active (not in trial/created state)
+  if (owner.subscriptionStatus === 'active') {
+    try {
+      await razorpay.subscriptions.update(owner.razorpaySubscriptionId, {
+        quantity: newQuantity,
+        schedule_change_at: 'cycle_end', // safer for UPI/eMandate
+      });
+    } catch (e) {
+      console.error('Razorpay quantity update failed:', e.message || e);
+    }
+  }
+}
 
 // Razorpay webhook to handle subscription events
 router.post('/webhook', express.json(), async (req, res) => {
@@ -92,6 +119,12 @@ router.post('/webhook', express.json(), async (req, res) => {
             subscriptionStartedAt: owner.subscriptionStartedAt || new Date(),
           },
         });
+
+        // Sync the current venue count to Razorpay now that the subscription is active
+        const venueCount = await prisma.venue.count({ where: { ownerId: owner.id } });
+        if (venueCount !== owner.venueQuantity) {
+          await updateSubscriptionQuantity(owner.id, venueCount);
+        }
       }
     } else if (event === 'subscription.cancelled' || event === 'subscription.completed') {
       const subscriptionId = payload.subscription.entity.id;
@@ -125,3 +158,4 @@ router.post('/webhook', express.json(), async (req, res) => {
 });
 
 module.exports = router;
+module.exports.updateSubscriptionQuantity = updateSubscriptionQuantity;
