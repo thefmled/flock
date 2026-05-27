@@ -88,18 +88,46 @@ async function updateSubscriptionQuantity(ownerId, newQuantity) {
     data: { venueQuantity: newQuantity },
   });
 
-  // Only sync with Razorpay if subscription is active (not in trial/created state)
+  // Only sync with Razorpay if subscription is active
   if (owner.subscriptionStatus === 'active') {
     try {
       await razorpay.subscriptions.update(owner.razorpaySubscriptionId, {
         quantity: newQuantity,
-        schedule_change_at: 'cycle_end', // safer for UPI/eMandate
+        schedule_change_at: 'cycle_end',
+      });
+      // Clear sync flag on success
+      await prisma.owner.update({
+        where: { id: ownerId },
+        data: { needsSubscriptionSync: false },
       });
     } catch (e) {
       console.error('Razorpay quantity update failed:', e.message || e);
+      // Mark for retry
+      await prisma.owner.update({
+        where: { id: ownerId },
+        data: { needsSubscriptionSync: true },
+      });
     }
   }
 }
+
+// Periodic retry — runs every 10 minutes
+async function retryFailedSyncs() {
+  try {
+    const owners = await prisma.owner.findMany({
+      where: { needsSubscriptionSync: true, subscriptionStatus: 'active' },
+    });
+    for (const owner of owners) {
+      const venueCount = await prisma.venue.count({ where: { ownerId: owner.id } });
+      await updateSubscriptionQuantity(owner.id, venueCount);
+    }
+  } catch (e) {
+    console.error('Retry failed syncs error:', e);
+  }
+}
+
+// Kick off retry interval at module load
+setInterval(retryFailedSyncs, 10 * 60 * 1000);
 
 // Razorpay webhook to handle subscription events
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
