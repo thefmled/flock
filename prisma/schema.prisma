@@ -127,3 +127,14 @@ model AuditLog {
   
   @@index([queueEntryId])
 }
+
+model Menu {
+  id        String   @id
+  venueId   String
+  name      String
+  url       String
+  createdAt DateTime @default(now())
+  venue     Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@index([venueId])
+}
