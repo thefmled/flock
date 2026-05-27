@@ -263,7 +263,6 @@
 </div>
 
 <div class="tab-content" id="liveTab">
-  <div id="onboardingBox"></div>
   <div id="statsBar" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
     <div class="card" style="padding:14px;margin-bottom:0;text-align:center;">
       <div style="font-family:'Fraunces',serif;font-style:italic;font-size:28px;color:var(--accent);" id="statTotal">—</div>
@@ -927,79 +926,6 @@ async function loadSubStatus() {
   } else {
     el.textContent = '';
   }
-}
-
-async function renderOnboarding() {
-  if (!venue) return;
-  const box = document.getElementById('onboardingBox');
-  if (venue.onboardingDismissed) {
-    box.innerHTML = '';
-    return;
-  }
-
-  // Check first guest exists
-  const histRes = await fetch('/api/queue/history/' + venue.id, {
-    headers: { 'Authorization': 'Bearer ' + token },
-  });
-  const histData = await histRes.json();
-  const hasFirstGuest = (histData.entries && histData.entries.length > 0);
-
-  const steps = [
-    { label: 'Create your venue', done: true, action: null },
-    { label: 'Upload your menu', done: !!venue.menuPdfUrl, action: 'settings' },
-    { label: 'Add your Google reviews link', done: !!venue.googleReviewsUrl, action: 'settings' },
-    { label: 'Print and place your QR code', done: !!venue.qrMarkedPlaced, action: 'qr' },
-    { label: 'Add your first guest', done: hasFirstGuest, action: null },
-  ];
-
-  const doneCount = steps.filter(s => s.done).length;
-  const total = steps.length;
-
-  if (doneCount === total) {
-    box.innerHTML = '';
-    return;
-  }
-
-  box.innerHTML = `
-    <div class="onboarding">
-      <div class="onboarding-header">
-        <div>
-          <div class="onboarding-title">Get set up</div>
-          <div class="onboarding-progress">${doneCount} of ${total} complete</div>
-        </div>
-        <button class="onboarding-dismiss" onclick="dismissOnboarding()" title="Hide">×</button>
-      </div>
-      ${steps.map(s => `
-        <div class="onboarding-step">
-          <div class="step-check ${s.done ? 'done' : ''}">${s.done ? '✓' : ''}</div>
-          <div>${s.label}</div>
-          ${!s.done && s.action === 'settings' ? '<a class="step-action" onclick="switchTab(\'settings\')">Open settings →</a>' : ''}
-          ${!s.done && s.action === 'qr' ? '<a class="step-action" onclick="markQrPlaced()">Mark as placed</a>' : ''}
-        </div>
-      `).join('')}
-    </div>
-  `;
-}
-
-async function markQrPlaced() {
-  await fetch('/api/venues/' + venue.id + '/qr-placed', {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + token },
-  });
-  venue.qrMarkedPlaced = true;
-  localStorage.setItem('flock_venue', JSON.stringify(venue));
-  renderOnboarding();
-}
-
-async function dismissOnboarding() {
-  if (!confirm('Hide the setup checklist? You can\'t bring it back.')) return;
-  await fetch('/api/venues/' + venue.id + '/dismiss-onboarding', {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + token },
-  });
-  venue.onboardingDismissed = true;
-  localStorage.setItem('flock_venue', JSON.stringify(venue));
-  renderOnboarding();
 }  
 
 let dailyChart = null;
@@ -1255,12 +1181,10 @@ loadVenue().then(() => {
   loadQueue();
   loadStats();
   loadSubStatus();
-  renderOnboarding();
 });
   
 setInterval(loadQueue, 2000);
 setInterval(loadStats, 10000);
-setInterval(renderOnboarding, 10000);
 
 // Keep server warm
 setInterval(() => fetch('/health'), 5 * 60 * 1000);
