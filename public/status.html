@@ -20,6 +20,19 @@
 .action-card-arrow { color: var(--accent); font-size: 20px; }
 .notified-banner { background: var(--accent); color: var(--accent-text); padding: 16px; border-radius: 12px; text-align: center; font-weight: 500; margin-bottom: 24px; }
 </style>
+
+<script>
+  (function() {
+    try {
+      const v = JSON.parse(localStorage.getItem('flock_venue') || 'null');
+      const t = (v && v.theme) ? v.theme : 'dark-premium';
+      document.addEventListener('DOMContentLoaded', function() {
+        document.body.className = 'theme-' + t;
+      });
+    } catch(e) {}
+  })();
+</script>
+  
 </head>
 <body>
 <main class="container" style="max-width: 480px; padding-top: 32px;">
