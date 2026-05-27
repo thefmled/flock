@@ -1,6 +1,7 @@
 const express = require('express');
 const Razorpay = require('razorpay');
 const prisma = require('../lib/prisma');
+const crypto = require('crypto');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -101,10 +102,22 @@ async function updateSubscriptionQuantity(ownerId, newQuantity) {
 }
 
 // Razorpay webhook to handle subscription events
-router.post('/webhook', express.json(), async (req, res) => {
+router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   try {
-    const event = req.body.event;
-    const payload = req.body.payload;
+    // Verify signature
+    const signature = req.headers['x-razorpay-signature'];
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    if (secret && signature) {
+      const expected = crypto.createHmac('sha256', secret).update(req.body).digest('hex');
+      if (expected !== signature) {
+        console.warn('Webhook signature mismatch');
+        return res.status(400).json({ error: 'Invalid signature' });
+      }
+    }
+
+    const body = JSON.parse(req.body.toString());
+    const event = body.event;
+    const payload = body.payload;
     if (!event || !payload) return res.status(400).json({ error: 'Invalid webhook' });
 
     if (event === 'subscription.activated' || event === 'subscription.charged') {
