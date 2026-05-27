@@ -2,6 +2,7 @@ const express = require('express');
 
 const multer = require('multer');
 const { createClient } = require('@supabase/supabase-js');
+const { updateSubscriptionQuantity } = require('./subscription');
 
 const upload = multer({ storage: multer.memoryStorage() });
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
@@ -59,6 +60,10 @@ router.post('/', requireAuth, requireActiveSubscription, async (req, res) => {
       },
     });
 
+    // Update subscription quantity to reflect new venue count
+    const count = await prisma.venue.count({ where: { ownerId: req.ownerId } });
+    await updateSubscriptionQuantity(req.ownerId, count);
+
     res.json({ success: true, venue });
   } catch (error) {
     console.error('Create venue error:', error);
@@ -103,6 +108,8 @@ router.delete('/:id', requireAuth, requireActiveSubscription, async (req, res) =
     if (!venue) return res.status(404).json({ error: 'Venue not found' });
 
     await prisma.venue.delete({ where: { id: venue.id } });
+    const count = await prisma.venue.count({ where: { ownerId: req.ownerId } });
+    await updateSubscriptionQuantity(req.ownerId, count);
     res.json({ success: true });
   } catch (error) {
     console.error('Delete venue error:', error);
