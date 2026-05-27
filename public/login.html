@@ -13,6 +13,7 @@
     <div class="card" id="emailStep">
       <h2 class="heading">Log in or sign up</h2>
       <p class="subheading">Enter your email to receive a one-time code.</p>
+      <div id="expiredBanner" style="display:none;background:var(--accent-soft);color:var(--accent);padding:10px 12px;border-radius:8px;margin-bottom:16px;font-size:13px;">Your session expired. Please log in again.</div>
       <div class="input-group">
         <label for="email">Email</label>
         <input type="email" id="email" placeholder="you@venue.com" autocomplete="email" />
@@ -37,6 +38,13 @@
   </main>
 
   <script>
+    if (sessionStorage.getItem('flock_expired') === '1') {
+      sessionStorage.removeItem('flock_expired');
+      document.addEventListener('DOMContentLoaded', () => {
+        const banner = document.getElementById('expiredBanner');
+        if (banner) banner.style.display = 'block';
+      });
+    }
     const API = '';
 
     async function requestOtp() {
