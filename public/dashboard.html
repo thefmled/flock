@@ -529,19 +529,14 @@ async function loadQueue() {
   
   // Show skeleton on first load
   const listEl = document.getElementById('queueList');
-  if (listEl.innerHTML === '' || listEl.querySelector('.skeleton-card')) {
-    if (listEl.innerHTML === '') {
-      listEl.innerHTML = `
-        <div class="skeleton-card" style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid var(--border);">
-          <div style="height:18px;width:55%;background:var(--card-hover);border-radius:4px;margin-bottom:8px;"></div>
-          <div style="height:12px;width:35%;background:var(--card-hover);border-radius:4px;opacity:0.6;"></div>
-        </div>
-        <div class="skeleton-card" style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid var(--border);">
-          <div style="height:18px;width:50%;background:var(--card-hover);border-radius:4px;margin-bottom:8px;"></div>
-          <div style="height:12px;width:30%;background:var(--card-hover);border-radius:4px;opacity:0.6;"></div>
-        </div>
-      `;
-    }
+  const hasContent = listEl.querySelector('.queue-entry');
+  if (listEl.innerHTML === '' && !hasContent) {
+    listEl.innerHTML = `
+      <div class="skeleton-card" style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid var(--border);">
+        <div style="height:18px;width:55%;background:var(--card-hover);border-radius:4px;margin-bottom:8px;"></div>
+        <div style="height:12px;width:35%;background:var(--card-hover);border-radius:4px;opacity:0.6;"></div>
+      </div>
+    `;
   }
   
   const res = await fetch('/api/queue/live/' + venue.id, {
