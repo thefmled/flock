@@ -16,7 +16,8 @@ router.post('/create', requireAuth, async (req, res) => {
     const owner = await prisma.owner.findUnique({ where: { id: req.ownerId } });
     if (!owner) return res.status(404).json({ error: 'Owner not found' });
 
-    if (owner.razorpaySubscriptionId) {
+    // If owner already has an active/trial subscription, return it. If cancelled/expired, allow creating a new one.
+    if (owner.razorpaySubscriptionId && (owner.subscriptionStatus === 'active' || owner.subscriptionStatus === 'trial')) {
       return res.json({ subscriptionId: owner.razorpaySubscriptionId, alreadyExists: true });
     }
 
