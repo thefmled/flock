@@ -18,20 +18,20 @@
   })();
 </script>
 
-  <style>body{opacity:0;}body.theme-loaded{opacity:1;transition:opacity 0.15s;}</style>
-  <script>
-    (function() {
-      try {
-        const venueSlug = new URLSearchParams(window.location.search).get('venue');
-        const cached = venueSlug ? sessionStorage.getItem('flock_venue_theme_' + venueSlug) : null;
-        document.addEventListener('DOMContentLoaded', function() {
-          if (cached) {
-            document.body.className = 'theme-' + cached + ' theme-loaded';
-          }
-        });
-      } catch(e) {}
-    })();
-  </script>
+<style>body{opacity:0;}body.theme-loaded{opacity:1;transition:opacity 0.15s;}</style>
+<script>
+  (function() {
+    try {
+      const venueSlug = new URLSearchParams(window.location.search).get('venue');
+      const cached = venueSlug ? sessionStorage.getItem('flock_venue_theme_' + venueSlug) : null;
+      document.addEventListener('DOMContentLoaded', function() {
+        if (cached) {
+          document.body.className = 'theme-' + cached + ' theme-loaded';
+        }
+      });
+    } catch(e) {}
+  })();
+</script>
   
 </head>
 <body>
