@@ -745,4 +745,240 @@ router.get('/report/:venueId', requireAuth, requireActiveSubscription, async (re
   }
 });
 
+// Insights — heuristic-based recommendations from venue's queue data
+router.get('/insights/:venueId', requireAuth, requireActiveSubscription, async (req, res) => {
+  try {
+    const venue = await prisma.venue.findFirst({
+      where: { id: req.params.venueId, ownerId: req.ownerId },
+    });
+    if (!venue) return res.status(404).json({ error: 'Venue not found' });
+
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
+    const fourteenDaysAgo = new Date(now.getTime() - 14 * 86400000);
+    
+    const entries = await prisma.queueEntry.findMany({
+      where: { venueId: venue.id, joinedAt: { gte: thirtyDaysAgo } },
+      orderBy: { joinedAt: 'asc' },
+    });
+    
+    const insights = [];
+
+    if (entries.length < 5) {
+      insights.push({
+        id: 'not_enough_data',
+        severity: 'info',
+        title: 'Not enough data yet',
+        metric: entries.length + ' guests so far',
+        body: 'Insights will appear as you get more guests through the queue. Aim for at least 14 days of activity for the best signal.',
+      });
+      return res.json({ insights, hasData: entries.length > 0 });
+    }
+
+    // Helper — IST conversion
+    const toIST = d => new Date(new Date(d).getTime() + 5.5 * 3600 * 1000);
+
+    // 1. Wait time accuracy — predicted vs actual
+    const seatedWithPrediction = entries.filter(e => e.seatedAt && e.waitTimeBaseAtJoin);
+    if (seatedWithPrediction.length >= 10) {
+      let totalOvershoot = 0;
+      seatedWithPrediction.forEach(e => {
+        const predicted = e.waitTimeBaseAtJoin + (e.waitTimeIncrementAtJoin || 3);
+        const actual = (new Date(e.seatedAt) - new Date(e.joinedAt)) / 60000;
+        totalOvershoot += (actual - predicted);
+      });
+      const avgOvershoot = Math.round(totalOvershoot / seatedWithPrediction.length);
+      if (Math.abs(avgOvershoot) >= 5) {
+        insights.push({
+          id: 'wait_accuracy',
+          severity: avgOvershoot > 0 ? 'warning' : 'good',
+          title: avgOvershoot > 0 ? 'Wait times are running longer than predicted' : 'Wait times are beating predictions',
+          metric: (avgOvershoot > 0 ? '+' : '') + avgOvershoot + ' min vs predicted',
+          body: avgOvershoot > 0
+            ? 'On average, guests wait ' + avgOvershoot + ' min longer than what they\'re told. Consider raising your base wait time in Settings, or noting this in the queue message.'
+            : 'Guests are being seated ' + Math.abs(avgOvershoot) + ' min faster than expected. You could lower your base wait estimate to be more accurate.',
+        });
+      } else {
+        insights.push({
+          id: 'wait_accuracy_good',
+          severity: 'good',
+          title: 'Wait predictions are accurate',
+          metric: 'Within ' + Math.abs(avgOvershoot) + ' min',
+          body: 'Your predicted wait times match what guests actually experience. Keep it up.',
+        });
+      }
+    }
+
+    // 2. Cancellation trend — last 7 days vs prior 7
+    const last7 = entries.filter(e => new Date(e.joinedAt) >= sevenDaysAgo);
+    const prior7 = entries.filter(e => new Date(e.joinedAt) >= fourteenDaysAgo && new Date(e.joinedAt) < sevenDaysAgo);
+    if (last7.length >= 5 && prior7.length >= 5) {
+      const last7Cancel = last7.filter(e => e.status === 'cancelled').length / last7.length;
+      const prior7Cancel = prior7.filter(e => e.status === 'cancelled').length / prior7.length;
+      const delta = ((last7Cancel - prior7Cancel) / Math.max(prior7Cancel, 0.01)) * 100;
+      if (Math.abs(delta) >= 25) {
+        insights.push({
+          id: 'cancel_trend',
+          severity: delta > 0 ? 'warning' : 'good',
+          title: delta > 0 ? 'Cancellation rate is climbing' : 'Fewer cancellations this week',
+          metric: (last7Cancel * 100).toFixed(0) + '% this week vs ' + (prior7Cancel * 100).toFixed(0) + '% last',
+          body: delta > 0
+            ? 'More guests are leaving the queue before being seated. Possible causes: wait times feel too long, no notification reaching them, or poor seating mix. Check your wait time accuracy and notification delivery.'
+            : 'Cancellations dropped — whatever you changed is working.',
+        });
+      }
+    }
+
+    // 3. Peak hour pressure — when does queue stack up?
+    const hourCountsByDow = Array.from({ length: 7 }, () => Array(24).fill(0));
+    entries.forEach(e => {
+      const d = toIST(e.joinedAt);
+      hourCountsByDow[d.getUTCDay()][d.getUTCHours()]++;
+    });
+    let maxHour = { dow: -1, hour: -1, count: 0 };
+    for (let dow = 0; dow < 7; dow++) {
+      for (let h = 0; h < 24; h++) {
+        if (hourCountsByDow[dow][h] > maxHour.count) {
+          maxHour = { dow, hour: h, count: hourCountsByDow[dow][h] };
+        }
+      }
+    }
+    const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    if (maxHour.count >= 5) {
+      insights.push({
+        id: 'peak_hour',
+        severity: 'info',
+        title: 'Your peak is ' + DAYS[maxHour.dow] + ' at ' + maxHour.hour + ':00',
+        metric: maxHour.count + ' parties joined this hour over the last 30 days',
+        body: 'Make sure you have staffing and seating ready for this slot. If wait times spike here, consider pre-bookings or a different floor layout.',
+      });
+    }
+
+    // 4. Repeat guests
+    const phoneCounts = {};
+    entries.forEach(e => {
+      if (e.guestPhone) phoneCounts[e.guestPhone] = (phoneCounts[e.guestPhone] || 0) + 1;
+    });
+    const repeatGuests = Object.values(phoneCounts).filter(c => c > 1).length;
+    const totalUnique = Object.keys(phoneCounts).length;
+    if (totalUnique >= 10) {
+      const repeatRate = (repeatGuests / totalUnique) * 100;
+      insights.push({
+        id: 'repeat_guests',
+        severity: repeatRate >= 15 ? 'good' : 'warning',
+        title: repeatRate >= 15 ? 'Healthy repeat guest rate' : 'Few guests are returning',
+        metric: repeatGuests + ' of ' + totalUnique + ' guests have been here multiple times (' + repeatRate.toFixed(0) + '%)',
+        body: repeatRate >= 15
+          ? 'You have a loyal base. Consider rewarding regulars to deepen the relationship — birthday acknowledgments, a thank-you message after their 5th visit, or a small perk.'
+          : 'Most guests visit once. Could be a discovery business (tourists, drop-ins) — or there\'s an opportunity to bring people back. A simple win-back message at 30/60 days could help.',
+      });
+    }
+
+    // 5. No-show rate (notified but never seated)
+    const notifiedTotal = entries.filter(e => e.notifiedAt).length;
+    const notifiedNoShow = entries.filter(e => e.notifiedAt && !e.seatedAt && e.status !== 'waiting' && e.status !== 'notified').length;
+    if (notifiedTotal >= 10) {
+      const noShowRate = (notifiedNoShow / notifiedTotal) * 100;
+      if (noShowRate >= 8) {
+        insights.push({
+          id: 'no_show',
+          severity: 'warning',
+          title: 'High no-show rate after notifying',
+          metric: noShowRate.toFixed(0) + '% (' + notifiedNoShow + ' of ' + notifiedTotal + ' notified guests)',
+          body: 'These guests got the "table ready" message but never came in. Try notifying slightly earlier so they have buffer time, or consider sending a reminder 5 min after the first notification.',
+        });
+      } else {
+        insights.push({
+          id: 'no_show_good',
+          severity: 'good',
+          title: 'Low no-show rate',
+          metric: noShowRate.toFixed(0) + '% don\'t show after notification',
+          body: 'Once guests are notified, almost everyone arrives. Your notification timing is well-calibrated.',
+        });
+      }
+    }
+
+    // 6. Average party size shift
+    if (entries.length >= 20) {
+      const recent15 = entries.slice(-15);
+      const earlier15 = entries.slice(0, 15);
+      const recentAvg = recent15.reduce((s, e) => s + e.partySize, 0) / 15;
+      const earlierAvg = earlier15.reduce((s, e) => s + e.partySize, 0) / 15;
+      const delta = recentAvg - earlierAvg;
+      if (Math.abs(delta) >= 0.5) {
+        insights.push({
+          id: 'party_size_shift',
+          severity: 'info',
+          title: delta > 0 ? 'Party sizes are growing' : 'Party sizes are shrinking',
+          metric: 'Avg: ' + earlierAvg.toFixed(1) + ' → ' + recentAvg.toFixed(1),
+          body: delta > 0
+            ? 'You\'re seeing bigger groups recently. Make sure you have large-party seating available, or consider expanding combinable tables.'
+            : 'You\'re seeing smaller groups recently. Could be a shift in your weekday vs weekend mix or a change in customer demographics worth noting.',
+        });
+      }
+    }
+
+    // 7. Slow days
+    const dayTotals = Array(7).fill(0);
+    const daysSeen = Array.from({ length: 7 }, () => new Set());
+    entries.forEach(e => {
+      const d = toIST(e.joinedAt);
+      const dow = d.getUTCDay();
+      dayTotals[dow]++;
+      daysSeen[dow].add(d.toISOString().split('T')[0]);
+    });
+    const dayAverages = dayTotals.map((t, dow) => daysSeen[dow].size > 0 ? t / daysSeen[dow].size : 0);
+    const maxDayAvg = Math.max(...dayAverages);
+    const slowestDay = dayAverages.indexOf(Math.min(...dayAverages.filter(v => v > 0)));
+    if (maxDayAvg > 0 && slowestDay >= 0 && dayAverages[slowestDay] < maxDayAvg * 0.4) {
+      insights.push({
+        id: 'slow_day',
+        severity: 'info',
+        title: DAYS[slowestDay] + 's are your quietest',
+        metric: dayAverages[slowestDay].toFixed(1) + ' avg parties vs ' + maxDayAvg.toFixed(1) + ' on your busy days',
+        body: DAYS[slowestDay] + ' has under 40% of your peak day traffic. Could be a chance to test a midweek promo, a tasting menu, or staff training.',
+      });
+    }
+
+    // 8. Hour utilization (dead hours)
+    const totalHours = Array(24).fill(0);
+    entries.forEach(e => {
+      const d = toIST(e.joinedAt);
+      totalHours[d.getUTCHours()]++;
+    });
+    const activeHours = totalHours.map((c, h) => ({ h, c })).filter(x => x.c > 0);
+    if (activeHours.length >= 3) {
+      const totalEntries = entries.length;
+      const firstActiveHour = activeHours[0];
+      const lastActiveHour = activeHours[activeHours.length - 1];
+      const firstHourShare = firstActiveHour.c / totalEntries;
+      const lastHourShare = lastActiveHour.c / totalEntries;
+      if (firstHourShare < 0.05 && firstActiveHour.c >= 1) {
+        insights.push({
+          id: 'dead_open',
+          severity: 'info',
+          title: 'Quiet first hour of service',
+          metric: (firstHourShare * 100).toFixed(0) + '% of traffic in the first active hour (' + firstActiveHour.h + ':00)',
+          body: 'Almost no one shows up in your first hour. Could consider opening later, or running an early-bird promo to fill the slot.',
+        });
+      }
+      if (lastHourShare < 0.05 && lastActiveHour.c >= 1) {
+        insights.push({
+          id: 'dead_close',
+          severity: 'info',
+          title: 'Quiet last hour of service',
+          metric: (lastHourShare * 100).toFixed(0) + '% of traffic in the last active hour (' + lastActiveHour.h + ':00)',
+          body: 'Very few guests in your closing hour. Consider closing slightly earlier or running a late-night discount.',
+        });
+      }
+    }
+
+    res.json({ insights, hasData: true });
+  } catch (error) {
+    console.error('Insights error:', error);
+    res.status(500).json({ error: 'Failed to compute insights' });
+  }
+});
+
 module.exports = router;
