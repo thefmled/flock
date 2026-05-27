@@ -172,7 +172,8 @@
         }
 
         localStorage.setItem('flock_venue', JSON.stringify(data.venue));
-        window.location.href = '/dashboard.html';
+        localStorage.setItem('flock_last_destination', 'main');
+        window.location.href = '/main.html';
       } catch (err) {
         errorEl.textContent = err.message;
       }
