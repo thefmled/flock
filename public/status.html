@@ -140,12 +140,14 @@ async function loadStatus() {
       wait.style.display = 'none';
       waitLabel.style.display = 'none';
       document.getElementById('leaveBtn').style.display = 'none';
+      if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
     } else if (status === 'cancelled') {
       document.getElementById('position').textContent = '\u2014';
       document.getElementById('positionLabel').textContent = 'cancelled';
       wait.style.display = 'none';
       waitLabel.style.display = 'none';
       document.getElementById('leaveBtn').style.display = 'none';
+      if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
     } else {
       banner.style.display = 'none';
       document.getElementById('position').textContent = '#' + data.position;
@@ -194,8 +196,8 @@ function escapeHtml(str) {
   return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+let statusInterval = setInterval(loadStatus, 2000);
 loadStatus();
-setInterval(loadStatus, 2000);
 setInterval(() => fetch('/health'), 5 * 60 * 1000);
 </script>
 </body>
