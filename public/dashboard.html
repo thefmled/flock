@@ -233,6 +233,30 @@
   color: var(--accent-text);
   border-color: var(--accent);
 }
+
+.menu-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 8px;
+  background: var(--card-hover);
+  border-radius: 8px;
+}
+.menu-action {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  text-decoration: none;
+  font-weight: 500;
+}
+.menu-action.menu-view { color: var(--accent); border-color: var(--accent); }
+.menu-action.menu-delete:hover { color: var(--error); border-color: var(--error); }
   
 </style>
 
