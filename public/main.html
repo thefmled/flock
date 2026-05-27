@@ -656,6 +656,28 @@ function toggleDow(dow) {
   if (analyticsData) renderHoursChart();
 }
 
+function getThemeColors() {
+  const style = getComputedStyle(document.body);
+  return {
+    accent: style.getPropertyValue('--accent').trim() || '#f5a854',
+    text: style.getPropertyValue('--text').trim() || '#f5ead4',
+    textMuted: style.getPropertyValue('--text-muted').trim() || 'rgba(245,234,212,0.5)',
+    border: style.getPropertyValue('--border').trim() || 'rgba(245,234,212,0.08)',
+  };
+}
+
+function hexToRgba(hex, alpha) {
+  // Accepts #rgb, #rrggbb, or rgba(...) — returns rgba string
+  if (hex.startsWith('rgba')) return hex;
+  if (hex.startsWith('rgb(')) return hex.replace('rgb(', 'rgba(').replace(')', ',' + alpha + ')');
+  let h = hex.replace('#','');
+  if (h.length === 3) h = h.split('').map(c => c+c).join('');
+  const r = parseInt(h.slice(0,2),16);
+  const g = parseInt(h.slice(2,4),16);
+  const b = parseInt(h.slice(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 async function loadAnalytics() {
   if (!venue) return;
   const res = await fetch('/api/queue/analytics/' + venue.id + '?range=' + currentRange, {
@@ -664,10 +686,19 @@ async function loadAnalytics() {
   analyticsData = await res.json();
   document.getElementById('dailyChartSub').textContent = RANGE_LABELS[currentRange];
   const grouped = currentRange !== 'L7D';
+  const colors = getThemeColors();
+
   const dailyCtx = document.getElementById('dailyChart').getContext('2d');
   if (dailyChart) dailyChart.destroy();
   if (!grouped) {
-    dailyChart = new Chart(dailyCtx, { type:'bar', data: { labels: analyticsData.daily.map(d => DAY_NAMES[d.dayOfWeek]+' '+new Date(d.date).getDate()), datasets:[{label:'Guest parties', data: analyticsData.daily.map(d => d.count), backgroundColor:'#f5a854', borderRadius:4}]}, options: chartBaseOptions({noLegend:true})});
+    dailyChart = new Chart(dailyCtx, {
+      type:'bar',
+      data: {
+        labels: analyticsData.daily.map(d => DAY_NAMES[d.dayOfWeek]+' '+new Date(d.date).getDate()),
+        datasets:[{label:'Guest parties', data: analyticsData.daily.map(d => d.count), backgroundColor: colors.accent, borderRadius:4}]
+      },
+      options: chartBaseOptions({noLegend:true})
+    });
   } else {
     dailyChart = buildClusterChart(dailyCtx, analyticsData.daily, 'count', 'Guest parties');
   }
@@ -675,13 +706,21 @@ async function loadAnalytics() {
   const partyCtx = document.getElementById('partyChart').getContext('2d');
   if (partyChart) partyChart.destroy();
   if (!grouped) {
-    partyChart = new Chart(partyCtx, { type:'bar', data: { labels: analyticsData.daily.map(d => DAY_NAMES[d.dayOfWeek]+' '+new Date(d.date).getDate()), datasets:[{label:'Avg party size', data: analyticsData.daily.map(d => d.avgPartySize), backgroundColor:'#f5a854', borderRadius:4}]}, options: chartBaseOptions({noLegend:true})});
+    partyChart = new Chart(partyCtx, {
+      type:'bar',
+      data: {
+        labels: analyticsData.daily.map(d => DAY_NAMES[d.dayOfWeek]+' '+new Date(d.date).getDate()),
+        datasets:[{label:'Avg party size', data: analyticsData.daily.map(d => d.avgPartySize), backgroundColor: colors.accent, borderRadius:4}]
+      },
+      options: chartBaseOptions({noLegend:true})
+    });
   } else {
     partyChart = buildClusterChart(partyCtx, analyticsData.daily, 'avgPartySize', 'Avg party size');
   }
 }
 
 function buildClusterChart(ctx, daily, valueKey, datasetLabel) {
+  const colors = getThemeColors();
   const labels = [], values = [], clusterMidpoints = [], dowAverages = [];
   const orderedDays = [1,2,3,4,5,6,0];
   orderedDays.forEach((dow, dowIdx) => {
@@ -708,8 +747,8 @@ function buildClusterChart(ctx, daily, valueKey, datasetLabel) {
   return new Chart(ctx, {
     type:'bar',
     data: { labels, datasets:[
-      { type:'bar', label: datasetLabel, data: values, backgroundColor:'#f5a854', borderRadius: 3 },
-      { type:'line', label:'Day-of-week avg', data: lineData, borderColor:'rgba(245,168,84,0.45)', backgroundColor:'transparent', borderWidth:2, pointRadius: 3, pointBackgroundColor:'rgba(245,168,84,0.7)', spanGaps:true, tension:0.3 }
+      { type:'bar', label: datasetLabel, data: values, backgroundColor: colors.accent, borderRadius: 3 },
+      { type:'line', label:'Day-of-week avg', data: lineData, borderColor: hexToRgba(colors.accent, 0.45), backgroundColor:'transparent', borderWidth:2, pointRadius: 3, pointBackgroundColor: hexToRgba(colors.accent, 0.7), spanGaps:true, tension:0.3 }
     ]},
     options: chartBaseOptions(),
   });
@@ -717,6 +756,7 @@ function buildClusterChart(ctx, daily, valueKey, datasetLabel) {
 
 function renderHoursChart() {
   if (!analyticsData) return;
+  const colors = getThemeColors();
   const hoursCtx = document.getElementById('hoursChart').getContext('2d');
   if (hoursChart) hoursChart.destroy();
   const dows = ['0','1','2','3','4','5','6'].filter(d => selectedDows.has(d)).map(d => parseInt(d));
@@ -733,18 +773,19 @@ function renderHoursChart() {
   }
   hoursChart = new Chart(hoursCtx, {
     type:'bar',
-    data: { labels: result.map((_, i) => i + ':00'), datasets:[{ label:'Avg guest parties', data: result.map(v => parseFloat(v.toFixed(2))), backgroundColor:'#f5a854', borderRadius:3 }]},
+    data: { labels: result.map((_, i) => i + ':00'), datasets:[{ label:'Avg guest parties', data: result.map(v => parseFloat(v.toFixed(2))), backgroundColor: colors.accent, borderRadius:3 }]},
     options: chartBaseOptions({noLegend:true}),
   });
 }
 
 function chartBaseOptions(opts={}) {
+  const colors = getThemeColors();
   return {
     responsive:true, maintainAspectRatio:false,
-    plugins: { legend: { display: !opts.noLegend, position:'bottom', labels:{color:'rgba(245,234,212,0.5)', font:{size:10}, boxWidth:12, padding:12 } } },
+    plugins: { legend: { display: !opts.noLegend, position:'bottom', labels:{color: colors.textMuted, font:{size:10}, boxWidth:12, padding:12 } } },
     scales: {
-      y: { beginAtZero:true, ticks:{color:'rgba(245,234,212,0.4)', font:{size:10}}, grid:{color:'rgba(245,234,212,0.04)'}, border:{display:false} },
-      x: { ticks:{color:'rgba(245,234,212,0.5)', font:{size:10}, autoSkip:false}, grid:{display:false}, border:{color:'rgba(245,234,212,0.1)'} },
+      y: { beginAtZero:true, ticks:{color: colors.textMuted, font:{size:10}}, grid:{color: colors.border}, border:{display:false} },
+      x: { ticks:{color: colors.textMuted, font:{size:10}, autoSkip:false}, grid:{display:false}, border:{color: colors.border} },
     },
   };
 }
@@ -990,6 +1031,7 @@ async function selectTheme(themeId) {
     localStorage.setItem('flock_venue', JSON.stringify(venue));
     document.body.className = 'theme-' + themeId;
     loadThemesSettings();
+    loadAnalytics(); // re-render charts with new theme colors
   }
 }
 
