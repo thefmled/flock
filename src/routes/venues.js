@@ -87,6 +87,7 @@ router.get('/', requireAuth, requireActiveSubscription, async (req, res) => {
       where: { ownerId: req.ownerId },
       orderBy: { createdAt: 'desc' },
     });
+    res.set('Cache-Control', 'private, max-age=30');
     res.json({ venues });
   } catch (error) {
     console.error('Get venues error:', error);
@@ -102,6 +103,7 @@ router.get('/by-slug/:slug', async (req, res) => {
       include: { menus: { orderBy: { createdAt: 'asc' } } },
     });
     if (!venue) return res.status(404).json({ error: 'Venue not found' });
+    res.set('Cache-Control', 'public, max-age=60');
     res.json({ venue });
   } catch (error) {
     console.error('Get venue by slug error:', error);
@@ -242,6 +244,7 @@ router.get('/:id/menus', requireAuth, requireActiveSubscription, async (req, res
       where: { venueId: venue.id },
       orderBy: { createdAt: 'asc' },
     });
+    res.set('Cache-Control', 'private, max-age=60');
     res.json({ menus });
   } catch (error) {
     console.error('List menus error:', error);
