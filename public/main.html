@@ -925,10 +925,8 @@ function toggleDropdown(e) {
 }
 
 async function selectVenue(id) {
-  // Optimistic: update label instantly from existing venue list in localStorage
   document.getElementById('venueMenu').style.display = 'none';
   
-  // Fetch fresh data
   const res = await fetch('/api/venues', {
     headers: { 'Authorization': 'Bearer ' + token },
   });
@@ -938,7 +936,9 @@ async function selectVenue(id) {
     localStorage.setItem('flock_venue', JSON.stringify(venue));
     document.getElementById('venueButtonLabel').textContent = venue.name;
     document.body.className = 'theme-' + (venue.theme || 'dark-premium');
-    loadQueue();
+    loadAnalytics();
+    loadSubStatus();
+    renderOnboarding();
   }
 }
 
