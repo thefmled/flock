@@ -102,6 +102,9 @@ model QueueEntry {
   
   notifications Notification[]
   auditLogs   AuditLog[]
+
+  guestReply    String?
+  guestReplyAt  DateTime?
 }
 
 model Notification {
