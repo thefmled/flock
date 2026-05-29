@@ -196,7 +196,8 @@
         if (fileInput.files.length > 0) {
           const formData = new FormData();
           formData.append('menu', fileInput.files[0]);
-          fetch('/api/venues/' + data.venue.id + '/menu', {
+          formData.append('name', 'Main menu');
+          fetch('/api/venues/' + data.venue.id + '/menus', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + localStorage.getItem('flock_token') },
             body: formData,
