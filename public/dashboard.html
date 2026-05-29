@@ -801,8 +801,13 @@ function switchTab(tab) {
   if (tab === 'settings') loadSettings();
 }
 
-async function loadHistory() {
+let _historyLoadedAt = 0;
+async function loadHistory(force) {
   if (!venue) return;
+  // Use cached render if loaded recently (avoid burst on tab toggling)
+  if (!force && historyCache.length > 0 && Date.now() - _historyLoadedAt < 10000) {
+    return;
+  }
   const list = document.getElementById('historyList');
   list.innerHTML = `
     <div class="skeleton-card" style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid var(--border);">
@@ -856,6 +861,7 @@ async function loadHistory() {
       </div>
     `;
   }).join('');
+  _historyLoadedAt = Date.now();
 }
 
 function downloadCsv() {
@@ -1170,7 +1176,10 @@ async function loadStats() {
   document.getElementById('statTotal').textContent = data.totalGuests;
   document.getElementById('statSeated').textContent = data.seatedCount;
   document.getElementById('statCancelled').textContent = data.cancelledCount;
-  document.getElementById('statAvg').textContent = data.avgWaitMinutes + 'm';
+  // Avg wait is noisy below 3 samples — show em dash instead
+  document.getElementById('statAvg').textContent = (data.seatedCount >= 3 && data.avgWaitMinutes)
+    ? data.avgWaitMinutes + 'm'
+    : '—';
 }
 
 let historyCache = [];
