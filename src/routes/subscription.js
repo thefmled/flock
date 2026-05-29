@@ -132,23 +132,20 @@ setInterval(retryFailedSyncs, 10 * 60 * 1000);
 // Mark expired trials — runs every hour
 async function expireOldTrials() {
   try {
-    const now = new Date();
+    const graceMs = 3 * 24 * 60 * 60 * 1000;
+    const cutoff = new Date(Date.now() - graceMs);
     const owners = await prisma.owner.findMany({
       where: {
         subscriptionStatus: 'trial',
-        trialEndsAt: { lt: now },
+        trialEndsAt: { lt: cutoff },
       },
     });
     for (const owner of owners) {
-      // Give 3 days grace after trial ends for the charge to come through
-      const graceMs = 3 * 24 * 60 * 60 * 1000;
-      if (now - new Date(owner.trialEndsAt) > graceMs) {
-        await prisma.owner.update({
-          where: { id: owner.id },
-          data: { subscriptionStatus: 'expired' },
-        });
-        console.log(`Trial expired for owner ${owner.id}`);
-      }
+      await prisma.owner.update({
+        where: { id: owner.id },
+        data: { subscriptionStatus: 'expired' },
+      });
+      console.log(`Trial expired for owner ${owner.id}`);
     }
   } catch (e) {
     console.error('Expire trials error:', e);
