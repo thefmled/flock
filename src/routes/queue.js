@@ -182,7 +182,6 @@ router.post('/join/:slug', async (req, res) => {
     const waitMinutes = waitTimes[position - 1];
 
     // Fire WhatsApp queue-joined message (non-blocking)
-    const statusUrl = `${process.env.PUBLIC_URL || 'https://flock-wdz3.onrender.com'}/status.html?id=${entry.id}`;
     broadcast('venue:' + venue.id, { type: 'queue_changed' });
     broadcast('entry:' + entry.id, { type: 'entry_changed' });
     sendTemplate(phoneClean, process.env.GUPSHUP_TEMPLATE_QUEUE_JOIN, [
