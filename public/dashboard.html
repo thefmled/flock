@@ -573,6 +573,9 @@ async function loadQueue() {
   const empty = document.getElementById('emptyState');
 
   data.entries = (data.entries || []).filter(e => !hiddenEntries.has(e.id));
+  const activeIds = new Set(data.entries.map(e => e.id));
+  notifiedLocally.forEach(id => { if (!activeIds.has(id)) notifiedLocally.delete(id); });
+  calledLocally.forEach(id => { if (!activeIds.has(id)) calledLocally.delete(id); });
   
   if (!data.entries || data.entries.length === 0) {
     listEl.innerHTML = '';
