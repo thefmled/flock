@@ -41,6 +41,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/venues', require('./routes/venues'));
 app.use('/api/queue', require('./routes/queue'));
 app.use('/api/subscription', require('./routes/subscription'));
+app.use('/api/whatsapp', require('./routes/whatsapp'));
 
 // 404 handler for any unmatched /api/* request
 app.use('/api', (req, res) => {
