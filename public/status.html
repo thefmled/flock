@@ -44,6 +44,11 @@
           document.body.className = 'theme-' + t + ' theme-loaded';
         }
       });
+      setTimeout(function() {
+        if (!document.body.classList.contains('theme-loaded')) {
+          document.body.className = 'theme-dark-premium theme-loaded';
+        }
+      }, 4000);
     } catch(e) {}
   })();
 </script>
@@ -78,12 +83,21 @@
   </a>
 </main>
 
+<div id="leaveModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--card);border-radius:16px;padding:28px;max-width:360px;width:100%;border:1px solid var(--border-strong);text-align:center;">
+    <h3 class="heading" style="font-size:20px;margin-bottom:8px;">Leave the waitlist?</h3>
+    <p class="subheading" style="margin-bottom:20px;">You'll lose your spot. You can always rejoin later.</p>
+    <div style="display:flex;gap:8px;justify-content:center;">
+      <button onclick="_cancelLeave()" style="background:transparent;color:var(--text);border:1px solid var(--border-strong);font-family:inherit;font-size:14px;padding:10px 20px;border-radius:8px;cursor:pointer;flex:1;">Stay</button>
+      <button onclick="_confirmLeave()" style="background:var(--error,#ef4444);color:#fff;border:none;font-family:inherit;font-size:14px;font-weight:500;padding:10px 20px;border-radius:8px;cursor:pointer;flex:1;">Leave</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const params = new URLSearchParams(window.location.search);
 const entryId = params.get('id');
 let venue = null;
-let menusRendered = false;
-let reviewRendered = false;
 let menusRendered = false;
 let reviewRendered = false;
 
@@ -159,11 +173,19 @@ async function loadStatus() {
       document.getElementById('leaveBtn').style.display = 'none';
     } else if (status === 'seated') {
       document.getElementById('position').textContent = '\u2713';
-      document.getElementById('positionLabel').textContent = 'seated';
+      document.getElementById('positionLabel').textContent = 'seated · enjoy your meal';
       wait.style.display = 'none';
       waitLabel.style.display = 'none';
       document.getElementById('leaveBtn').style.display = 'none';
       if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
+      // Show review prompt prominently if available
+      const rc = document.getElementById('reviewCard');
+      if (venue.googleReviewsUrl && rc) {
+        rc.style.display = 'flex';
+        rc.href = venue.googleReviewsUrl;
+        rc.querySelector('h4').textContent = 'How was it? Leave a review';
+        rc.querySelector('p').textContent = 'A quick rating helps the venue a lot';
+      }
     } else if (status === 'cancelled') {
       document.getElementById('position').textContent = '\u2014';
       document.getElementById('positionLabel').textContent = 'cancelled';
@@ -214,12 +236,16 @@ async function loadStatus() {
   }
 }
 
-async function cancelEntry() {
-  if (!confirm('Leave the queue?')) return;
-  // Optimistic: show "you've left" state instantly
+function cancelEntry() {
+  document.getElementById('leaveModal').style.display = 'flex';
+}
+function _confirmLeave() {
+  document.getElementById('leaveModal').style.display = 'none';
   document.body.innerHTML = '<div style="text-align:center;padding:60px 24px;color:var(--text-muted);font-size:16px;">You\'ve left the waitlist. <a href="/" style="color:var(--accent);">Back to home</a></div>';
-  
   fetch('/api/queue/cancel/' + entryId, { method: 'POST' });
+}
+function _cancelLeave() {
+  document.getElementById('leaveModal').style.display = 'none';
 }
 
 function escapeHtml(str) {
