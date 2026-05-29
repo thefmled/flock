@@ -194,8 +194,22 @@
         // Navigate immediately — menu PDF upload happens in background
         const fileInput = document.getElementById('menuPdf');
         if (fileInput.files.length > 0) {
-          const formData = new FormData();
-          formData.append('menu', fileInput.files[0]);
+          const file = fileInput.files[0];
+          if (file.size > 20 * 1024 * 1024) {
+            errorEl.textContent = 'Menu file too large (max 20 MB). Venue created, but menu was not uploaded.';
+          } else if (file.type !== 'application/pdf') {
+            errorEl.textContent = 'Menu must be a PDF. Venue created, but menu was not uploaded.';
+          } else {
+            const formData = new FormData();
+            formData.append('menu', file);
+            formData.append('name', 'Main menu');
+            fetch('/api/venues/' + data.venue.id + '/menus', {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + localStorage.getItem('flock_token') },
+              body: formData,
+            });
+          }
+        }
           formData.append('name', 'Main menu');
           fetch('/api/venues/' + data.venue.id + '/menus', {
             method: 'POST',
