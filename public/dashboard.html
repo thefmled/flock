@@ -606,8 +606,8 @@ async function loadQueue() {
         </div>
       </div>
       <div class="queue-actions">
-        <button class="btn-notify ${notified ? 'btn-done' : ''}" onclick="notifyGuest('${e.id}')">${notified ? '✓ Notified' : 'Notify'}</button>
-        <button class="btn-notify ${called ? 'btn-done' : ''}" onclick="callGuest('${e.id}', '${e.guestPhone}')">${called ? '✓ Called' : 'Call'}</button>
+        <button class="btn-notify btn-action-notify ${notified ? 'btn-done' : ''}" onclick="notifyGuest('${e.id}')">${notified ? '✓ Notified' : 'Notify'}</button>
+        <button class="btn-notify btn-action-call ${called ? 'btn-done' : ''}" onclick="callGuest('${e.id}', '${e.guestPhone}')">${called ? '✓ Called' : 'Call'}</button>
         <button class="btn-seat" onclick="seatGuest('${e.id}')">Mark seated</button>
         <button class="btn-cancel" onclick="cancelGuest('${e.id}')">Cancel</button>
         <button onclick="showAudit('${e.id}', '${escapeHtml(e.guestName)}')" style="background:transparent;color:var(--text-muted);border:1px solid var(--border-strong);padding:8px 14px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;">Audit</button>
@@ -628,7 +628,7 @@ async function notifyGuest(id) {
   // Optimistic: flip Notify button to ✓ Notified instantly
   const card = document.querySelector(`[data-entry-id="${id}"]`);
   if (card) {
-    const notifyBtn = card.querySelectorAll('.btn-notify')[0];
+    const notifyBtn = card.querySelector('.btn-action-notify');
     if (notifyBtn) {
       notifyBtn.classList.add('btn-done');
       notifyBtn.textContent = '✓ Notified';
@@ -688,7 +688,7 @@ async function callGuest(id, phone) {
   // Optimistic: flip button to ✓ Called instantly
   const card = document.querySelector(`[data-entry-id="${id}"]`);
   if (card) {
-    const callBtn = card.querySelectorAll('.btn-notify')[1];
+    const callBtn = card.querySelector('.btn-action-call');
     if (callBtn) {
       callBtn.classList.add('btn-done');
       callBtn.textContent = '✓ Called';
