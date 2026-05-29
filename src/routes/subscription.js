@@ -238,9 +238,10 @@ router.post('/cancel', requireAuth, async (req, res) => {
     if (!owner.razorpaySubscriptionId) return res.status(400).json({ error: 'No active subscription' });
 
     try {
-      // cancel_at_cycle_end: false means cancel at the end of the current billing cycle (counterintuitive Razorpay flag)
-      // Pass true to cancel immediately. We want end-of-cycle, so false.
-      await razorpay.subscriptions.cancel(owner.razorpaySubscriptionId, false);
+      // Razorpay flag: `true` = cancel immediately, `false` = cancel at end of current billing cycle.
+      // We want end-of-cycle so the user keeps access until their paid period ends.
+      const cancelImmediately = false;
+      await razorpay.subscriptions.cancel(owner.razorpaySubscriptionId, cancelImmediately);
     } catch (e) {
       console.error('Razorpay cancel failed:', e.message || e);
       // Continue anyway — mark cancelled locally
