@@ -292,6 +292,13 @@ router.patch('/:venueId/menus/:menuId', requireAuth, requireActiveSubscription, 
     if (!venue) return res.status(404).json({ error: 'Venue not found' });
     const name = (req.body.name || '').trim();
     if (!name) return res.status(400).json({ error: 'Name required' });
+
+    // Verify menu belongs to this venue
+    const existing = await prisma.menu.findFirst({
+      where: { id: req.params.menuId, venueId: venue.id },
+    });
+    if (!existing) return res.status(404).json({ error: 'Menu not found' });
+
     const menu = await prisma.menu.update({
       where: { id: req.params.menuId },
       data: { name },
@@ -310,6 +317,13 @@ router.delete('/:venueId/menus/:menuId', requireAuth, requireActiveSubscription,
       where: { id: req.params.venueId, ownerId: req.ownerId },
     });
     if (!venue) return res.status(404).json({ error: 'Venue not found' });
+
+    // Verify menu belongs to this venue
+    const existing = await prisma.menu.findFirst({
+      where: { id: req.params.menuId, venueId: venue.id },
+    });
+    if (!existing) return res.status(404).json({ error: 'Menu not found' });
+
     await prisma.menu.delete({ where: { id: req.params.menuId } });
     res.json({ success: true });
   } catch (error) {
