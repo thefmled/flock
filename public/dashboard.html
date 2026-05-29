@@ -1037,6 +1037,15 @@ async function uploadMenu() {
     errEl.textContent = 'Pick a PDF first.';
     return;
   }
+  const file = fileInput.files[0];
+  if (file.size > 20 * 1024 * 1024) {
+    errEl.textContent = 'File too large. Max 20 MB.';
+    return;
+  }
+  if (file.type !== 'application/pdf') {
+    errEl.textContent = 'Only PDF files are allowed.';
+    return;
+  }
   const formData = new FormData();
   formData.append('menu', fileInput.files[0]);
   formData.append('name', nameInput.value.trim() || 'Menu');
