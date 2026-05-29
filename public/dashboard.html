@@ -635,6 +635,7 @@ async function loadQueue() {
             ${e.seatingPreference ? `<span class="preference-tag">${escapeHtml(e.seatingPreference)}</span>` : ''}
             <span>${escapeHtml(e.guestPhone)}</span>
             <span>· joined ${timeAgo(e.joinedAt)}</span>
+            <span>· ${renderVisitInfo(e.visitNumber, e.lastVisitAt)}</span>
           </div>
           ${e.notes ? `<div class="meta" style="margin-top:6px;">Notes: ${escapeHtml(e.notes)}</div>` : ''}
         </div>
@@ -1492,6 +1493,21 @@ function renderReplyBadge(reply) {
     return '<div class="reply-badge reply-declined">Guest responded "' + escapeHtml(reply) + '"</div>';
   }
   return '';
+}
+
+function renderVisitInfo(visitNumber, lastVisitAt) {
+  if (!visitNumber || visitNumber === 1) {
+    return '<span style="color:var(--text-muted);">First visit</span>';
+  }
+  const ordinal = ord(visitNumber);
+  const lastDate = lastVisitAt ? new Date(lastVisitAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '';
+  return '<span style="color:var(--accent);">' + ordinal + ' visit' + (lastDate ? ' · last ' + lastDate : '') + '</span>';
+}
+
+function ord(n) {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
   
 loadVenue().then(() => {
