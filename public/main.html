@@ -1534,14 +1534,22 @@ async function renderOnboarding() {
     if (onboardingInterval) { clearInterval(onboardingInterval); onboardingInterval = null; }
     return;
   }
-  const hasRes = await fetch('/api/queue/has-any/' + venue.id, {
-    headers: { 'Authorization': 'Bearer ' + token },
-  });
+  // Parallel fetch: has-any + menu count
+  const [hasRes, menusRes] = await Promise.all([
+    fetch('/api/queue/has-any/' + venue.id, {
+      headers: { 'Authorization': 'Bearer ' + token },
+    }),
+    fetch('/api/venues/' + venue.id + '/menus', {
+      headers: { 'Authorization': 'Bearer ' + token },
+    }),
+  ]);
   const hasData = await hasRes.json();
+  const menusData = await menusRes.json();
   const hasFirstGuest = !!hasData.hasAny;
+  const hasAnyMenu = (menusData.menus && menusData.menus.length > 0);
   const steps = [
     { label: 'Create your venue', done: true, action: null },
-    { label: 'Upload your menu', done: !!venue.menuPdfUrl, action: 'settings' },
+    { label: 'Upload your menu', done: hasAnyMenu, action: 'settings' },
     { label: 'Add your Google reviews link', done: !!venue.googleReviewsUrl, action: 'settings' },
     { label: 'Print and place your QR code', done: !!venue.qrMarkedPlaced, action: 'qr' },
     { label: 'Add your first guest', done: hasFirstGuest, action: null },
