@@ -998,6 +998,8 @@ async function saveSettings() {
   // Update local venue copy
   Object.assign(venue, payload);
   localStorage.setItem('flock_venue', JSON.stringify(venue));
+  // Update venue dropdown label
+  document.getElementById('venueButtonLabel').textContent = venue.name;
 
   try {
     const res = await fetch('/api/venues/' + venue.id, {
@@ -1010,15 +1012,14 @@ async function saveSettings() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to save');
-        venue = data.venue;
-        localStorage.setItem('flock_venue', JSON.stringify(venue));
-        okEl.textContent = 'Saved.';
-        loadVenue();
-        loadSettings();
-      } catch (err) {
-        errEl.textContent = err.message;
-      }
-    }
+    venue = data.venue;
+    localStorage.setItem('flock_venue', JSON.stringify(venue));
+    // Don't re-render the whole settings UI — user might still be editing
+  } catch (err) {
+    errEl.textContent = err.message;
+    okEl.textContent = '';
+  }
+}
 
 function showQr() {
   if (!venue) return;
