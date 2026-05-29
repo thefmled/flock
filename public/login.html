@@ -79,7 +79,7 @@
       const code = document.getElementById('code').value.trim();
       const email = sessionStorage.getItem('flock_email');
       const errorEl = document.getElementById('otpError');
-      const btn = document.querySelector('.button');
+      const btn = document.querySelector('#otpStep .button');
       errorEl.textContent = '';
       if (!code || code.length !== 6) {
         errorEl.textContent = 'Enter the 6-digit code.';
@@ -124,7 +124,7 @@
       } catch (err) {
         errorEl.textContent = err.message;
         btn.disabled = false;
-        btn.textContent = 'Verify';
+        btn.textContent = 'Log in';
       }
     }
 
