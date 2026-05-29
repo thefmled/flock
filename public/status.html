@@ -33,18 +33,6 @@
 .notified-banner { background: var(--accent); color: var(--accent-text); padding: 16px; border-radius: 12px; text-align: center; font-weight: 500; margin-bottom: 24px; }
 </style>
 
-<script>
-  (function() {
-    try {
-      const v = JSON.parse(localStorage.getItem('flock_venue') || 'null');
-      const t = (v && v.theme) ? v.theme : 'dark-premium';
-      document.addEventListener('DOMContentLoaded', function() {
-        document.body.className = 'theme-' + t;
-      });
-    } catch(e) {}
-  })();
-</script>
-
 <style>body{opacity:0;}body.theme-loaded{opacity:1;transition:opacity 0.15s;}</style>
 <script>
   (function() {
