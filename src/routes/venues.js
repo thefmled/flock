@@ -324,6 +324,17 @@ router.delete('/:venueId/menus/:menuId', requireAuth, requireActiveSubscription,
     });
     if (!existing) return res.status(404).json({ error: 'Menu not found' });
 
+    // Extract storage filename from the public URL and delete it
+    try {
+      const url = existing.url;
+      const match = url.match(/\/menus\/([^?]+)$/);
+      if (match && match[1]) {
+        await supabase.storage.from('menus').remove([match[1]]);
+      }
+    } catch (storageErr) {
+      console.error('Storage cleanup failed (continuing with DB delete):', storageErr);
+    }
+
     await prisma.menu.delete({ where: { id: req.params.menuId } });
     res.json({ success: true });
   } catch (error) {
