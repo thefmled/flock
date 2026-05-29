@@ -189,7 +189,6 @@
         if (!res.ok) throw new Error(data.error || 'Failed to create venue');
         
         localStorage.setItem('flock_venue', JSON.stringify(data.venue));
-        localStorage.setItem('flock_last_destination', 'main');
         
         // Navigate immediately — menu PDF upload happens in background
         const fileInput = document.getElementById('menuPdf');
