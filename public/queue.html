@@ -17,6 +17,11 @@
             document.body.className = 'theme-' + cached + ' theme-loaded';
           }
         });
+        setTimeout(function() {
+          if (!document.body.classList.contains('theme-loaded')) {
+            document.body.className = 'theme-dark-premium theme-loaded';
+          }
+        }, 4000);
       } catch(e) {}
     })();
   </script>
@@ -28,13 +33,13 @@
     <p style="text-align:center;color:var(--text-muted);font-size:14px;margin-bottom:4px;" id="venueLabel"></p>
     <p style="text-align:center;color:var(--text-muted);font-size:12px;margin-bottom:32px;" id="venueAddress"></p>
 
-    <div class="card" id="joinStep">
+    <form class="card" id="joinStep" onsubmit="event.preventDefault(); joinQueue();">
       <h2 class="heading">Join the queue</h2>
       <p class="subheading">A few quick details and you're on the list.</p>
 
       <div class="input-group">
         <label for="guestName">Your name</label>
-        <input type="text" id="guestName" placeholder="e.g. Aarav" />
+        <input type="text" id="guestName" placeholder="e.g. Aarav" autocomplete="name" autofocus />
       </div>
 
       <div class="input-group">
@@ -70,24 +75,31 @@
         <div class="seating-chips" id="notesChips"></div>
       </div>
 
-      <button class="button" onclick="joinQueue()">Join queue</button>
+      <button type="submit" class="button">Join queue</button>
       <p class="error" id="joinError"></p>
-    </div>
+    </form>
   </main>
 
   <script>
     const params = new URLSearchParams(window.location.search);
     const slug = params.get('venue');
     if (!slug) {
-      document.body.innerHTML = '<div class="empty" style="padding-top:100px;">Invalid queue link.</div>';
+      document.body.className = 'theme-dark-premium theme-loaded';
+      document.body.innerHTML = '<div class="empty" style="padding-top:100px;text-align:center;color:var(--text-muted);">Invalid queue link.</div>';
     }
 
     let seatingState = [];
     let notesState = [];
 
+    function showVenueUnavailable() {
+      document.body.className = 'theme-dark-premium theme-loaded';
+      document.body.innerHTML = '<div class="empty" style="padding:100px 24px 0;text-align:center;color:var(--text-muted);"><p style="font-size:16px;">This queue link is invalid or the venue is unavailable.</p><p style="margin-top:8px;font-size:13px;">Please ask staff for a fresh QR code.</p></div>';
+    }
+
     async function loadVenue() {
       try {
         const res = await fetch('/api/venues/by-slug/' + slug);
+        if (!res.ok) throw new Error('unavailable');
         const data = await res.json();
         if (data.venue) {
           document.body.className = 'theme-' + (data.venue.theme || 'dark-premium') + ' theme-loaded';
@@ -107,8 +119,12 @@
           notesState = noteOpts.map(o => ({ name: o, selected: false }));
           document.getElementById('notesGroup').style.display = noteOpts.length > 0 ? 'block' : 'none';
           renderNotesChips();
+        } else {
+          showVenueUnavailable();
         }
-      } catch (e) {}
+      } catch (e) {
+        showVenueUnavailable();
+      }
     }
 
     function renderSeatingChips() {
@@ -193,14 +209,13 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to join queue');
         const venueData = JSON.parse(sessionStorage.getItem('flock_venue_data') || '{}');
-        const params = new URLSearchParams({
-          id: data.entry.id,
-          position: data.position,
-          wait: data.waitMinutes,
-          venueName: document.getElementById('venueLabel').textContent,
-          menuPdfUrl: venueData.menuPdfUrl || '',
-          googleReviewsUrl: venueData.googleReviewsUrl || '',
-        });
+        const queryObj = { id: data.entry.id };
+        if (data.position != null) queryObj.position = data.position;
+        if (data.waitMinutes != null) queryObj.wait = data.waitMinutes;
+        queryObj.venueName = document.getElementById('venueLabel').textContent;
+        if (venueData.menuPdfUrl) queryObj.menuPdfUrl = venueData.menuPdfUrl;
+        if (venueData.googleReviewsUrl) queryObj.googleReviewsUrl = venueData.googleReviewsUrl;
+        const params = new URLSearchParams(queryObj);
         window.location.replace('/status.html?' + params.toString());
       } catch (err) {
         errorEl.textContent = err.message;
