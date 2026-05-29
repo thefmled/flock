@@ -96,13 +96,44 @@ async function startSubscription() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to create subscription');
 
+    // If user already has an active subscription, skip checkout and route them appropriately
+    if (data.alreadyExists) {
+      const venuesRes = await fetch('/api/venues', {
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+      const venuesData = await venuesRes.json();
+      if (!venuesData.venues || venuesData.venues.length === 0) {
+        window.location.replace('/setup.html');
+      } else {
+        window.location.replace('/main.html');
+      }
+      return;
+    }
+
+    if (!data.keyId || !data.subscriptionId) {
+      throw new Error('Subscription setup incomplete. Please refresh and try again.');
+    }
+
     const options = {
       key: data.keyId,
       subscription_id: data.subscriptionId,
       name: 'flock',
       description: 'Monthly subscription — ₹999/mo',
-      handler: function(response) {
-        window.location.href = '/setup.html';
+      handler: async function(response) {
+        // Route based on whether user has venues
+        try {
+          const vRes = await fetch('/api/venues', {
+            headers: { 'Authorization': 'Bearer ' + token },
+          });
+          const vData = await vRes.json();
+          if (!vData.venues || vData.venues.length === 0) {
+            window.location.replace('/setup.html');
+          } else {
+            window.location.replace('/main.html');
+          }
+        } catch (e) {
+          window.location.replace('/setup.html');
+        }
       },
       theme: { color: '#f5a854' },
       modal: {
