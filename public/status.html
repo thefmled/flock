@@ -252,8 +252,53 @@ function escapeHtml(str) {
   return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-let statusInterval = setInterval(loadStatus, 2000);
+// WebSocket for real-time push; falls back to slow polling when disconnected
+let statusWs = null;
+let statusWsReconnectTimer = null;
+let statusWsBackoff = 1000;
+let statusInterval = null;
+
+function setStatusPollRate(fast) {
+  if (statusInterval) clearInterval(statusInterval);
+  statusInterval = setInterval(loadStatus, fast ? 2000 : 15000);
+}
+
+function connectStatusWs() {
+  if (!entryId) return;
+  if (statusWs && (statusWs.readyState === WebSocket.OPEN || statusWs.readyState === WebSocket.CONNECTING)) return;
+
+  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  statusWs = new WebSocket(proto + '//' + window.location.host + '/ws');
+
+  statusWs.addEventListener('open', () => {
+    statusWsBackoff = 1000;
+    statusWs.send(JSON.stringify({ type: 'subscribe', key: 'entry:' + entryId }));
+    setStatusPollRate(false); // slow fallback when WS healthy
+  });
+
+  statusWs.addEventListener('message', (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'entry_changed') loadStatus();
+    } catch(err) {}
+  });
+
+  statusWs.addEventListener('close', () => {
+    setStatusPollRate(true); // back to fast polling
+    if (statusWsReconnectTimer) clearTimeout(statusWsReconnectTimer);
+    statusWsReconnectTimer = setTimeout(connectStatusWs, statusWsBackoff);
+    statusWsBackoff = Math.min(statusWsBackoff * 2, 30000);
+  });
+
+  statusWs.addEventListener('error', () => {
+    try { statusWs.close(); } catch(err) {}
+  });
+}
+
+// Start fast polling immediately; WS will downshift it once connected
+setStatusPollRate(true);
 loadStatus();
+connectStatusWs();
 </script>
 </body>
 </html>
