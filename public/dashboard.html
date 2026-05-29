@@ -257,6 +257,25 @@
 }
 .menu-action.menu-view { color: var(--accent); border-color: var(--accent); }
 .menu-action.menu-delete:hover { color: var(--error); border-color: var(--error); }
+
+.reply-badge {
+  font-size: 11px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-weight: 500;
+  max-width: 180px;
+  line-height: 1.3;
+}
+.reply-badge.reply-confirmed {
+  background: rgba(74,170,106,0.12);
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+.reply-badge.reply-declined {
+  background: rgba(229,115,115,0.12);
+  color: var(--error);
+  border: 1px solid var(--error);
+}
   
 </style>
 
@@ -619,7 +638,10 @@ async function loadQueue() {
           </div>
           ${e.notes ? `<div class="meta" style="margin-top:6px;">Notes: ${escapeHtml(e.notes)}</div>` : ''}
         </div>
-        <div class="wait-time" data-position="${e.position}" data-position-entered-at="${e.positionEnteredAt || ''}" data-server-wait="${e.waitMinutes}" data-base-wait="${venue.waitTimeBase}" data-last-sync="${Date.now()}">~${e.waitMinutes}m</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+          ${e.guestReply ? renderReplyBadge(e.guestReply) : ''}
+          <div class="wait-time" data-position="${e.position}" data-position-entered-at="${e.positionEnteredAt || ''}" data-server-wait="${e.waitMinutes}" data-base-wait="${venue.waitTimeBase}" data-last-sync="${Date.now()}">~${e.waitMinutes}m</div>
+        </div>
       </div>
       <div class="queue-actions">
         <button class="btn-notify ${notified ? 'btn-done' : ''}" onclick="notifyGuest('${e.id}')">${notified ? '✓ Notified' : 'Notify'}</button>
@@ -1458,6 +1480,19 @@ function setRange(range) {
   });
   loadAnalytics();
 }  
+
+function renderReplyBadge(reply) {
+  const normalized = (reply || '').trim().toLowerCase();
+  const isConfirmed = normalized.includes('will be there');
+  const isDeclined = normalized.includes('sorry') && (normalized.includes("can't") || normalized.includes('cant'));
+  
+  if (isConfirmed) {
+    return '<div class="reply-badge reply-confirmed">Guest responded "' + escapeHtml(reply) + '"</div>';
+  } else if (isDeclined) {
+    return '<div class="reply-badge reply-declined">Guest responded "' + escapeHtml(reply) + '"</div>';
+  }
+  return '';
+}
   
 loadVenue().then(() => {
   loadQueue();
