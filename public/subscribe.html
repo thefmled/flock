@@ -78,6 +78,18 @@
 </main>
 
 <script>
+// Intercept 401s globally — redirect to login
+const _origFetch = window.fetch;
+window.fetch = async function(...args) {
+  const res = await _origFetch.apply(this, args);
+  if (res.status === 401 && args[0] && typeof args[0] === 'string' && args[0].includes('/api/')) {
+    localStorage.clear();
+    sessionStorage.setItem('flock_expired', '1');
+    window.location.replace('/login.html');
+  }
+  return res;
+};
+
 const token = localStorage.getItem('flock_token');
 if (!token) window.location.href = '/login.html';
 
