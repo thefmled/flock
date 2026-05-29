@@ -1241,8 +1241,6 @@ setInterval(loadQueue, 5000); // fallback polling if WS drops
 setInterval(loadStats, 15000);
 setInterval(loadVenue, 30000); // refresh venue (including theme) every 30s
 
-// Keep server warm
-setInterval(() => fetch('/health'), 5 * 60 * 1000);
   
 </script>
 
