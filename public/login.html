@@ -32,6 +32,7 @@
       <button class="button" onclick="verifyOtp()">Log in</button>
       <p class="error" id="otpError"></p>
       <p style="text-align: center; margin-top: 16px;">
+        <a href="#" onclick="resendOtp(); return false;" style="color: var(--accent); font-size: 13px; margin-right: 16px;">Resend code</a>
         <a href="#" onclick="resetLogin(); return false;" style="color: var(--text-muted); font-size: 13px;">Use a different email</a>
       </p>
     </div>
@@ -126,6 +127,27 @@
         errorEl.textContent = err.message;
         btn.disabled = false;
         btn.textContent = 'Log in';
+      }
+    }
+
+    async function resendOtp() {
+      const email = sessionStorage.getItem('flock_email');
+      if (!email) return;
+      const errorEl = document.getElementById('otpError');
+      errorEl.textContent = '';
+      try {
+        const res = await fetch(API + '/api/auth/request-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to resend code');
+        errorEl.style.color = 'var(--success)';
+        errorEl.textContent = 'New code sent.';
+        setTimeout(() => { errorEl.style.color = ''; errorEl.textContent = ''; }, 3000);
+      } catch (err) {
+        errorEl.textContent = err.message;
       }
     }
 
