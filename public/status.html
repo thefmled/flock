@@ -107,6 +107,35 @@ if (preposition && prewait) {
 if (prevenue) {
   document.getElementById('venueLabel').textContent = prevenue;
 }
+// Pre-render menus + review card from sessionStorage cache (set by queue.html)
+function escapeHtmlEarly(str) {
+  return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+try {
+  const cachedVenue = JSON.parse(sessionStorage.getItem('flock_venue_data') || 'null');
+  if (cachedVenue) {
+    const mc = document.getElementById('menuCardsContainer');
+    if (cachedVenue.menus && cachedVenue.menus.length > 0) {
+      mc.innerHTML = cachedVenue.menus.map(m => `
+        <a href="${m.url}" class="card action-card" target="_blank">
+          <div class="action-card-body">
+            <svg class="action-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+            <div>
+              <h4>${escapeHtmlEarly(m.name)}</h4>
+              <p>Browse while you wait</p>
+            </div>
+          </div>
+          <span class="action-card-arrow">→</span>
+        </a>
+      `).join('');
+    }
+    if (cachedVenue.googleReviewsUrl) {
+      const rc = document.getElementById('reviewCard');
+      rc.style.display = 'flex';
+      rc.href = cachedVenue.googleReviewsUrl;
+    }
+  }
+} catch(e) {}
 
 async function loadStatus() {
   if (!entryId) return;
