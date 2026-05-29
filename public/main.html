@@ -1531,6 +1531,7 @@ async function renderOnboarding() {
   const box = document.getElementById('onboardingBox');
   if (venue.onboardingDismissed) {
     box.innerHTML = '';
+    if (onboardingInterval) { clearInterval(onboardingInterval); onboardingInterval = null; }
     return;
   }
   const hasRes = await fetch('/api/queue/has-any/' + venue.id, {
