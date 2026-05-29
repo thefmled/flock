@@ -217,19 +217,50 @@ router.get('/live/:venueId', requireAuth, requireActiveSubscription, async (req,
       where: { id: req.params.venueId, ownerId: req.ownerId },
     });
     if (!venue) return res.status(404).json({ error: 'Venue not found' });
-
     const entries = await prisma.queueEntry.findMany({
       where: { venueId: venue.id, status: { in: ['waiting', 'notified'] } },
       orderBy: { joinedAt: 'asc' },
     });
-
     const waitTimes = await computeWaitTimes(entries, venue);
-    const enriched = entries.map((entry, idx) => ({
-      ...entry,
-      position: idx + 1,
-      waitMinutes: waitTimes[idx],
-    }));
 
+    // Compute visit history per unique phone (batch query)
+    const phones = [...new Set(entries.map(e => e.guestPhone))];
+    const visitData = {};
+    if (phones.length > 0) {
+      const allVisits = await prisma.queueEntry.findMany({
+        where: {
+          venueId: venue.id,
+          guestPhone: { in: phones },
+          status: { in: ['seated', 'cancelled', 'notified', 'waiting'] },
+        },
+        select: { guestPhone: true, joinedAt: true, status: true, id: true },
+        orderBy: { joinedAt: 'desc' },
+      });
+      phones.forEach(phone => {
+        const visits = allVisits.filter(v => v.guestPhone === phone);
+        // Count completed visits (seated only — cancelled doesn't count as a "visit")
+        const completed = visits.filter(v => v.status === 'seated');
+        // Find last completed visit before current
+        const lastCompleted = completed[0]; // most recent
+        visitData[phone] = {
+          totalCompleted: completed.length,
+          lastVisitAt: lastCompleted ? lastCompleted.joinedAt : null,
+        };
+      });
+    }
+
+    const enriched = entries.map((entry, idx) => {
+      const visit = visitData[entry.guestPhone] || { totalCompleted: 0, lastVisitAt: null };
+      // visitNumber = number of past completed visits + 1 for the current one
+      const visitNumber = visit.totalCompleted + 1;
+      return {
+        ...entry,
+        position: idx + 1,
+        waitMinutes: waitTimes[idx],
+        visitNumber,
+        lastVisitAt: visit.lastVisitAt,
+      };
+    });
     res.json({ entries: enriched });
   } catch (error) {
     console.error('Live queue error:', error);
