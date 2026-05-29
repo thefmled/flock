@@ -549,45 +549,13 @@ document.addEventListener('click', (e) => {
 
 let queueEverLoaded = false;
 
-async function loadQueue() {
-  if (!venue) return;
-  
-  const listEl = document.getElementById('queueList');
-  const hasContent = listEl.querySelector('.queue-entry');
-  if (!queueEverLoaded && listEl.innerHTML === '' && !hasContent) {
-    listEl.innerHTML = `
-      <div class="skeleton-card" style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid var(--border);">
-        <div style="height:18px;width:55%;background:var(--card-hover);border-radius:4px;margin-bottom:8px;"></div>
-        <div style="height:12px;width:35%;background:var(--card-hover);border-radius:4px;opacity:0.6;"></div>
-      </div>
-    `;
-  }
-  
-  const res = await fetch('/api/queue/live/' + venue.id, {
-    headers: { 'Authorization': 'Bearer ' + token },
-  });
-  const data = await res.json();
-  queueEverLoaded = true;
-  const list = document.getElementById('queueList');
-  const empty = document.getElementById('emptyState');
+// Per-entry HTML cache for diff rendering — kills full innerHTML thrash
+let _renderedEntries = new Map(); // id -> html string
 
-  // Skip entries with pending actions OR hidden ones (already optimistically removed)
-  data.entries = (data.entries || []).filter(e => !hiddenEntries.has(e.id) && !pendingActions.has(e.id));
-  const activeIds = new Set(data.entries.map(e => e.id));
-  notifiedLocally.forEach(id => { if (!activeIds.has(id)) notifiedLocally.delete(id); });
-  calledLocally.forEach(id => { if (!activeIds.has(id)) calledLocally.delete(id); });
-  
-  if (!data.entries || data.entries.length === 0) {
-    listEl.innerHTML = '';
-    empty.style.display = 'block';
-    return;
-  }
-  empty.style.display = 'none';
-
-  listEl.innerHTML = data.entries.map(e => {
-    const notified = !!e.notifiedAt || notifiedLocally.has(e.id);
-    const called = !!e.calledAt || calledLocally.has(e.id);
-    return `
+function buildEntryHtml(e) {
+  const notified = !!e.notifiedAt || notifiedLocally.has(e.id);
+  const called = !!e.calledAt || calledLocally.has(e.id);
+  return `
     <div class="queue-entry" data-entry-id="${e.id}">
       <div class="queue-entry-row">
         <div class="queue-entry-info">
@@ -614,7 +582,104 @@ async function loadQueue() {
       </div>
     </div>
   `;
-  }).join('');
+}
+
+// Build the hash key WITHOUT data-last-sync so timestamps don't cause spurious updates
+function entryHashKey(e) {
+  const notified = !!e.notifiedAt || notifiedLocally.has(e.id);
+  const called = !!e.calledAt || calledLocally.has(e.id);
+  return [e.id, e.position, e.waitMinutes, e.guestName, e.guestPhone, e.partySize,
+    e.seatingPreference || '', e.notes || '', notified ? 1 : 0, called ? 1 : 0,
+    e.visitNumber, e.lastVisitAt || '', e.guestReply || '', e.positionEnteredAt || ''
+  ].join('|');
+}
+
+let queueEverLoaded = false;
+async function loadQueue() {
+  if (!venue) return;
+  const listEl = document.getElementById('queueList');
+  
+  // First load only — show skeletons
+  if (!queueEverLoaded) {
+    listEl.innerHTML = `
+      <div class="skeleton-card" style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid var(--border);">
+        <div style="height:18px;width:60%;background:var(--card-hover);border-radius:4px;margin-bottom:8px;"></div>
+        <div style="height:12px;width:40%;background:var(--card-hover);border-radius:4px;opacity:0.6;"></div>
+      </div>
+      <div class="skeleton-card" style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid var(--border);">
+        <div style="height:18px;width:55%;background:var(--card-hover);border-radius:4px;margin-bottom:8px;"></div>
+        <div style="height:12px;width:35%;background:var(--card-hover);border-radius:4px;opacity:0.6;"></div>
+      </div>
+    `;
+  }
+  
+  const res = await fetch('/api/queue/live/' + venue.id, {
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
+  const data = await res.json();
+  queueEverLoaded = true;
+  const empty = document.getElementById('emptyState');
+
+  // Skip entries with pending actions OR hidden ones (already optimistically removed)
+  data.entries = (data.entries || []).filter(e => !hiddenEntries.has(e.id) && !pendingActions.has(e.id));
+  const activeIds = new Set(data.entries.map(e => e.id));
+  notifiedLocally.forEach(id => { if (!activeIds.has(id)) notifiedLocally.delete(id); });
+  calledLocally.forEach(id => { if (!activeIds.has(id)) calledLocally.delete(id); });
+  
+  if (data.entries.length === 0) {
+    listEl.innerHTML = '';
+    empty.style.display = 'block';
+    _renderedEntries.clear();
+    return;
+  }
+  empty.style.display = 'none';
+
+  // Diff render: only touch cards whose content actually changed
+  const incoming = new Map();
+  data.entries.forEach(e => incoming.set(e.id, e));
+  
+  // Remove cards no longer in the queue
+  _renderedEntries.forEach((_, id) => {
+    if (!incoming.has(id)) {
+      const el = listEl.querySelector(`[data-entry-id="${id}"]`);
+      if (el) el.remove();
+      _renderedEntries.delete(id);
+    }
+  });
+  
+  // Add or update cards; preserve order by re-anchoring against incoming order
+  let prevEl = null;
+  for (const e of data.entries) {
+    const hash = entryHashKey(e);
+    const existing = listEl.querySelector(`[data-entry-id="${e.id}"]`);
+    const cached = _renderedEntries.get(e.id);
+    
+    if (!existing) {
+      // New card — insert in correct position
+      const tmp = document.createElement('div');
+      tmp.innerHTML = buildEntryHtml(e).trim();
+      const newEl = tmp.firstChild;
+      if (prevEl && prevEl.nextSibling) {
+        listEl.insertBefore(newEl, prevEl.nextSibling);
+      } else if (prevEl) {
+        listEl.appendChild(newEl);
+      } else {
+        listEl.insertBefore(newEl, listEl.firstChild);
+      }
+      _renderedEntries.set(e.id, hash);
+      prevEl = newEl;
+    } else if (cached !== hash) {
+      // Changed — replace contents only (preserves the outer element)
+      const tmp = document.createElement('div');
+      tmp.innerHTML = buildEntryHtml(e).trim();
+      existing.replaceWith(tmp.firstChild);
+      _renderedEntries.set(e.id, hash);
+      prevEl = listEl.querySelector(`[data-entry-id="${e.id}"]`);
+    } else {
+      // Unchanged — skip DOM work entirely
+      prevEl = existing;
+    }
+  }
 }
 
 const notifiedLocally = new Set();
