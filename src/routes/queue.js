@@ -25,7 +25,8 @@ async function logAudit(queueEntryId, action, details = null) {
   }
 }
 
-async function computeWaitTimes(entries, venue) {
+async function computeWaitTimes(entries, venue, options = {}) {
+  const readOnly = options.readOnly === true;
   const waitTimes = [];
   const updates = [];
 
@@ -38,12 +39,13 @@ async function computeWaitTimes(entries, venue) {
     const updateData = {};
 
     if (entry.lastPosition !== currentPos) {
-      // Preserve previous lockedWait as a ceiling — wait never increases
-      const previousLock = entry.lockedWait;
+      // Position changed — record new entry time. Preserve lockedWait as ceiling.
       updateData.lastPosition = currentPos;
       updateData.positionEnteredAt = new Date();
-      updateData.lockedWait = previousLock;
-      updateData.startingWait = null; // will re-snapshot based on new chainStart
+      // Only write startingWait if it's not already null (avoid noise)
+      if (entry.startingWait !== null) {
+        updateData.startingWait = null;
+      }
       entry.lastPosition = currentPos;
       entry.positionEnteredAt = new Date();
       entry.startingWait = null;
@@ -114,8 +116,7 @@ async function computeWaitTimes(entries, venue) {
     }
   }
 
-  // Batch update — fire all updates in parallel instead of awaiting each one
-  if (updates.length > 0) {
+  if (!readOnly && updates.length > 0) {
     await Promise.all(updates.map(u =>
       prisma.queueEntry.update({ where: { id: u.id }, data: u.data })
     ));
@@ -284,7 +285,7 @@ router.get('/status/:entryId', async (req, res) => {
     });
     const position = allWaiting.findIndex(e => e.id === entry.id) + 1;
     const waitMinutes = position > 0
-      ? (await computeWaitTimes(allWaiting, entry.venue))[position - 1]
+      ? (await computeWaitTimes(allWaiting, entry.venue, { readOnly: true }))[position - 1]
       : 0;
 
     res.json({ entry, position, waitMinutes });
