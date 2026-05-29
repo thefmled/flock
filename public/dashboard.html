@@ -624,25 +624,61 @@ async function notifyGuest(id) {
   if (!reportingTime) return;
 
   notifiedLocally.add(id);
-  
-  // Optimistic: flip Notify button to ✓ Notified instantly
   const card = document.querySelector(`[data-entry-id="${id}"]`);
-  if (card) {
-    const notifyBtn = card.querySelector('.btn-action-notify');
-    if (notifyBtn) {
-      notifyBtn.classList.add('btn-done');
-      notifyBtn.textContent = '✓ Notified';
-    }
+  const notifyBtn = card && card.querySelector('.btn-action-notify');
+  if (notifyBtn) {
+    notifyBtn.classList.add('btn-done');
+    notifyBtn.textContent = '✓ Notified';
   }
 
-  fetch('/api/queue/notify/' + id, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + token,
-    },
-    body: JSON.stringify({ reportingTime }),
+  try {
+    const res = await fetch('/api/queue/notify/' + id, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token,
+      },
+      body: JSON.stringify({ reportingTime }),
+    });
+    if (!res.ok) throw new Error('notify_failed');
+  } catch (err) {
+    // Revert optimistic state + alert operator
+    notifiedLocally.delete(id);
+    if (notifyBtn) {
+      notifyBtn.classList.remove('btn-done');
+      notifyBtn.textContent = 'Notify';
+    }
+    showToast('Notify failed — please try again.');
+  }
+}
+
+function confirmAction(title, body, confirmLabel, variant) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('confirmModal');
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmBody').textContent = body;
+    const cBtn = document.getElementById('confirmYes');
+    cBtn.textContent = confirmLabel;
+    cBtn.style.background = variant === 'danger' ? 'var(--error,#ef4444)' : 'var(--accent)';
+    cBtn.style.color = variant === 'danger' ? '#fff' : 'var(--accent-text)';
+    modal.style.display = 'flex';
+    window._confirmYes = () => { modal.style.display = 'none'; resolve(true); };
+    window._confirmNo = () => { modal.style.display = 'none'; resolve(false); };
   });
+}
+  
+function showToast(msg) {
+  let t = document.getElementById('flockToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'flockToast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--error,#ef4444);color:#fff;padding:12px 20px;border-radius:8px;font-size:14px;font-weight:500;z-index:2000;box-shadow:0 4px 16px rgba(0,0,0,0.3);';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.display = 'none'; }, 3500);
 }
 
 function pickReportingTime() {
@@ -683,9 +719,8 @@ function pickReportingTime() {
 
 const calledLocally = new Set();
 
-async function callGuest(id, phone) {
+function callGuest(id, phone) {
   calledLocally.add(id);
-  // Optimistic: flip button to ✓ Called instantly
   const card = document.querySelector(`[data-entry-id="${id}"]`);
   if (card) {
     const callBtn = card.querySelector('.btn-action-call');
@@ -694,13 +729,20 @@ async function callGuest(id, phone) {
       callBtn.textContent = '✓ Called';
     }
   }
-  
-  await fetch('/api/queue/call/' + id, {
+
+  // Fire log async — don't block the dial
+  fetch('/api/queue/call/' + id, {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + token },
-  });
-  
-  window.location.href = 'tel:' + phone;
+  }).catch(() => {});
+
+  // Trigger dialer via anchor so the dashboard never navigates away
+  const a = document.createElement('a');
+  a.href = 'tel:' + phone;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => a.remove(), 100);
 }
 
 const pendingActions = new Set();
@@ -708,7 +750,8 @@ const pendingActions = new Set();
 const hiddenEntries = new Set();
 
 async function seatGuest(id) {
-  if (!confirm('Mark this guest as seated? They will be removed from the queue.')) return;
+  const ok = await confirmAction('Mark seated?', 'They\'ll be removed from the queue.', 'Mark seated', 'accent');
+  if (!ok) return;
   pendingActions.add(id);
   hiddenEntries.add(id);
   const card = document.querySelector(`[data-entry-id="${id}"]`);
@@ -731,7 +774,8 @@ async function seatGuest(id) {
 }
 
 async function cancelGuest(id) {
-  if (!confirm('Cancel this entry?')) return;
+  const ok = await confirmAction('Cancel this entry?', 'They\'ll be removed from the queue.', 'Cancel entry', 'danger');
+  if (!ok) return;
   hiddenEntries.add(id);
   const card = document.querySelector(`[data-entry-id="${id}"]`);
   if (card) {
@@ -1265,6 +1309,17 @@ setInterval(loadVenue, 30000); // refresh venue (including theme) every 30s
     <div style="display:flex;gap:8px;justify-content:center;margin-top:24px;">
       <button onclick="window._cancelReportingTime()" style="background:transparent;color:var(--text-muted);border:1px solid var(--border-strong);font-family:inherit;font-size:13px;padding:10px 20px;border-radius:8px;cursor:pointer;">Cancel</button>
       <button id="confirmNotifyBtn" disabled style="background:var(--accent);color:var(--accent-text);border:none;font-family:inherit;font-size:13px;font-weight:500;padding:10px 20px;border-radius:8px;cursor:pointer;opacity:0.4;" onclick="window._confirmReportingTime()">Send notification</button>
+    </div>
+  </div>
+</div>
+
+<div id="confirmModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--card);border-radius:16px;padding:28px;max-width:360px;width:100%;border:1px solid var(--border-strong);text-align:center;">
+    <h3 class="heading" id="confirmTitle" style="font-size:20px;margin-bottom:8px;"></h3>
+    <p class="subheading" id="confirmBody" style="margin-bottom:20px;"></p>
+    <div style="display:flex;gap:8px;justify-content:center;">
+      <button onclick="window._confirmNo()" style="background:transparent;color:var(--text);border:1px solid var(--border-strong);font-family:inherit;font-size:14px;padding:10px 20px;border-radius:8px;cursor:pointer;flex:1;">Back</button>
+      <button id="confirmYes" onclick="window._confirmYes()" style="background:var(--accent);color:var(--accent-text);border:none;font-family:inherit;font-size:14px;font-weight:500;padding:10px 20px;border-radius:8px;cursor:pointer;flex:1;"></button>
     </div>
   </div>
 </div>
