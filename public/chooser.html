@@ -94,7 +94,12 @@ window.fetch = async function(...args) {
 };
 
 const token = localStorage.getItem('flock_token');
-if (!token) window.location.href = '/login.html';
+if (!token) {
+  window.location.href = '/login.html';
+} else {
+  // Chooser is deprecated — send straight to dashboard
+  window.location.replace('/dashboard.html');
+}
 
 </script>
 </body>
