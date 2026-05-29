@@ -2,7 +2,7 @@ const express = require('express');
 const Razorpay = require('razorpay');
 const prisma = require('../lib/prisma');
 const crypto = require('crypto');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, invalidateSubCache } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -45,6 +45,7 @@ router.post('/create', requireAuth, async (req, res) => {
         venueQuantity: 1,
       },
     });
+    invalidateSubCache(owner.id);
 
     res.json({
       subscriptionId: subscription.id,
@@ -145,6 +146,7 @@ async function expireOldTrials() {
         where: { id: owner.id },
         data: { subscriptionStatus: 'expired' },
       });
+      invalidateSubCache(owner.id);
       console.log(`Trial expired for owner ${owner.id}`);
     }
   } catch (e) {
@@ -192,6 +194,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
             subscriptionStartedAt: owner.subscriptionStartedAt || new Date(),
           },
         });
+        invalidateSubCache(owner.id);
 
         // Sync the current venue count to Razorpay now that the subscription is active
         const venueCount = await prisma.venue.count({ where: { ownerId: owner.id } });
@@ -209,6 +212,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
           where: { id: owner.id },
           data: { subscriptionStatus: 'cancelled' },
         });
+        invalidateSubCache(owner.id);
       }
     } else if (event === 'subscription.paused' || event === 'subscription.halted') {
       const subscriptionId = payload.subscription.entity.id;
@@ -220,6 +224,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
           where: { id: owner.id },
           data: { subscriptionStatus: 'paused' },
         });
+        invalidateSubCache(owner.id);
       }
     }
 
@@ -251,6 +256,7 @@ router.post('/cancel', requireAuth, async (req, res) => {
       where: { id: owner.id },
       data: { subscriptionStatus: 'cancelled' },
     });
+    invalidateSubCache(owner.id);
 
     res.json({ success: true });
   } catch (error) {
