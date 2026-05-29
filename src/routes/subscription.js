@@ -160,15 +160,21 @@ setInterval(expireOldTrials, 60 * 60 * 1000);
 // Razorpay webhook to handle subscription events
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   try {
-    // Verify signature
+    // Verify signature — fail closed
     const signature = req.headers['x-razorpay-signature'];
     const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
-    if (secret && signature) {
-      const expected = crypto.createHmac('sha256', secret).update(req.body).digest('hex');
-      if (expected !== signature) {
-        console.warn('Webhook signature mismatch');
-        return res.status(400).json({ error: 'Invalid signature' });
-      }
+    if (!secret) {
+      console.error('RAZORPAY_WEBHOOK_SECRET not configured — rejecting webhook');
+      return res.status(500).json({ error: 'Webhook secret not configured' });
+    }
+    if (!signature) {
+      console.warn('Webhook missing signature header');
+      return res.status(400).json({ error: 'Missing signature' });
+    }
+    const expected = crypto.createHmac('sha256', secret).update(req.body).digest('hex');
+    if (expected !== signature) {
+      console.warn('Webhook signature mismatch');
+      return res.status(400).json({ error: 'Invalid signature' });
     }
 
     const body = JSON.parse(req.body.toString());
