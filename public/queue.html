@@ -116,21 +116,6 @@
       `).join('');
     }
 
-    function renderNotesChips() {
-      const c = document.getElementById('notesChips');
-      if (!c) return;
-      c.innerHTML = notesState.map((opt, i) => `
-        <button type="button" class="chip ${opt.selected ? 'selected' : ''}" onclick="toggleNote(${i})">
-          ${escapeHtml(opt.name)}
-        </button>
-      `).join('');
-    }
-
-    function toggleNote(i) {
-      notesState[i].selected = !notesState[i].selected;
-      renderNotesChips();
-    }
-    
     function selectSeating(i) {
       // Single-select for seating
       seatingState = seatingState.map((o, idx) => ({ ...o, selected: idx === i }));
