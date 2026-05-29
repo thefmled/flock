@@ -75,8 +75,8 @@
   <div class="chooser">
     <h1 class="chooser-logo">fl<span class="accent">o</span>ck</h1>
     <p class="chooser-greeting">Where would you like to go?</p>
-    <a href="/dashboard.html" class="chooser-btn" onclick="rememberChoice('dashboard')">Go to live queue</a>
-    <a href="/main.html" class="chooser-btn secondary" onclick="rememberChoice('main')">Go to main</a>
+    <a href="/dashboard.html" class="chooser-btn">Go to live queue</a>
+    <a href="/main.html" class="chooser-btn secondary">Go to main</a>
   </div>
 </div>
 
@@ -95,10 +95,6 @@ window.fetch = async function(...args) {
 
 const token = localStorage.getItem('flock_token');
 if (!token) window.location.href = '/login.html';
-
-function rememberChoice(dest) {
-  localStorage.setItem('flock_last_destination', dest);
-}
 
 </script>
 </body>
