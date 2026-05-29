@@ -98,7 +98,8 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Invalid code');
         localStorage.setItem('flock_token', data.token);
-        localStorage.setItem('flock_owner', JSON.stringify(data.owner));
+        // Only store minimal owner info, not the full record (which has razorpay IDs etc.)
+        localStorage.setItem('flock_owner', JSON.stringify({ id: data.owner.id, phone: data.owner.phone }));
         
         if (data.isNewUser) {
           window.location.replace('/subscribe.html');
