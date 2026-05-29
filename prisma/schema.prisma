@@ -82,6 +82,8 @@ model QueueEntry {
   partySize   Int
   seatingPreference String?
   notes             String?
+  guestReply    String?
+  guestReplyAt  DateTime?
   waitTimeBaseAtJoin      Int?
   waitTimeIncrementAtJoin Int?
   waitTimeCapAtJoin       Int?
@@ -102,9 +104,6 @@ model QueueEntry {
   
   notifications Notification[]
   auditLogs   AuditLog[]
-
-  guestReply    String?
-  guestReplyAt  DateTime?
 }
 
 model Notification {
