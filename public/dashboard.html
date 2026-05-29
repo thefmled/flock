@@ -443,7 +443,7 @@ let wsReconnectTimer = null;
 
 function connectWebSocket() {
   if (!venue) return;
-  if (ws && ws.readyState === WebSocket.OPEN) return;
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
   
   const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   ws = new WebSocket(proto + '//' + window.location.host + '/ws');
