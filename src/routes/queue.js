@@ -931,12 +931,13 @@ router.get('/insights/:venueId', requireAuth, requireActiveSubscription, async (
       }
     }
 
-    // 6. Average party size shift
+    // 6. Average party size shift — split entries cleanly in half
     if (entries.length >= 20) {
-      const recent15 = entries.slice(-15);
-      const earlier15 = entries.slice(0, 15);
-      const recentAvg = recent15.reduce((s, e) => s + e.partySize, 0) / 15;
-      const earlierAvg = earlier15.reduce((s, e) => s + e.partySize, 0) / 15;
+      const mid = Math.floor(entries.length / 2);
+      const earlierHalf = entries.slice(0, mid);
+      const recentHalf = entries.slice(mid);
+      const recentAvg = recentHalf.reduce((s, e) => s + e.partySize, 0) / recentHalf.length;
+      const earlierAvg = earlierHalf.reduce((s, e) => s + e.partySize, 0) / earlierHalf.length;
       const delta = recentAvg - earlierAvg;
       if (Math.abs(delta) >= 0.5) {
         insights.push({
