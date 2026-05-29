@@ -551,7 +551,6 @@ let queueEverLoaded = false;
 
 async function loadQueue() {
   if (!venue) return;
-  if (pendingActions.size > 0) return;
   
   const listEl = document.getElementById('queueList');
   const hasContent = listEl.querySelector('.queue-entry');
@@ -572,7 +571,8 @@ async function loadQueue() {
   const list = document.getElementById('queueList');
   const empty = document.getElementById('emptyState');
 
-  data.entries = (data.entries || []).filter(e => !hiddenEntries.has(e.id));
+  // Skip entries with pending actions OR hidden ones (already optimistically removed)
+  data.entries = (data.entries || []).filter(e => !hiddenEntries.has(e.id) && !pendingActions.has(e.id));
   const activeIds = new Set(data.entries.map(e => e.id));
   notifiedLocally.forEach(id => { if (!activeIds.has(id)) notifiedLocally.delete(id); });
   calledLocally.forEach(id => { if (!activeIds.has(id)) calledLocally.delete(id); });
