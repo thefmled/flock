@@ -3,6 +3,7 @@ const express = require('express');
 const multer = require('multer');
 const { createClient } = require('@supabase/supabase-js');
 const { updateSubscriptionQuantity } = require('./subscription');
+const { broadcast } = require('../lib/realtime');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -172,6 +173,7 @@ router.patch('/:id', requireAuth, requireActiveSubscription, async (req, res) =>
       where: { id: venue.id },
       data,
     });
+    broadcast('venue:' + updated.id, { type: 'venue_updated', venue: updated });
     res.json({ success: true, venue: updated });
   } catch (error) {
     console.error('Update venue error:', error);
@@ -228,6 +230,7 @@ router.post('/:id/qr-placed', requireAuth, requireActiveSubscription, async (req
       where: { id: venue.id },
       data: { qrMarkedPlaced: true },
     });
+    broadcast('venue:' + updated.id, { type: 'venue_updated', venue: updated });
     res.json({ success: true, venue: updated });
   } catch (error) {
     console.error('QR placed error:', error);
