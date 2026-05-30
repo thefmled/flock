@@ -1355,7 +1355,7 @@ function loadSettings() {
         <div id="menuList"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
           <input type="text" id="newMenuName" placeholder="Menu name (e.g. Bar menu)" style="flex:1;min-width:160px;padding:8px 10px;background:var(--card);border:1px solid var(--border-strong);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;align-self:center;" maxlength="50">
-          <input type="file" id="newMenuFile" accept="application/pdf" style="flex:1;min-width:160px;">
+          <input type="file" id="newMenuFile" accept="application/pdf" style="flex:1;min-width:160px;padding:7px 10px;background:var(--card);border:1px solid var(--border-strong);border-radius:8px;font-family:inherit;font-size:13px;color:var(--text);align-self:center;">
           <button class="menu-action" style="background:var(--accent);color:var(--accent-text);border-color:var(--accent);font-weight:600;flex-shrink:0;align-self:center;" onclick="uploadMenu()">Add menu</button>
         </div>
         <p class="error" id="menuUploadError" style="margin-top:6px;"></p>
