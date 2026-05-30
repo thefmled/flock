@@ -742,7 +742,7 @@ body[class*="theme-cloud-mint"] input[type="date"]::-webkit-calendar-picker-indi
       <a href="/dashboard.html" class="go-live-btn">Go to live queue →</a>
     </div>
 
-    <div class="main-tab-content" id="analyticsSection">
+    <div class="main-tab-content" id="analyticsSection" style="display:none;">
       <div id="onboardingBox"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
         <h2 class="heading" style="margin:0;font-size:24px;">Analytics</h2>
@@ -871,6 +871,30 @@ body[class*="theme-cloud-mint"] input[type="date"]::-webkit-calendar-picker-indi
 </div>
 
 <script>
+// Pre-paint: pick initial section so there's no flash. Only restore on reload; new opens default to analytics.
+(function() {
+  try {
+    const navType = performance.getEntriesByType('navigation')[0]?.type;
+    let initial = 'analytics';
+    if (navType === 'reload') {
+      const saved = sessionStorage.getItem('flock_main_section');
+      if (saved && ['analytics','insights','settings','subscription','reports'].includes(saved)) {
+        initial = saved;
+      }
+    } else {
+      // Not a reload — clear stale state so future reloads start clean
+      try { sessionStorage.removeItem('flock_main_section'); } catch(e) {}
+      try { sessionStorage.removeItem('flock_main_settings_sub'); } catch(e) {}
+    }
+    const el = document.getElementById(initial + 'Section');
+    if (el) el.style.display = 'block';
+    document.querySelectorAll('[data-section]').forEach(b => {
+      b.classList.toggle('active', b.dataset.section === initial);
+    });
+    window.__flockInitialSection = initial;
+  } catch(e) {}
+})();
+
 const token = localStorage.getItem('flock_token');
 
 // Intercept 401s globally — redirect to login
@@ -953,12 +977,7 @@ async function selectVenue(id) {
     localStorage.setItem('flock_venue', JSON.stringify(venue));
     document.getElementById('venueButtonLabel').textContent = venue.name;
     document.body.className = 'theme-' + (venue.theme || 'dark-premium');
-    let initial = 'analytics';
-    try {
-      const saved = sessionStorage.getItem('flock_main_section');
-      if (saved && ['analytics','insights','settings','subscription','reports'].includes(saved)) initial = saved;
-    } catch(e) {}
-    showSection(initial);
+    showSection(window.__flockInitialSection || 'analytics');
     loadSubStatus();
     renderOnboarding();
   }
@@ -2124,12 +2143,7 @@ async function deleteMenu(id, name) {
 }
   
 loadVenue().then(() => {
-  let initial = 'analytics';
-  try {
-    const saved = sessionStorage.getItem('flock_main_section');
-    if (saved && ['analytics','insights','settings','subscription','reports'].includes(saved)) initial = saved;
-  } catch(e) {}
-  showSection(initial);
+  showSection(window.__flockInitialSection || 'analytics');
   loadSubStatus();
   renderOnboarding();
 });
