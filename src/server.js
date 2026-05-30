@@ -50,8 +50,8 @@ app.use('/api', (req, res) => {
 
 // Generic error handler — catches any unhandled error
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Something went wrong on our end. Please try again.' });
+  console.error(`[${req.reqId}] Unhandled error:`, err);
+  res.status(500).json({ error: 'Something went wrong on our end. Please try again.', reqId: req.reqId });
 });
 
 const http = require('http');
