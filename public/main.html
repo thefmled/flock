@@ -1280,10 +1280,17 @@ function chartBaseOptions(opts={}) {
 let settingsSeating = [];
 let settingsNotes = [];
 
-let activeSettingsSub = 'venue';
+let activeSettingsSub = (function() {
+  try {
+    const saved = sessionStorage.getItem('flock_main_settings_sub');
+    if (saved && ['venue', 'themes', 'qr'].includes(saved)) return saved;
+  } catch(e) {}
+  return 'venue';
+})();
 
 function showSettingsSub(sub) {
   activeSettingsSub = sub;
+  try { sessionStorage.setItem('flock_main_settings_sub', sub); } catch(e) {}
   document.querySelectorAll('.settings-subnav-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.sub === sub);
   });
