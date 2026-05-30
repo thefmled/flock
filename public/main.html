@@ -1436,7 +1436,8 @@ async function loadSubscription() {
 }
 
 async function cancelSubscription() {
-  if (!confirm('Cancel your flock subscription? You\'ll keep access until the end of the current billing cycle.')) return;
+  const ok = await confirmAction('Cancel subscription?', 'You\'ll keep access until the end of the current billing cycle.', 'Cancel subscription', 'danger');
+  if (!ok) return;
   
   // Optimistic: show cancelled state immediately
   const content = document.getElementById('subscriptionContent');
@@ -2018,7 +2019,8 @@ async function renameMenu(id, newName) {
 }
 
 async function deleteMenu(id, name) {
-  if (!confirm('Delete "' + name + '"?')) return;
+  const ok = await confirmAction('Delete "' + name + '"?', 'This menu will be removed from your guest queue page.', 'Delete menu', 'danger');
+  if (!ok) return;
   // Optimistic remove
   venueMenus = venueMenus.filter(m => m.id !== id);
   renderMenuList();
