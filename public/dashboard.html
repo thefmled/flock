@@ -1170,6 +1170,8 @@ async function saveSettings() {
   // Update venue dropdown label
   document.getElementById('venueButtonLabel').textContent = venue.name;
 
+  payload.expectedUpdatedAt = venue.updatedAt;
+
   try {
     const res = await fetch('/api/venues/' + venue.id, {
       method: 'PATCH',
@@ -1180,10 +1182,19 @@ async function saveSettings() {
       body: JSON.stringify(payload),
     });
     const data = await res.json();
+    if (res.status === 409) {
+      okEl.textContent = '';
+      errEl.textContent = 'Someone else updated settings. Refreshing — please re-apply your changes.';
+      if (data.currentVenue) {
+        venue = data.currentVenue;
+        localStorage.setItem('flock_venue', JSON.stringify(venue));
+        loadSettings();
+      }
+      return;
+    }
     if (!res.ok) throw new Error(data.error || 'Failed to save');
     venue = data.venue;
     localStorage.setItem('flock_venue', JSON.stringify(venue));
-    // Don't re-render the whole settings UI — user might still be editing
   } catch (err) {
     errEl.textContent = err.message;
     okEl.textContent = '';
