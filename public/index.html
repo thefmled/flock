@@ -123,7 +123,7 @@ body { padding-top: 76px; }
   font-family: 'Fraunces', serif;
   font-style: italic;
   font-weight: 400;
-  font-size: clamp(32px, 5vw, 48px);
+  font-size: clamp(36px, 5.5vw, 56px);
   text-align: center;
   margin-bottom: 48px;
   letter-spacing: -1px;
@@ -174,15 +174,15 @@ body { padding-top: 76px; }
   margin-bottom: 12px;
 }
 .flow-step h4 {
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 8px;
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 10px;
 }
 .flow-step p {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text);
-  opacity: 0.78;
-  line-height: 1.6;
+  opacity: 0.82;
+  line-height: 1.55;
 }
 
 .why-list {
@@ -359,8 +359,9 @@ footer a:hover { color: var(--text); }
 .faq-answer {
   display: none;
   padding: 0 0 22px;
-  color: var(--text-muted);
-  font-size: 14px;
+  color: var(--text);
+  opacity: 0.78;
+  font-size: 15px;
   line-height: 1.7;
 }
 .faq-item.open .faq-answer { display: block; }
@@ -403,7 +404,12 @@ footer a:hover { color: var(--text); }
 .compare td.flock-col:last-of-type {
   border-radius: 0 0 8px 8px;
 }
-.compare td.feature { color: var(--text); font-weight: 500; }
+.compare td.feature {
+  color: var(--text);
+  font-weight: 600;
+  background: rgba(245, 234, 212, 0.03);
+  border-right: 1px solid var(--border);
+}
 .compare td.miss { color: var(--text-muted); }
 .compare td.win { color: var(--accent); }
 
@@ -603,14 +609,14 @@ footer a:hover { color: var(--text); }
         <rect x="8" y="5" width="8" height="8" rx="1" stroke-width="2"/>
       </svg>
       <h3>For guests</h3>
-      <p>Scan a QR. Join the queue from your phone. See your position, your wait time, and a quick look at the menu — all in one place. No yelling names. No standing around guessing.</p>
+      <p>Scan, join, watch your spot move up. See your wait time, peek at the menu, get a WhatsApp ping when your table's ready.</p>
     </div>
     <div class="feature-card">
       <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
       </svg>
       <h3>For staff</h3>
-      <p>One screen, one tap. Notify the next party with WhatsApp and a phone call. Guests reply right there — "Will be there" or "Can't make it" — so you know who to keep on hold and who to drop. No chasing tables down.</p>
+      <p>One tap pings the next party on WhatsApp and rings them. Guests reply "Will be there" or "Sorry" — no chasing.</p>
     </div>
     <div class="feature-card">
       <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -619,7 +625,7 @@ footer a:hover { color: var(--text); }
         <polyline points="7,15 11,11 14,14 20,8"/>
       </svg>
       <h3>For owners</h3>
-      <p>Real-time queue stats, today's guest count, average wait times, and full activity history. Export to CSV. Configure wait times per venue. Run it from your phone.</p>
+      <p>Today's covers, average wait, busiest hours, full history. Export to CSV. All from your phone.</p>
     </div>
   </div>
 </section>
@@ -733,8 +739,9 @@ footer a:hover { color: var(--text); }
         </tr>
         <tr>
           <td></td>
+          <td class="feature">Cost</td>
           <td class="miss" style="font-size:14px;">Free, costs you time</td>
-          <td class="flock-col" style="font-family:'Fraunces',serif;font-style:italic;font-size:30px;padding-top:8px;padding-bottom:8px;">₹999<span style="font-size:13px;font-style:normal;font-family:inherit;opacity:0.7;"> /venue/mo</span></td>
+          <td class="flock-col" style="font-size:22px;font-weight:600;padding-top:8px;padding-bottom:8px;">₹999<span style="font-size:13px;font-weight:400;opacity:0.7;"> /venue/mo</span></td>
           <td class="miss" style="font-size:14px;">₹3,000+ per month</td>
         </tr>
       </thead>
@@ -791,7 +798,7 @@ footer a:hover { color: var(--text); }
           <td></td>
           <td></td>
           <td class="flock-col" style="padding:14px;">
-            <a href="/login.html" class="cta" style="display:block;width:100%;box-sizing:border-box;white-space:nowrap;">Start free trial</a>
+            <a href="/login.html" class="cta" style="display:inline-block;font-size:13px;padding:11px 22px;letter-spacing:0.04em;box-shadow:none;white-space:nowrap;">Start free trial</a>
           </td>
           <td></td>
         </tr>
