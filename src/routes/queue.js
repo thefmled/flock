@@ -223,28 +223,26 @@ router.get('/live/:venueId', requireAuth, requireActiveSubscription, async (req,
     });
     const waitTimes = await computeWaitTimes(entries, venue);
 
-    // Compute visit history per unique phone (batch query)
+    // Compute visit history per unique phone — single grouped aggregate query
+    // (DB does the counting; we don't pull every historical row)
     const phones = [...new Set(entries.map(e => e.guestPhone))];
     const visitData = {};
     if (phones.length > 0) {
-      const allVisits = await prisma.queueEntry.findMany({
+      const aggregates = await prisma.queueEntry.groupBy({
+        by: ['guestPhone'],
         where: {
           venueId: venue.id,
           guestPhone: { in: phones },
-          status: { in: ['seated', 'cancelled', 'notified', 'waiting'] },
+          status: 'seated', // only completed visits count
         },
-        select: { guestPhone: true, joinedAt: true, status: true, id: true },
-        orderBy: { joinedAt: 'desc' },
+        _count: { _all: true },
+        _max: { joinedAt: true },
       });
       phones.forEach(phone => {
-        const visits = allVisits.filter(v => v.guestPhone === phone);
-        // Count completed visits (seated only — cancelled doesn't count as a "visit")
-        const completed = visits.filter(v => v.status === 'seated');
-        // Find last completed visit before current
-        const lastCompleted = completed[0]; // most recent
+        const agg = aggregates.find(a => a.guestPhone === phone);
         visitData[phone] = {
-          totalCompleted: completed.length,
-          lastVisitAt: lastCompleted ? lastCompleted.joinedAt : null,
+          totalCompleted: agg ? agg._count._all : 0,
+          lastVisitAt: agg ? agg._max.joinedAt : null,
         };
       });
     }
@@ -313,9 +311,10 @@ router.post('/notify/:entryId', requireAuth, requireActiveSubscription, async (r
       data: { notifiedAt: new Date(), status: 'notified' },
     });
 
-    await logAudit(entry.id, 'notified', reportingTime ? `Reporting time: ${reportingTime} mins` : null);
-    broadcast('venue:' + entry.venueId, { type: 'queue_changed' });
-    broadcast('entry:' + entry.id, { type: 'entry_changed' });
+    logAudit(entry.id, 'called');
+    const updatedEntry = await prisma.queueEntry.findUnique({ where: { id: entry.id } });
+    broadcast('venue:' + entry.venueId, { type: 'entry_updated', entry: updatedEntry });
+    broadcast('entry:' + entry.id, { type: 'entry_changed', entry: updatedEntry });
 
     // Fire WhatsApp table-ready message (non-blocking)
     sendTemplate(entry.guestPhone, process.env.GUPSHUP_TEMPLATE_TABLE_READY, [
@@ -361,9 +360,9 @@ router.post('/seat/:entryId', requireAuth, requireActiveSubscription, async (req
     });
 
     await logAudit(entry.id, 'seated');
-    broadcast('venue:' + entry.venueId, { type: 'queue_changed' });
-    broadcast('entry:' + entry.id, { type: 'entry_changed' });
-
+    const updatedEntry = await prisma.queueEntry.findUnique({ where: { id: entry.id } });
+    broadcast('venue:' + entry.venueId, { type: 'entry_updated', entry: updatedEntry });
+    broadcast('entry:' + entry.id, { type: 'entry_changed', entry: updatedEntry });
     res.json({ success: true });
   } catch (error) {
     console.error('Seat error:', error);
