@@ -5,7 +5,9 @@ const APP_NAME = process.env.GUPSHUP_APP_NAME;
 const SOURCE = process.env.GUPSHUP_SOURCE_NUMBER;
 
 async function sendTemplate(toPhone, templateName, params, buttonParams = null) {
-  console.log('WA SEND:', { toPhone, templateName, params, buttonParams });
+  // Sanitized log — masks phone, doesn't log params
+  const maskedPhone = String(toPhone || '').replace(/^(\d{2})(\d+)(\d{2})$/, '$1***$3');
+  console.log('WA SEND:', { phone: maskedPhone, template: templateName });
   if (!API_KEY || !APP_NAME || !SOURCE) {
     console.warn('Gupshup not configured, skipping WhatsApp send');
     return null;
