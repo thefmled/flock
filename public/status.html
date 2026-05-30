@@ -268,10 +268,17 @@ async function loadStatus() {
 function cancelEntry() {
   document.getElementById('leaveModal').style.display = 'flex';
 }
-function _confirmLeave() {
+async function _confirmLeave() {
   document.getElementById('leaveModal').style.display = 'none';
+  try {
+    const res = await fetch('/api/queue/cancel/' + entryId, { method: 'POST' });
+    if (res.status === 409) {
+      // Already seated or already cancelled — just refresh
+      loadStatus();
+      return;
+    }
+  } catch (e) {}
   document.body.innerHTML = '<div style="text-align:center;padding:60px 24px;color:var(--text-muted);font-size:16px;">You\'ve left the waitlist. <a href="/" style="color:var(--accent);">Back to home</a></div>';
-  fetch('/api/queue/cancel/' + entryId, { method: 'POST' });
 }
 function _cancelLeave() {
   document.getElementById('leaveModal').style.display = 'none';
