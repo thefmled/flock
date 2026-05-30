@@ -220,6 +220,21 @@ body.landing-light {
   --success: #4a7c4a;
 }
 
+body.theme-light-amber {
+  --bg: #faf8f3;
+  --text: #1a1814;
+  --text-muted: rgba(26,24,20,0.72);
+  --accent: #f5a854;
+  --accent-text: #1a1814;
+  --accent-soft: rgba(245,168,84,0.14);
+  --card: #ffffff;
+  --card-hover: #f6f3ed;
+  --border: rgba(26,24,20,0.08);
+  --border-strong: rgba(26,24,20,0.18);
+  --error: #c4422a;
+  --success: #4a7c4a;
+}
+
 /* === Theme toggle button === */
 .theme-toggle {
   background: transparent;
