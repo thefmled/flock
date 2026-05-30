@@ -44,11 +44,21 @@
 .nav-cta {
   background: var(--accent) !important;
   color: var(--accent-text) !important;
-  padding: 10px 22px !important;
+  padding: 11px 24px !important;
   border-radius: 999px;
   font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 3px 14px rgba(245, 168, 84, 0.22);
+  transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
 }
-.nav-cta:hover { background: var(--accent) !important; color: var(--accent-text) !important; opacity: 0.9; }
+.nav-cta:hover {
+  background: var(--accent) !important;
+  color: var(--accent-text) !important;
+  opacity: 0.95;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 18px rgba(245, 168, 84, 0.32);
+}
 
 .hero {
   text-align: center;
@@ -772,7 +782,7 @@ footer a:hover { color: var(--text); }
           <td></td>
           <td></td>
           <td class="flock-col" style="padding:14px;">
-            <a href="/login.html" class="cta" style="width:100%;display:inline-block;font-size:13px;padding:10px;">Start 14-day free trial</a>
+            <a href="/login.html" class="cta" style="display:block;width:100%;box-sizing:border-box;">Start 14-day free trial</a>
           </td>
           <td></td>
         </tr>
