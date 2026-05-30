@@ -119,6 +119,14 @@ router.delete('/:id', requireAuth, requireActiveSubscription, async (req, res) =
     });
     if (!venue) return res.status(404).json({ error: 'Venue not found' });
 
+    // Refuse to delete the last venue — Razorpay can't have quantity 0
+    const totalCount = await prisma.venue.count({ where: { ownerId: req.ownerId } });
+    if (totalCount === 1) {
+      return res.status(400).json({
+        error: "You can't delete your only venue. Cancel your subscription instead if you no longer need flock.",
+      });
+    }
+
     await prisma.venue.delete({ where: { id: venue.id } });
     const count = await prisma.venue.count({ where: { ownerId: req.ownerId } });
     await updateSubscriptionQuantity(req.ownerId, count);
