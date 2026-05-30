@@ -12,7 +12,7 @@ html, body {
 body:not([class*="theme-"]) {
   --bg: #0f0d0a;
   --text: #f5ead4;
-  --text-muted: rgba(245,234,212,0.55);
+  --text-muted: rgba(245,234,212,0.75);
   --accent: #f5a854;
   --accent-text: #0f0d0a;
   --accent-soft: rgba(245,168,84,0.12);
@@ -27,7 +27,7 @@ body:not([class*="theme-"]) {
 body.theme-dark-premium {
   --bg: #0f0d0a;
   --text: #f5ead4;
-  --text-muted: rgba(245,234,212,0.55);
+  --text-muted: rgba(245,234,212,0.75);
   --accent: #f5a854;
   --accent-text: #0f0d0a;
   --accent-soft: rgba(245,168,84,0.12);
