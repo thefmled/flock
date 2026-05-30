@@ -93,6 +93,19 @@ window.fetch = async function(...args) {
 const token = localStorage.getItem('flock_token');
 if (!token) window.location.href = '/login.html';
 
+if (sessionStorage.getItem('flock_sub_expired') === '1') {
+  sessionStorage.removeItem('flock_sub_expired');
+  document.addEventListener('DOMContentLoaded', () => {
+    const card = document.querySelector('.subscribe-card');
+    if (card) {
+      const banner = document.createElement('div');
+      banner.style.cssText = 'background:var(--error,#ef4444);color:#fff;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px;';
+      banner.textContent = 'Your subscription expired or was cancelled. Resume access by restarting your subscription below.';
+      card.insertBefore(banner, card.firstChild);
+    }
+  });
+}
+
 async function startSubscription() {
   const btn = document.getElementById('payBtn');
   const errEl = document.getElementById('payError');
