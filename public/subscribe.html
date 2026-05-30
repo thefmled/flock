@@ -93,6 +93,29 @@ window.fetch = async function(...args) {
 const token = localStorage.getItem('flock_token');
 if (!token) window.location.href = '/login.html';
 
+// Detect whether this is a returning user (trial already used)
+async function adaptSubscribeCopy() {
+  try {
+    const res = await fetch('/api/subscription/status', {
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const isReturning = !!data.hasSubscription && (data.status === 'expired' || data.status === 'cancelled' || data.status === 'pending');
+    if (!isReturning) return;
+    
+    // Update card copy for resubscription
+    const badge = document.querySelector('.trial-badge');
+    const period = document.querySelector('.price-period');
+    const btn = document.getElementById('payBtn');
+    const fineprint = document.querySelector('.fineprint');
+    if (badge) badge.textContent = 'Resume your subscription';
+    if (period) period.textContent = 'per venue, per month';
+    if (btn) btn.textContent = 'Add payment method';
+    if (fineprint) fineprint.textContent = 'Your card will be charged ₹999 immediately and every month thereafter. Cancel anytime from settings.';
+  } catch (e) {}
+}
+
 if (sessionStorage.getItem('flock_sub_expired') === '1') {
   sessionStorage.removeItem('flock_sub_expired');
   document.addEventListener('DOMContentLoaded', () => {
@@ -100,11 +123,15 @@ if (sessionStorage.getItem('flock_sub_expired') === '1') {
     if (card) {
       const banner = document.createElement('div');
       banner.style.cssText = 'background:var(--error,#ef4444);color:#fff;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px;';
-      banner.textContent = 'Your subscription expired or was cancelled. Resume access by restarting your subscription below.';
+      banner.textContent = 'Your trial ended and no card was added. Add payment to resume access.';
       card.insertBefore(banner, card.firstChild);
     }
   });
 }
+
+document.addEventListener('DOMContentLoaded', adaptSubscribeCopy);
+
+let _isReturning = false;
 
 async function startSubscription() {
   const btn = document.getElementById('payBtn');
@@ -120,6 +147,7 @@ async function startSubscription() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to create subscription');
+    _isReturning = !!data.isReturning;
 
     // If user already has an active subscription, skip checkout and route them appropriately
     if (data.alreadyExists) {
@@ -143,7 +171,7 @@ async function startSubscription() {
       key: data.keyId,
       subscription_id: data.subscriptionId,
       name: 'flock',
-      description: 'Monthly subscription — ₹999/mo',
+      description: _isReturning ? 'Subscription — ₹999/mo' : 'Monthly subscription with 14-day trial',
       handler: async function(response) {
         // Route based on whether user has venues
         try {
