@@ -671,6 +671,12 @@ body[class*="theme-cloud-mint"] input[type="date"]::-webkit-calendar-picker-indi
   font-size: 14px;
   text-decoration: none;
   font-weight: 500;
+  min-width: 72px;
+  text-align: center;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .menu-action.menu-view { color: var(--accent); border-color: var(--accent); }
 .menu-action.menu-delete { color: var(--error); border-color: var(--error); }
@@ -1350,13 +1356,21 @@ function loadSettings() {
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
           <input type="text" id="newMenuName" placeholder="Menu name (e.g. Bar menu)" style="flex:1;min-width:160px;padding:10px 12px;background:var(--card);border:1px solid var(--border-strong);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;">
           <input type="file" id="newMenuFile" accept="application/pdf" style="flex:1;min-width:160px;">
-          <button class="button" style="max-width:140px;flex-shrink:0;" onclick="uploadMenu()">Add menu</button>
+          <button class="menu-action" style="background:var(--accent);color:var(--accent-text);border-color:var(--accent);font-weight:600;flex-shrink:0;" onclick="uploadMenu()">Add menu</button>
         </div>
         <p class="error" id="menuUploadError" style="margin-top:6px;"></p>
       </div>
       <div class="input-group"><label>Google reviews link</label><input type="url" id="settingsReviews" placeholder="https://g.page/..."></div>
-      <div class="input-group"><label>Seating options</label><div class="seating-chips" id="settingsChips"></div></div>
-      <div class="input-group"><label>Note options</label><p class="subheading" style="font-size:11px;margin-bottom:8px;">Optional notes guests can pick when joining the queue.</p><div class="seating-chips" id="notesChips"></div></div>
+      <div class="input-group">
+        <label>Seating options</label>
+        <p class="subheading" style="font-size:13px;margin-bottom:10px;">Tap a chip to toggle whether guests see it. Click × to delete. "No preference" can't be removed.</p>
+        <div class="seating-chips" id="settingsChips"></div>
+      </div>
+      <div class="input-group">
+        <label>Note options</label>
+        <p class="subheading" style="font-size:13px;margin-bottom:10px;">Optional flags guests can add when joining (allergies, birthdays, etc.). Tap to toggle visibility; × to delete.</p>
+        <div class="seating-chips" id="notesChips"></div>
+      </div>
     </div>
     <div class="card">
       <h2 class="heading">Wait time formula</h2>
@@ -1398,7 +1412,7 @@ function loadSettings() {
 }
 
 function renderSettingsChips() {
-  const protectedOpts = ['Indoor', 'Outdoor', 'No preference'];
+  const protectedOpts = ['No preference'];
   const c = document.getElementById('settingsChips');
   c.innerHTML = settingsSeating.map((opt, i) => `
     <button class="chip ${opt.selected ? 'selected' : ''}" onclick="toggleSettingsChip(${i})">
