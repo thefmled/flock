@@ -29,9 +29,9 @@ async function requireActiveSubscription(req, res, next) {
     let cached = subCache.get(req.ownerId);
     if (cached && cached.expiresAt > Date.now()) {
       const status = cached.status;
-      if (status === 'active') return next();
+      if (status === 'active' || status === 'cancelled') return next();
       if (status === 'trial' && cached.trialEndsAt && new Date(cached.trialEndsAt) > new Date()) return next();
-      // Fall through to DB on expired/cancelled to confirm before blocking
+      // Fall through to DB on expired to confirm before blocking
     }
     const owner = await prisma.owner.findUnique({ where: { id: req.ownerId } });
     if (!owner) return res.status(404).json({ error: 'Owner not found' });
@@ -43,7 +43,9 @@ async function requireActiveSubscription(req, res, next) {
 
     const status = owner.subscriptionStatus;
     if (status === 'active') return next();
-
+    // Cancelled = user has cancelled, but Razorpay cycle is still running. Keep access until
+    // 'subscription.completed' webhook flips status to 'expired'.
+    if (status === 'cancelled') return next();
     if (status === 'trial') {
       // Grace: allow trial access for 24h past trialEndsAt so the in-app banner can show
       const TRIAL_GRACE_MS = 24 * 60 * 60 * 1000;
