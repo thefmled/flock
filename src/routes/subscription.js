@@ -17,32 +17,44 @@ router.post('/create', requireAuth, async (req, res) => {
     const owner = await prisma.owner.findUnique({ where: { id: req.ownerId } });
     if (!owner) return res.status(404).json({ error: 'Owner not found' });
 
-    // If owner already has an active/trial subscription, return it. If cancelled/expired, allow creating a new one.
+    // If owner already has an active/trial subscription, return it.
     if (owner.razorpaySubscriptionId && (owner.subscriptionStatus === 'active' || owner.subscriptionStatus === 'trial')) {
       return res.json({ subscriptionId: owner.razorpaySubscriptionId, alreadyExists: true });
     }
 
-    const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    // Has the owner already used a trial? If so, no second free trial.
+    // We detect this by the presence of a prior razorpaySubscriptionId OR a past trialEndsAt.
+    const hasHadTrial = !!owner.razorpaySubscriptionId || !!owner.trialEndsAt;
+    const venueCount = await prisma.venue.count({ where: { ownerId: owner.id } });
+    const initialQuantity = Math.max(1, venueCount); // preserve current venue count
 
-    const subscription = await razorpay.subscriptions.create({
+    const subParams = {
       plan_id: process.env.RAZORPAY_PLAN_ID,
       customer_notify: 1,
-      quantity: 1,
+      quantity: initialQuantity,
       total_count: 120,
-      start_at: Math.floor(trialEndsAt.getTime() / 1000),
       notes: {
         ownerId: owner.id,
         email: owner.phone,
       },
-    });
+    };
+    let trialEndsAt = null;
+    if (!hasHadTrial) {
+      // First-time user gets a 14-day trial
+      trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+      subParams.start_at = Math.floor(trialEndsAt.getTime() / 1000);
+    }
+    // Returning user: omit start_at — Razorpay starts billing immediately
+
+    const subscription = await razorpay.subscriptions.create(subParams);
 
     await prisma.owner.update({
       where: { id: owner.id },
       data: {
         razorpaySubscriptionId: subscription.id,
-        subscriptionStatus: 'trial',
-        trialEndsAt,
-        venueQuantity: 1,
+        subscriptionStatus: hasHadTrial ? 'pending' : 'trial',
+        trialEndsAt: trialEndsAt || owner.trialEndsAt, // preserve original trial date for record
+        venueQuantity: initialQuantity,
       },
     });
     invalidateSubCache(owner.id);
@@ -51,6 +63,7 @@ router.post('/create', requireAuth, async (req, res) => {
       subscriptionId: subscription.id,
       shortUrl: subscription.short_url,
       keyId: process.env.RAZORPAY_KEY_ID,
+      isReturning: hasHadTrial,
     });
   } catch (error) {
     console.error('Subscription create error:', error);
