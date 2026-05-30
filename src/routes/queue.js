@@ -344,36 +344,39 @@ router.post('/notify/:entryId', requireAuth, requireActiveSubscription, async (r
     broadcast('venue:' + entry.venueId, { type: 'entry_updated', entry: updatedEntry });
     broadcast('entry:' + entry.id, { type: 'entry_changed', entry: updatedEntry });
 
-    // Track WhatsApp delivery: create pending row up-front, update with result
+    // Track WhatsApp delivery: create → send → update. Chain ensures the update
+    // always finds the row regardless of which DB/API call finishes first.
     const notifId = generateId();
-    prisma.notification.create({
-      data: {
-        id: notifId,
-        queueEntryId: entry.id,
-        channel: 'whatsapp',
-        status: 'pending',
-        payload: 'table_ready',
-      },
-    }).catch(e => console.error('Notification create error:', e));
-
-    sendTemplate(entry.guestPhone, process.env.GUPSHUP_TEMPLATE_TABLE_READY, [
-      entry.guestName,
-      entry.venue.name,
-      String(reportingTime || 5),
-    ]).then(result => {
-      const newStatus = result ? 'sent' : 'failed';
-      prisma.notification.update({
-        where: { id: notifId },
-        data: { status: newStatus },
-      }).then(() => {
-        // Re-broadcast so dashboard updates the delivery badge
-        prisma.queueEntry.findUnique({ where: { id: entry.id } }).then(latest => {
-          if (latest && latest.status === 'notified') {
-            broadcast('venue:' + entry.venueId, { type: 'queue_changed' });
-          }
+    (async () => {
+      try {
+        await prisma.notification.create({
+          data: {
+            id: notifId,
+            queueEntryId: entry.id,
+            channel: 'whatsapp',
+            status: 'pending',
+            payload: 'table_ready',
+          },
         });
-      }).catch(e => console.error('Notification update error:', e));
-    });
+        const result = await sendTemplate(entry.guestPhone, process.env.GUPSHUP_TEMPLATE_TABLE_READY, [
+          entry.guestName,
+          entry.venue.name,
+          String(reportingTime || 5),
+        ]);
+        const newStatus = result ? 'sent' : 'failed';
+        await prisma.notification.update({
+          where: { id: notifId },
+          data: { status: newStatus },
+        });
+        // Re-broadcast so dashboard updates the delivery badge
+        const latest = await prisma.queueEntry.findUnique({ where: { id: entry.id } });
+        if (latest && latest.status === 'notified') {
+          broadcast('venue:' + entry.venueId, { type: 'queue_changed' });
+        }
+      } catch (e) {
+        console.error('Notify delivery tracking error:', e);
+      }
+    })();
 
     res.json({ success: true });
   } catch (error) {
