@@ -663,17 +663,18 @@ body[class*="theme-cloud-mint"] input[type="date"]::-webkit-calendar-picker-indi
 .menu-action {
   background: transparent;
   border: 1px solid var(--border-strong);
-  color: var(--text-muted);
-  padding: 6px 10px;
+  color: var(--text);
+  padding: 8px 14px;
   border-radius: 6px;
   cursor: pointer;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 14px;
   text-decoration: none;
   font-weight: 500;
 }
 .menu-action.menu-view { color: var(--accent); border-color: var(--accent); }
-.menu-action.menu-delete:hover { color: var(--error); border-color: var(--error); }
+.menu-action.menu-delete { color: var(--error); border-color: var(--error); }
+.menu-action.menu-delete:hover { background: var(--error); color: #fff; }
 
 .app { visibility: hidden; }
 body.flock-ready .app { visibility: visible; }
@@ -2069,7 +2070,7 @@ function renderMenuList() {
   const el = document.getElementById('menuList');
   if (!el) return;
   if (venueMenus.length === 0) {
-    el.innerHTML = '<p class="subheading" style="font-size:12px;">No menus yet. Add your first one below.</p>';
+    el.innerHTML = '';
     return;
   }
   el.innerHTML = venueMenus.map(m => `
