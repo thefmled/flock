@@ -1375,16 +1375,27 @@ function loadSettings() {
       <h2 class="heading">Wait time formula</h2>
       <p class="subheading">min(base + increment × (position − 1), cap)</p>
       <div style="background:var(--card-hover);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:13px;line-height:1.6;color:var(--text);">
-        <p style="margin:0 0 8px;"><strong>Base</strong> — the wait time shown to the guest at the front of the queue (position 1). Typical: 8 min on weekdays, 12–15 min on weekends.</p>
+        <p style="margin:0 0 8px;"><strong>Base</strong> — wait time shown to the guest at the front of the queue (position 1). Typical: 8 min on weekdays, 12–15 min on weekends.</p>
         <p style="margin:0 0 8px;"><strong>Increment</strong> — how many minutes each additional position adds. Typical: 3 min for fast turnover, 5 min for slower seating.</p>
-        <p style="margin:0 0 12px;"><strong>Cap</strong> — the highest wait time the guest will ever see. Anyone deeper in the queue still sees this number. Prevents intimidating numbers like "50 min" from scaring guests off.</p>
-        <p style="margin:0;color:var(--text-muted);font-size:12px;">Example with base 8, increment 3, cap 30: position 1 shows ~8 min, position 5 shows ~20 min, position 12+ all show ~30 min. Numbers tick down by 1 every real minute, and reset lower when guests ahead are seated or cancel.</p>
+        <p style="margin:0;"><strong>Cap</strong> — the highest wait time the guest will ever see. Prevents scary numbers like "50 min" from putting guests off.</p>
       </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+        <span style="font-size:13px;color:var(--text-muted);margin-right:4px;">Quick start:</span>
+        <button type="button" class="chip" onclick="applyWaitPreset('cafe')">Casual cafe</button>
+        <button type="button" class="chip" onclick="applyWaitPreset('fine')">Fine dining</button>
+        <button type="button" class="chip" onclick="applyWaitPreset('bar')">Bar / lounge</button>
+      </div>
+
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <div class="input-group" style="flex:1;min-width:90px;"><label>Base (min)</label><input type="number" id="settingsBase" min="1"></div>
-        <div class="input-group" style="flex:1;min-width:90px;"><label>Increment</label><input type="number" id="settingsIncrement" min="1"></div>
-        <div class="input-group" style="flex:1;min-width:90px;"><label>Cap (min)</label><input type="number" id="settingsCap" min="1"></div>
+        <div class="input-group" style="flex:1;min-width:90px;"><label>Base (min)</label><input type="number" id="settingsBase" min="1" oninput="updateWaitPreview()"></div>
+        <div class="input-group" style="flex:1;min-width:90px;"><label>Increment</label><input type="number" id="settingsIncrement" min="1" oninput="updateWaitPreview()"></div>
+        <div class="input-group" style="flex:1;min-width:90px;"><label>Cap (min)</label><input type="number" id="settingsCap" min="1" oninput="updateWaitPreview()"></div>
       </div>
+
+      <div id="waitPreview" style="margin-top:14px;padding:12px 14px;background:var(--accent-soft);border-radius:8px;font-size:13px;color:var(--text);line-height:1.6;"></div>
+
+      <p style="margin:14px 0 0;font-size:12px;color:var(--text-muted);font-style:italic;line-height:1.5;">Guests see this as an estimate, not a guarantee. The formula trends conservative — actual seating usually happens faster as guests cancel or are bumped through quickly.</p>
     </div>
     <button class="button" onclick="saveSettings()">Save changes</button>
     <p class="success" id="settingsSuccess"></p>
@@ -1398,6 +1409,7 @@ function loadSettings() {
   document.getElementById('settingsBase').value = venue.waitTimeBase;
   document.getElementById('settingsIncrement').value = venue.waitTimeIncrement;
   document.getElementById('settingsCap').value = venue.waitTimeCap;
+  updateWaitPreview();
   const opts = (venue.seatingOptions || 'Indoor,Outdoor,No preference').split(',');
   settingsSeating = opts.map(o => {
     const trimmed = o.trim();
@@ -1441,6 +1453,38 @@ async function addSettingsChip() {
     settingsSeating.push({ name, selected: true });
     renderSettingsChips();
   }
+}
+
+function applyWaitPreset(type) {
+  const presets = {
+    cafe: { base: 6, increment: 2, cap: 25 },
+    fine: { base: 15, increment: 5, cap: 45 },
+    bar:  { base: 5, increment: 3, cap: 20 },
+  };
+  const p = presets[type];
+  if (!p) return;
+  document.getElementById('settingsBase').value = p.base;
+  document.getElementById('settingsIncrement').value = p.increment;
+  document.getElementById('settingsCap').value = p.cap;
+  updateWaitPreview();
+}
+
+function updateWaitPreview() {
+  const base = parseInt(document.getElementById('settingsBase').value) || 0;
+  const inc  = parseInt(document.getElementById('settingsIncrement').value) || 0;
+  const cap  = parseInt(document.getElementById('settingsCap').value) || 0;
+  const calc = (pos) => Math.min(base + inc * (pos - 1), cap);
+  const el = document.getElementById('waitPreview');
+  if (!el) return;
+  el.innerHTML = `
+    <div style="margin-bottom:4px;font-weight:600;">What guests will see</div>
+    <div style="display:flex;flex-wrap:wrap;gap:18px;">
+      <span>Position 1 → <strong style="color:var(--accent);">~${calc(1)} min</strong></span>
+      <span>Position 4 → <strong style="color:var(--accent);">~${calc(4)} min</strong></span>
+      <span>Position 8 → <strong style="color:var(--accent);">~${calc(8)} min</strong></span>
+      <span>Position 12 → <strong style="color:var(--accent);">~${calc(12)} min</strong></span>
+    </div>
+  `;
 }
 
 async function saveSettings() {
