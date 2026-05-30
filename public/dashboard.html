@@ -755,9 +755,19 @@ async function notifyGuest(id) {
       },
       body: JSON.stringify({ reportingTime }),
     });
+    if (res.status === 409) {
+      // Entry no longer in queue — revert and refresh
+      notifiedLocally.delete(id);
+      if (notifyBtn) {
+        notifyBtn.classList.remove('btn-done');
+        notifyBtn.textContent = 'Notify';
+      }
+      showToast('Guest is no longer in queue.');
+      loadQueueDebounced();
+      return;
+    }
     if (!res.ok) throw new Error('notify_failed');
   } catch (err) {
-    // Revert optimistic state + alert operator
     notifiedLocally.delete(id);
     if (notifyBtn) {
       notifyBtn.classList.remove('btn-done');
@@ -866,6 +876,14 @@ function callGuest(id, phone) {
   fetch('/api/queue/call/' + id, {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + token },
+  }).then(res => {
+    if (res.status === 409) {
+      calledLocally.delete(id);
+      const cb = card && card.querySelector('.btn-action-call');
+      if (cb) { cb.classList.remove('btn-done'); cb.textContent = 'Call'; }
+      showToast('Guest is no longer in queue.');
+      loadQueueDebounced();
+    }
   }).catch(() => {});
 
   // Trigger dialer via anchor so the dashboard never navigates away
@@ -895,10 +913,15 @@ async function seatGuest(id) {
   }
   
   try {
-    await fetch('/api/queue/seat/' + id, {
+    const res = await fetch('/api/queue/seat/' + id, {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + token },
     });
+    if (res.status === 409) {
+      hiddenEntries.delete(id);
+      // Restore the card via refetch
+      showToast('Guest is no longer in queue.');
+    }
   } finally {
     pendingActions.delete(id);
     loadQueueDebounced();
@@ -916,10 +939,14 @@ async function cancelGuest(id) {
     card.style.pointerEvents = 'none';
   }
   
-  await fetch('/api/queue/cancel/' + id, {
+  const res = await fetch('/api/queue/cancel/' + id, {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + token },
   });
+  if (res.status === 409) {
+    hiddenEntries.delete(id);
+    showToast('Guest is no longer in queue.');
+  }
   loadQueueDebounced();
 }
 
