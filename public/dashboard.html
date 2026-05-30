@@ -440,6 +440,20 @@ if (!token) {
 
 let ws = null;
 let wsReconnectTimer = null;
+let wsBackoff = 1000;
+
+function setReconnecting(on) {
+  let b = document.getElementById('reconnectBanner');
+  if (!b && on) {
+    b = document.createElement('div');
+    b.id = 'reconnectBanner';
+    b.style.cssText = 'position:fixed;top:0;left:0;right:0;background:var(--accent-soft);color:var(--accent);text-align:center;padding:6px;font-size:12px;z-index:1500;';
+    b.textContent = 'Reconnecting…';
+    document.body.appendChild(b);
+  } else if (b && !on) {
+    b.remove();
+  }
+}
 
 function connectWebSocket() {
   if (!venue) return;
@@ -449,6 +463,8 @@ function connectWebSocket() {
   ws = new WebSocket(proto + '//' + window.location.host + '/ws');
   
   ws.addEventListener('open', () => {
+    wsBackoff = 1000;
+    setReconnecting(false);
     ws.send(JSON.stringify({ type: 'subscribe', key: 'venue:' + venue.id }));
   });
   
@@ -465,9 +481,10 @@ function connectWebSocket() {
   });
   
   ws.addEventListener('close', () => {
-    // Reconnect after 3s
+    setReconnecting(true);
     if (wsReconnectTimer) clearTimeout(wsReconnectTimer);
-    wsReconnectTimer = setTimeout(connectWebSocket, 3000);
+    wsReconnectTimer = setTimeout(connectWebSocket, wsBackoff);
+    wsBackoff = Math.min(wsBackoff * 2, 30000);
   });
   
   ws.addEventListener('error', () => {
@@ -508,10 +525,8 @@ function toggleDropdown(e) {
 }
 
 async function selectVenue(id) {
-  // Optimistic: update label instantly from existing venue list in localStorage
   document.getElementById('venueMenu').style.display = 'none';
   
-  // Fetch fresh data
   const res = await fetch('/api/venues', {
     headers: { 'Authorization': 'Bearer ' + token },
   });
@@ -521,7 +536,18 @@ async function selectVenue(id) {
     localStorage.setItem('flock_venue', JSON.stringify(venue));
     document.getElementById('venueButtonLabel').textContent = venue.name;
     document.body.className = 'theme-' + (venue.theme || 'dark-premium');
+    
+    // Clear diff-render cache so old venue's cards don't leak in
+    _renderedEntries.clear();
+    queueEverLoaded = false;
+    
+    // Reconnect WS to new venue's channel
+    if (ws) { try { ws.close(); } catch(e) {} ws = null; }
+    connectWebSocket();
+    
     loadQueue();
+    loadStats();
+    loadSubStatus();
   }
 }
 
@@ -852,7 +878,7 @@ async function seatGuest(id) {
     });
   } finally {
     pendingActions.delete(id);
-    loadQueue();
+    loadQueueDebounced();
   }
 }
 
@@ -871,7 +897,7 @@ async function cancelGuest(id) {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + token },
   });
-  loadQueue();
+  loadQueueDebounced();
 }
 
 function switchTab(tab) {
@@ -1399,10 +1425,29 @@ loadVenue().then(() => {
   loadSubStatus();
   connectWebSocket();
 });
-  
-setInterval(loadQueue, 5000); // fallback polling if WS drops
-setInterval(loadStats, 15000);
-setInterval(loadVenue, 30000); // refresh venue (including theme) every 30s
+
+// Debounce loadQueue: coalesce WS event + poll bursts; prevent overlapping in-flight calls
+let _loadQueueTimer = null;
+let _loadQueueInFlight = false;
+function loadQueueDebounced() {
+  if (_loadQueueTimer) return;
+  _loadQueueTimer = setTimeout(async () => {
+    _loadQueueTimer = null;
+    if (_loadQueueInFlight) return;
+    _loadQueueInFlight = true;
+    try { await loadQueue(); } finally { _loadQueueInFlight = false; }
+  }, 150);
+}
+
+function isTabActive(name) {
+  const el = document.getElementById(name + 'Tab');
+  return el && el.style.display !== 'none';
+}
+
+// Only poll the live queue when viewing it; same for stats
+setInterval(() => { if (isTabActive('live')) loadQueueDebounced(); }, 5000);
+setInterval(() => { if (isTabActive('live')) loadStats(); }, 15000);
+// loadVenue removed from interval — only runs on mount + settings save + venue switch
 
   
 </script>
