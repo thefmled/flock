@@ -564,7 +564,7 @@ async function deleteVenue(id, name) {
     }
     loadVenue().then(loadQueue);
   } else {
-    alert('Failed to delete venue.');
+    showToast('Failed to delete venue.');
   }
 }
 
