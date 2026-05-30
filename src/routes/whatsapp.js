@@ -17,7 +17,10 @@ router.post('/inbound', express.json(), async (req, res) => {
     const payload = req.body;
     // Gupshup inbound message format
     // We expect type=message with text payload (button click sends text=button label)
-    const phone = (payload?.payload?.sender?.phone || payload?.payload?.source || '').replace(/^91/, '');
+    // Normalize phone: strip non-digits, then strip leading 91 country code if 12 digits long.
+    // Handles formats: '+919876543210', '919876543210', '9876543210'
+    let phone = String(payload?.payload?.sender?.phone || payload?.payload?.source || '').replace(/\D/g, '');
+    if (phone.length === 12 && phone.startsWith('91')) phone = phone.slice(2);
     const text = payload?.payload?.payload?.text || payload?.payload?.text || '';
     const eventType = payload?.type;
 
