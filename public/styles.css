@@ -204,6 +204,49 @@ body.theme-cloud-mint {
   --success: #2e7d32;
 }
 
+/* === App-shell light theme (used on auth + setup pages) === */
+body.landing-light {
+  --bg: #faf8f3;
+  --text: #1a1814;
+  --text-muted: rgba(26,24,20,0.72);
+  --accent: #f5a854;
+  --accent-text: #1a1814;
+  --accent-soft: rgba(245,168,84,0.14);
+  --card: #ffffff;
+  --card-hover: #f6f3ed;
+  --border: rgba(26,24,20,0.08);
+  --border-strong: rgba(26,24,20,0.18);
+  --error: #c4422a;
+  --success: #4a7c4a;
+}
+
+/* === Theme toggle button === */
+.theme-toggle {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.15s;
+  font-family: inherit;
+}
+.theme-toggle:hover {
+  background: var(--card-hover);
+  transform: translateY(-1px);
+}
+.theme-toggle-fixed {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 100;
+}
+
 .container {
   max-width: 560px;
   margin: 0 auto;
