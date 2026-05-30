@@ -90,7 +90,7 @@ body { padding-top: 76px; }
   color: var(--text);
 }
 .hero-sub {
-  font-size: 16px;
+  font-size: 18px;
   color: var(--text-muted);
   line-height: 1.6;
   margin-bottom: 36px;
@@ -150,7 +150,7 @@ body { padding-top: 76px; }
   color: var(--accent);
 }
 .feature-card p {
-  font-size: 15px;
+  font-size: 17px;
   color: var(--text);
   opacity: 0.78;
   line-height: 1.65;
@@ -179,7 +179,7 @@ body { padding-top: 76px; }
   margin-bottom: 10px;
 }
 .flow-step p {
-  font-size: 15px;
+  font-size: 16px;
   color: var(--text);
   opacity: 0.82;
   line-height: 1.55;
@@ -628,7 +628,9 @@ body.landing-light .nav-cta {
   (function() {
     try {
       const saved = localStorage.getItem('flock_landing_theme');
-      if (saved === 'light') document.documentElement.classList.add('landing-light-pre');
+      // Default to LIGHT theme for landing — easier reading for older operators.
+      // Dark only if explicitly chosen.
+      if (saved !== 'dark') document.documentElement.classList.add('landing-light-pre');
     } catch(e) {}
   })();
 </script>
@@ -663,11 +665,12 @@ body.landing-light .nav-cta {
     <a href="/login.html" class="cta">Get started</a>
     <a href="#how" class="cta cta-ghost">See how it works</a>
   </div>
+  <p style="margin-top:20px;font-size:14px;color:var(--text-muted);">Questions? WhatsApp <a href="https://wa.me/917003025467" style="color:var(--accent);text-decoration:none;">+91 XXXXX XXXXX</a></p>
 </section>
 
 <section class="section" id="features">
-  <p class="section-eyebrow">Built for everyone</p>
-  <h2 class="section-title">One tool. Three happier people.</h2>
+  <p class="section-eyebrow">What flock does</p>
+  <h2 class="section-title">Three jobs, one tool.</h2>
   <div class="three-col">
     <div class="feature-card">
       <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -699,7 +702,7 @@ body.landing-light .nav-cta {
 
 <section class="section" id="how">
   <p class="section-eyebrow">How it works</p>
-  <h2 class="section-title">From scan to seated in four steps.</h2>
+  <h2 class="section-title">Four steps from scan to seated.</h2>
   <div class="flow">
     <div class="flow-step">
       <svg class="flow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
