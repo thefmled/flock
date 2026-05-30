@@ -10,6 +10,18 @@ function generateId() {
   return 'c' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
 
+// Returns a Date representing midnight IST (Asia/Kolkata) for the given offset in days.
+// offset=0 → today at IST 00:00 expressed in UTC. offset=-7 → 7 days ago.
+function istStartOfDay(offsetDays = 0) {
+  const now = new Date();
+  // Get IST date components by formatting in IST timezone
+  const istDateStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // 'YYYY-MM-DD'
+  // Anchor at IST midnight, expressed as UTC
+  const d = new Date(istDateStr + 'T00:00:00+05:30');
+  d.setDate(d.getDate() + offsetDays);
+  return d;
+}
+
 async function logAudit(queueEntryId, action, details = null) {
   try {
     await prisma.auditLog.create({
@@ -499,8 +511,7 @@ router.get('/stats/:venueId', requireAuth, requireActiveSubscription, async (req
     });
     if (!venue) return res.status(404).json({ error: 'Venue not found' });
 
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+    const startOfDay = istStartOfDay();
 
     const entries = await prisma.queueEntry.findMany({
       where: { venueId: venue.id, joinedAt: { gte: startOfDay } },
@@ -590,41 +601,49 @@ router.get('/analytics/:venueId', requireAuth, requireActiveSubscription, async 
     let startDate;
     let endDate = new Date(now);
 
+    // Today (IST) as the right edge for daily bucketing
+    const istToday = istStartOfDay();
+    // Helper: get IST midnight of MTD/YTD
+    const istMonthStart = (() => {
+      const istDateStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+      const [y, m] = istDateStr.split('-');
+      return new Date(`${y}-${m}-01T00:00:00+05:30`);
+    })();
+    const istYearStart = (() => {
+      const istDateStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+      const [y] = istDateStr.split('-');
+      return new Date(`${y}-01-01T00:00:00+05:30`);
+    })();
+
     if (range === 'L7D') {
-      startDate = new Date(now);
-      startDate.setDate(startDate.getDate() - 6);
-      startDate.setHours(0, 0, 0, 0);
+      startDate = istStartOfDay(-6);
     } else if (range === 'MTD') {
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      startDate = istMonthStart;
     } else if (range === 'YTD') {
-      startDate = new Date(now.getFullYear(), 0, 1);
+      startDate = istYearStart;
     } else if (range === 'L3M') {
-      startDate = new Date(now);
-      startDate.setDate(startDate.getDate() - 90);
-      startDate.setHours(0, 0, 0, 0);
+      startDate = istStartOfDay(-90);
     } else if (range === 'L6M') {
-      startDate = new Date(now);
-      startDate.setDate(startDate.getDate() - 180);
-      startDate.setHours(0, 0, 0, 0);
+      startDate = istStartOfDay(-180);
     } else if (range === 'L1Y') {
-      startDate = new Date(now);
-      startDate.setDate(startDate.getDate() - 365);
-      startDate.setHours(0, 0, 0, 0);
+      startDate = istStartOfDay(-365);
     } else if (range === 'LM') {
-      startDate = new Date(now);
-      startDate.setDate(startDate.getDate() - 30);
-      startDate.setHours(0, 0, 0, 0);
+      startDate = istStartOfDay(-30);
     } else {
-      startDate = new Date(now);
-      startDate.setDate(startDate.getDate() - 6);
-      startDate.setHours(0, 0, 0, 0);
+      startDate = istStartOfDay(-6);
     }
 
-    const startOfToday = new Date(now);
-    startOfToday.setHours(0, 0, 0, 0);
+    const startOfToday = istStartOfDay();
 
     const allInRange = await prisma.queueEntry.findMany({
       where: { venueId: venue.id, joinedAt: { gte: startDate, lt: endDate } },
+      select: {
+        joinedAt: true,
+        seatedAt: true,
+        cancelledAt: true,
+        status: true,
+        partySize: true,
+      },
     });
 
     // Today's metrics (always today, regardless of range)
