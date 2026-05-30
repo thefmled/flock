@@ -27,7 +27,7 @@
       <p class="subheading">We sent a 6-digit code to <span id="emailDisplay"></span>.</p>
       <div class="input-group">
         <label for="code">Code</label>
-        <input type="text" id="code" maxlength="6" placeholder="123456" inputmode="numeric" />
+        <input type="text" id="code" maxlength="6" placeholder="123456" inputmode="numeric" autocomplete="one-time-code" oninput="if(this.value.length===6) verifyOtp();" />
       </div>
       <button class="button" onclick="verifyOtp()">Log in</button>
       <p class="error" id="otpError"></p>
@@ -51,12 +51,16 @@
     async function requestOtp() {
       const email = document.getElementById('email').value.trim();
       const errorEl = document.getElementById('emailError');
+      const btn = document.querySelector('#emailStep .button');
       errorEl.textContent = '';
 
       if (!email || !email.includes('@')) {
         errorEl.textContent = 'Please enter a valid email.';
         return;
       }
+
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
 
       try {
         const res = await fetch(API + '/api/auth/request-otp', {
@@ -73,6 +77,9 @@
         sessionStorage.setItem('flock_email', email);
       } catch (err) {
         errorEl.textContent = err.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Send code';
       }
     }
 
