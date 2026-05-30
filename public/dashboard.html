@@ -653,7 +653,6 @@ function patchEntryInPlace(entry) {
   _renderedEntries.set(entry.id, entryHashKey(merged));
 }
 
-let queueEverLoaded = false;
 async function loadQueue() {
   if (!venue) return;
   const listEl = document.getElementById('queueList');
