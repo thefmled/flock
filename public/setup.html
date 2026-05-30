@@ -44,14 +44,19 @@
   // Intercept 401s globally — redirect to login
   const _origFetch = window.fetch;
   window.fetch = async function(...args) {
-    const res = await _origFetch.apply(this, args);
-    if (res.status === 401 && args[0] && typeof args[0] === 'string' && args[0].includes('/api/')) {
+  const res = await _origFetch.apply(this, args);
+  if (args[0] && typeof args[0] === 'string' && args[0].includes('/api/')) {
+    if (res.status === 401) {
       localStorage.clear();
       sessionStorage.setItem('flock_expired', '1');
       window.location.replace('/login.html');
+    } else if (res.status === 402) {
+      sessionStorage.setItem('flock_sub_expired', '1');
+      window.location.replace('/subscribe.html');
     }
-    return res;
-  };
+  }
+  return res;
+};
   
   (function() {
     try {
