@@ -17,9 +17,19 @@ router.post('/create', requireAuth, async (req, res) => {
     const owner = await prisma.owner.findUnique({ where: { id: req.ownerId } });
     if (!owner) return res.status(404).json({ error: 'Owner not found' });
 
-    // If owner already has an active/trial subscription, return it.
+    // If owner already has an active/trial subscription, return it as already-exists.
     if (owner.razorpaySubscriptionId && (owner.subscriptionStatus === 'active' || owner.subscriptionStatus === 'trial')) {
       return res.json({ subscriptionId: owner.razorpaySubscriptionId, alreadyExists: true });
+    }
+    // If owner has a 'pending' subscription, let them resume payment on the same Razorpay subscription
+    // rather than creating a new orphan. Frontend re-opens checkout with the same subscriptionId.
+    if (owner.razorpaySubscriptionId && owner.subscriptionStatus === 'pending') {
+      return res.json({
+        subscriptionId: owner.razorpaySubscriptionId,
+        keyId: process.env.RAZORPAY_KEY_ID,
+        isReturning: true,
+        isResume: true,
+      });
     }
 
     // Has the owner already used a trial? If so, no second free trial.
