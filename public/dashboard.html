@@ -984,16 +984,6 @@ async function loadHistory(force) {
     return;
   }
   const list = document.getElementById('historyList');
-  list.innerHTML = `
-    <div class="skeleton-card" style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid var(--border);">
-      <div style="height:18px;width:50%;background:var(--card-hover);border-radius:4px;margin-bottom:8px;"></div>
-      <div style="height:12px;width:30%;background:var(--card-hover);border-radius:4px;opacity:0.6;"></div>
-    </div>
-    <div class="skeleton-card" style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid var(--border);">
-      <div style="height:18px;width:45%;background:var(--card-hover);border-radius:4px;margin-bottom:8px;"></div>
-      <div style="height:12px;width:35%;background:var(--card-hover);border-radius:4px;opacity:0.6;"></div>
-    </div>
-  `;
   const res = await fetch('/api/queue/history/' + venue.id, {
     headers: { 'Authorization': 'Bearer ' + token },
   });
