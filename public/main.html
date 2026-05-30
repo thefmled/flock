@@ -1016,6 +1016,8 @@ async function selectVenue(id) {
     document.getElementById('venueButtonLabel').textContent = venue.name;
     document.body.classList.remove(...Array.from(document.body.classList).filter(c => c.startsWith('theme-')));
     document.body.classList.add('theme-' + (venue.theme || 'dark-premium'));
+    if (ws) { try { ws.close(); } catch(e) {} ws = null; }
+    connectMainWebSocket();
     showSection(window.__flockInitialSection || 'analytics');
     loadSubStatus();
     renderOnboarding();
@@ -2309,11 +2311,65 @@ async function deleteMenu(id, name) {
   } catch (e) { console.error(e); loadMenus(); }
 }
   
+let ws = null;
+let wsReconnectTimer = null;
+let wsBackoff = 1000;
+
+function connectMainWebSocket() {
+  if (!venue || !token) return;
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+
+  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(proto + '//' + window.location.host + '/ws');
+
+  ws.addEventListener('open', () => {
+    wsBackoff = 1000;
+    ws.send(JSON.stringify({ type: 'subscribe', key: 'venue:' + venue.id, token }));
+  });
+
+  ws.addEventListener('message', (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.type !== 'venue_updated' || !msg.venue) return;
+      if (!venue || msg.venue.id !== venue.id) return;
+      const oldName = venue.name;
+      const oldTheme = venue.theme;
+      venue = msg.venue;
+      localStorage.setItem('flock_venue', JSON.stringify(venue));
+      if (oldName !== venue.name) {
+        const lbl = document.getElementById('venueButtonLabel');
+        if (lbl) lbl.textContent = venue.name;
+      }
+      if (oldTheme !== venue.theme) {
+        document.body.classList.remove(...Array.from(document.body.classList).filter(c => c.startsWith('theme-')));
+        document.body.classList.add('theme-' + (venue.theme || 'dark-premium'));
+      }
+      const activeSection = sessionStorage.getItem('flock_main_section') || 'analytics';
+      if (activeSection === 'settings' && typeof showSettingsSub === 'function') {
+        showSettingsSub(activeSettingsSub);
+      } else if (activeSection === 'analytics' && oldTheme !== venue.theme && typeof loadAnalytics === 'function') {
+        loadAnalytics();
+      }
+    } catch(err) {}
+  });
+
+  ws.addEventListener('close', () => {
+    if (wsReconnectTimer) clearTimeout(wsReconnectTimer);
+    wsReconnectTimer = setTimeout(connectMainWebSocket, wsBackoff);
+    wsBackoff = Math.min(wsBackoff * 2, 30000);
+  });
+
+  ws.addEventListener('error', () => {
+    try { ws.close(); } catch(err) {}
+  });
+}
+
 (async () => {
   await loadVenue();
   showSection(window.__flockInitialSection || 'analytics');
   await loadSubStatus();
   renderOnboarding();
+  connectMainWebSocket();
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       document.body.classList.add('flock-ready');
