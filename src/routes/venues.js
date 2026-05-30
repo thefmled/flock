@@ -38,11 +38,15 @@ function slugify(text) {
 // Create a venue (first-time setup)
 router.post('/', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
-    const { name, address, floorManagerName, menuPdfUrl, googleReviewsUrl } = req.body;
+    const { name, address, floorManagerName, menuPdfUrl, googleReviewsUrl, theme } = req.body;
 
     if (!name || !address || !floorManagerName) {
       return res.status(400).json({ error: 'Name, address, and floor manager name are required' });
     }
+
+    // Whitelist allowed themes (DB has a schema-level default, this just narrows what's accepted at creation)
+    const allowedThemes = ['dark-premium', 'light-amber', 'warm-editorial', 'crisp-modern', 'forest-tavern', 'terracotta-bistro', 'midnight-indigo', 'sun-sand', 'bombay-blue', 'spice-market', 'charcoal-linen', 'brick-birch', 'cloud-mint'];
+    const safeTheme = allowedThemes.includes(theme) ? theme : 'dark-premium';
 
     // Generate unique slug
     let baseSlug = slugify(name);
@@ -65,6 +69,7 @@ router.post('/', requireAuth, requireActiveSubscription, async (req, res) => {
         menuPdfUrl: menuPdfUrl || null,
         googleReviewsUrl: googleReviewsUrl || null,
         seatingOptions: seatingOptions || 'Indoor,Outdoor,No preference',
+        theme: safeTheme,
         ownerId: req.ownerId,
       },
     });
