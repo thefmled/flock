@@ -88,9 +88,10 @@ router.get('/status', requireAuth, async (req, res) => {
     let owner = await prisma.owner.findUnique({ where: { id: req.ownerId } });
     if (!owner) return res.status(404).json({ error: 'Owner not found' });
 
-    // If local says 'pending' but Razorpay has activated the subscription,
-    // reconcile (covers cases where the webhook didn't reach us)
-    if (owner.subscriptionStatus === 'pending' && owner.razorpaySubscriptionId) {
+    // If local status is stale (pending OR trial-in-grace) but Razorpay has activated
+    // the subscription, reconcile (covers cases where the webhook didn't reach us)
+    const trialInGrace = owner.subscriptionStatus === 'trial' && owner.trialEndsAt && new Date(owner.trialEndsAt) < new Date();
+    if ((owner.subscriptionStatus === 'pending' || trialInGrace) && owner.razorpaySubscriptionId) {
       try {
         const rzSub = await razorpay.subscriptions.fetch(owner.razorpaySubscriptionId);
         // Razorpay status values: 'active', 'authenticated', 'completed', 'cancelled', 'created'
