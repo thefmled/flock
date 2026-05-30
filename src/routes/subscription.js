@@ -89,26 +89,30 @@ async function updateSubscriptionQuantity(ownerId, newQuantity) {
     data: { venueQuantity: newQuantity },
   });
 
-  // Only sync with Razorpay if subscription is active
   if (owner.subscriptionStatus === 'active') {
     try {
       await razorpay.subscriptions.update(owner.razorpaySubscriptionId, {
         quantity: newQuantity,
         schedule_change_at: 'cycle_end',
       });
-      // Clear sync flag on success
       await prisma.owner.update({
         where: { id: ownerId },
         data: { needsSubscriptionSync: false },
       });
     } catch (e) {
       console.error('Razorpay quantity update failed:', e.message || e);
-      // Mark for retry
       await prisma.owner.update({
         where: { id: ownerId },
         data: { needsSubscriptionSync: true },
       });
     }
+  } else if (owner.subscriptionStatus === 'trial') {
+    // Can't update Razorpay during trial (subscription not active yet).
+    // Flag for sync — retry loop will catch it once status flips to active.
+    await prisma.owner.update({
+      where: { id: ownerId },
+      data: { needsSubscriptionSync: true },
+    });
   }
 }
 
