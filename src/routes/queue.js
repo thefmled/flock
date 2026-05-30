@@ -247,9 +247,21 @@ router.get('/live/:venueId', requireAuth, requireActiveSubscription, async (req,
       });
     }
 
+    // Latest table-ready notification per entry (for delivery indicator)
+    const entryIds = entries.map(e => e.id);
+    const notifMap = {};
+    if (entryIds.length > 0) {
+      const notifications = await prisma.notification.findMany({
+        where: { queueEntryId: { in: entryIds }, payload: 'table_ready' },
+        orderBy: { sentAt: 'desc' },
+      });
+      notifications.forEach(n => {
+        if (!notifMap[n.queueEntryId]) notifMap[n.queueEntryId] = n.status;
+      });
+    }
+
     const enriched = entries.map((entry, idx) => {
       const visit = visitData[entry.guestPhone] || { totalCompleted: 0, lastVisitAt: null };
-      // visitNumber = number of past completed visits + 1 for the current one
       const visitNumber = visit.totalCompleted + 1;
       return {
         ...entry,
@@ -257,6 +269,7 @@ router.get('/live/:venueId', requireAuth, requireActiveSubscription, async (req,
         waitMinutes: waitTimes[idx],
         visitNumber,
         lastVisitAt: visit.lastVisitAt,
+        lastNotificationStatus: notifMap[entry.id] || null,
       };
     });
     res.json({ entries: enriched });
@@ -319,23 +332,35 @@ router.post('/notify/:entryId', requireAuth, requireActiveSubscription, async (r
     broadcast('venue:' + entry.venueId, { type: 'entry_updated', entry: updatedEntry });
     broadcast('entry:' + entry.id, { type: 'entry_changed', entry: updatedEntry });
 
-    // Fire WhatsApp table-ready message (non-blocking)
+    // Track WhatsApp delivery: create pending row up-front, update with result
+    const notifId = generateId();
+    prisma.notification.create({
+      data: {
+        id: notifId,
+        queueEntryId: entry.id,
+        channel: 'whatsapp',
+        status: 'pending',
+        payload: 'table_ready',
+      },
+    }).catch(e => console.error('Notification create error:', e));
+
     sendTemplate(entry.guestPhone, process.env.GUPSHUP_TEMPLATE_TABLE_READY, [
       entry.guestName,
       entry.venue.name,
       String(reportingTime || 5),
     ]).then(result => {
-      if (result) {
-        prisma.notification.create({
-          data: {
-            id: generateId(),
-            queueEntryId: entry.id,
-            channel: 'whatsapp',
-            status: 'sent',
-            payload: 'table_ready',
-          },
-        }).catch(e => console.error('Notification log error:', e));
-      }
+      const newStatus = result ? 'sent' : 'failed';
+      prisma.notification.update({
+        where: { id: notifId },
+        data: { status: newStatus },
+      }).then(() => {
+        // Re-broadcast so dashboard updates the delivery badge
+        prisma.queueEntry.findUnique({ where: { id: entry.id } }).then(latest => {
+          if (latest && latest.status === 'notified') {
+            broadcast('venue:' + entry.venueId, { type: 'queue_changed' });
+          }
+        });
+      }).catch(e => console.error('Notification update error:', e));
     });
 
     res.json({ success: true });
