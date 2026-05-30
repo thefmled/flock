@@ -675,8 +675,8 @@ body[class*="theme-cloud-mint"] input[type="date"]::-webkit-calendar-picker-indi
 .menu-action.menu-view { color: var(--accent); border-color: var(--accent); }
 .menu-action.menu-delete:hover { color: var(--error); border-color: var(--error); }
 
-.main-content { visibility: hidden; }
-body.flock-ready .main-content { visibility: visible; }
+.app { visibility: hidden; }
+body.flock-ready .app { visibility: visible; }
   
 </style>
 
@@ -2154,17 +2154,17 @@ async function deleteMenu(id, name) {
   } catch (e) { console.error(e); loadMenus(); }
 }
   
-loadVenue().then(() => {
+(async () => {
+  await loadVenue();
   showSection(window.__flockInitialSection || 'analytics');
-  loadSubStatus();
+  await loadSubStatus();
   renderOnboarding();
-  // Two rAFs = wait for the browser to paint section content, then reveal
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       document.body.classList.add('flock-ready');
     });
   });
-});
+})();
 
 let onboardingInterval = setInterval(renderOnboarding, 10000);
 
