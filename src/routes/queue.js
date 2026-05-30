@@ -22,6 +22,23 @@ function istStartOfDay(offsetDays = 0) {
   return d;
 }
 
+// Build an entry payload for WS broadcasts, enriched with the latest table-ready
+// notification status. Pass `overrides` to set fields explicitly (e.g. set
+// lastNotificationStatus='pending' on a fresh notify before the record exists).
+async function enrichEntryForBroadcast(entryId, overrides = {}) {
+  const entry = await prisma.queueEntry.findUnique({ where: { id: entryId } });
+  if (!entry) return null;
+  const latestNotif = await prisma.notification.findFirst({
+    where: { queueEntryId: entryId, payload: 'table_ready' },
+    orderBy: { sentAt: 'desc' },
+  });
+  return {
+    ...entry,
+    lastNotificationStatus: latestNotif?.status || null,
+    ...overrides,
+  };
+}
+
 async function logAudit(queueEntryId, action, details = null) {
   try {
     await prisma.auditLog.create({
@@ -340,9 +357,10 @@ router.post('/notify/:entryId', requireAuth, requireActiveSubscription, async (r
     });
 
     logAudit(entry.id, 'notified', reportingTime ? `Reporting in ${reportingTime} min` : null);
-    const updatedEntry = await prisma.queueEntry.findUnique({ where: { id: entry.id } });
-    broadcast('venue:' + entry.venueId, { type: 'entry_updated', entry: updatedEntry });
-    broadcast('entry:' + entry.id, { type: 'entry_changed', entry: updatedEntry });
+    // Broadcast with explicit 'pending' status — Notification row will be created in the async chain below
+    const broadcastEntry = await enrichEntryForBroadcast(entry.id, { lastNotificationStatus: 'pending' });
+    broadcast('venue:' + entry.venueId, { type: 'entry_updated', entry: broadcastEntry });
+    broadcast('entry:' + entry.id, { type: 'entry_changed', entry: broadcastEntry });
 
     // Track WhatsApp delivery: create → send → update. Chain ensures the update
     // always finds the row regardless of which DB/API call finishes first.
@@ -575,14 +593,16 @@ router.post('/call/:entryId', requireAuth, requireActiveSubscription, async (req
       return res.status(409).json({ error: 'Entry is no longer in queue', currentStatus: entry.status });
     }
 
-    const updatedEntry = await prisma.queueEntry.update({
+    await prisma.queueEntry.update({
       where: { id: entry.id },
       data: { calledAt: new Date() },
     });
 
     logAudit(entry.id, 'called');
-    broadcast('venue:' + entry.venueId, { type: 'entry_updated', entry: updatedEntry });
-    broadcast('entry:' + entry.id, { type: 'entry_changed', entry: updatedEntry });
+
+    const broadcastEntry = await enrichEntryForBroadcast(entry.id);
+    broadcast('venue:' + entry.venueId, { type: 'entry_updated', entry: broadcastEntry });
+    broadcast('entry:' + entry.id, { type: 'entry_changed', entry: broadcastEntry });
 
     res.json({ success: true });
   } catch (error) {
