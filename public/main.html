@@ -674,6 +674,9 @@ body[class*="theme-cloud-mint"] input[type="date"]::-webkit-calendar-picker-indi
 }
 .menu-action.menu-view { color: var(--accent); border-color: var(--accent); }
 .menu-action.menu-delete:hover { color: var(--error); border-color: var(--error); }
+
+.main-content { opacity: 0; transition: opacity 0.18s ease-out; }
+body.flock-ready .main-content { opacity: 1; }
   
 </style>
 
@@ -683,7 +686,8 @@ body[class*="theme-cloud-mint"] input[type="date"]::-webkit-calendar-picker-indi
       const v = JSON.parse(localStorage.getItem('flock_venue') || 'null');
       const t = (v && v.theme) ? v.theme : 'dark-premium';
       document.addEventListener('DOMContentLoaded', function() {
-        document.body.className = 'theme-' + t;
+        document.body.classList.remove(...Array.from(document.body.classList).filter(c => c.startsWith('theme-')));
+        document.body.classList.add('theme-' + t);
       });
     } catch(e) {}
   })();
@@ -947,7 +951,8 @@ async function loadVenue() {
   const savedId = venue ? venue.id : null;
   venue = data.venues.find(v => v.id === savedId) || data.venues[0];
   localStorage.setItem('flock_venue', JSON.stringify(venue));
-  document.body.className = 'theme-' + (venue.theme || 'dark-premium');
+  document.body.classList.remove(...Array.from(document.body.classList).filter(c => c.startsWith('theme-')));
+  document.body.classList.add('theme-' + (venue.theme || 'dark-premium'));
   document.getElementById('venueButtonLabel').textContent = venue.name;
 
   const menu = document.getElementById('venueMenu');
@@ -976,10 +981,16 @@ async function selectVenue(id) {
   if (venue) {
     localStorage.setItem('flock_venue', JSON.stringify(venue));
     document.getElementById('venueButtonLabel').textContent = venue.name;
-    document.body.className = 'theme-' + (venue.theme || 'dark-premium');
+    document.body.classList.remove(...Array.from(document.body.classList).filter(c => c.startsWith('theme-')));
+    document.body.classList.add('theme-' + (venue.theme || 'dark-premium'));
     showSection(window.__flockInitialSection || 'analytics');
     loadSubStatus();
     renderOnboarding();
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.body.classList.add('flock-ready');
+      });
+    });
   }
 }
 
@@ -1626,7 +1637,8 @@ async function selectTheme(themeId) {
   if (res.ok) {
     venue = data.venue;
     localStorage.setItem('flock_venue', JSON.stringify(venue));
-    document.body.className = 'theme-' + themeId;
+    document.body.classList.remove(...Array.from(document.body.classList).filter(c => c.startsWith('theme-')));
+    document.body.classList.add('theme-' + themeId);
     loadThemesSettings();
     loadAnalytics(); // re-render charts with new theme colors
   }
@@ -2146,6 +2158,12 @@ loadVenue().then(() => {
   showSection(window.__flockInitialSection || 'analytics');
   loadSubStatus();
   renderOnboarding();
+  // Two rAFs = wait for the browser to paint section content, then reveal
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      document.body.classList.add('flock-ready');
+    });
+  });
 });
 
 let onboardingInterval = setInterval(renderOnboarding, 10000);
