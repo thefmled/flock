@@ -1390,10 +1390,22 @@ async function loadSubStatus() {
   const el = document.getElementById('subStatus');
   
   const billing = data.venueQuantity > 0 ? ' · ₹' + data.monthlyAmount + '/mo (' + data.venueQuantity + ' venue' + (data.venueQuantity !== 1 ? 's' : '') + ')' : '';
+  let showTrialBanner = false;
+  let trialBannerText = '';
 
   if (data.status === 'trial' && data.trialEndsAt) {
-    const daysLeft = Math.floor((new Date(data.trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24));
+    const msLeft = new Date(data.trialEndsAt) - new Date();
+    const daysLeft = Math.floor(msLeft / (1000 * 60 * 60 * 24));
     el.innerHTML = '<span style="color:var(--accent);">Trial · ' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : '') + ' left' + billing + '</span>';
+    // Urgent banner conditions
+    if (msLeft < 0) {
+      // In post-trial grace period — must add card
+      showTrialBanner = true;
+      trialBannerText = 'Your trial has ended. Add a payment method to keep access — your account will be cancelled soon if no card is added.';
+    } else if (daysLeft <= 3) {
+      showTrialBanner = true;
+      trialBannerText = 'Trial ends in ' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : '') + '. Add a payment method to continue without interruption.';
+    }
   } else if (data.status === 'active') {
     el.innerHTML = '<span style="color:var(--success);">● Active' + billing + '</span>';
   } else if (data.status === 'expired') {
@@ -1403,7 +1415,27 @@ async function loadSubStatus() {
   } else {
     el.textContent = '';
   }
-}  
+
+  renderTrialBanner(showTrialBanner, trialBannerText);
+}
+
+function renderTrialBanner(show, text) {
+  let banner = document.getElementById('trialBanner');
+  if (!show) {
+    if (banner) banner.remove();
+    return;
+  }
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'trialBanner';
+    banner.style.cssText = 'background:var(--accent-soft);border-bottom:1px solid var(--accent);padding:10px 16px;display:flex;justify-content:center;align-items:center;gap:12px;font-size:13px;color:var(--text);flex-wrap:wrap;';
+    document.body.insertBefore(banner, document.body.firstChild);
+  }
+  banner.innerHTML = `
+    <span>${escapeHtml(text)}</span>
+    <a href="/subscribe.html" style="background:var(--accent);color:var(--accent-text);padding:6px 14px;border-radius:6px;text-decoration:none;font-weight:500;">Add payment method</a>
+  `;
+}
 
 function renderReplyBadge(reply) {
   const normalized = (reply || '').trim().toLowerCase();
