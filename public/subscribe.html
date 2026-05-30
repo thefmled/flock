@@ -59,6 +59,17 @@
 <script>
   (function() {
     try {
+      const token = localStorage.getItem('flock_token');
+      const venue = JSON.parse(localStorage.getItem('flock_venue') || 'null');
+      if (token && venue && venue.theme) {
+        // Logged-in user — apply their venue theme
+        document.addEventListener('DOMContentLoaded', function() {
+          document.body.classList.remove(...Array.from(document.body.classList).filter(c => c.startsWith('landing-')));
+          document.body.classList.add('theme-' + venue.theme);
+        });
+        return;
+      }
+      // Logged-out — landing aesthetic with optional light toggle
       const saved = localStorage.getItem('flock_landing_theme');
       if (saved === 'light') document.documentElement.classList.add('landing-light-pre');
     } catch(e) {}
