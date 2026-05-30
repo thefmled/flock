@@ -1374,6 +1374,12 @@ function loadSettings() {
     <div class="card">
       <h2 class="heading">Wait time formula</h2>
       <p class="subheading">min(base + increment × (position − 1), cap)</p>
+      <div style="background:var(--card-hover);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:13px;line-height:1.6;color:var(--text);">
+        <p style="margin:0 0 8px;"><strong>Base</strong> — the wait time shown to the guest at the front of the queue (position 1). Typical: 8 min on weekdays, 12–15 min on weekends.</p>
+        <p style="margin:0 0 8px;"><strong>Increment</strong> — how many minutes each additional position adds. Typical: 3 min for fast turnover, 5 min for slower seating.</p>
+        <p style="margin:0 0 12px;"><strong>Cap</strong> — the highest wait time the guest will ever see. Anyone deeper in the queue still sees this number. Prevents intimidating numbers like "50 min" from scaring guests off.</p>
+        <p style="margin:0;color:var(--text-muted);font-size:12px;">Example with base 8, increment 3, cap 30: position 1 shows ~8 min, position 5 shows ~20 min, position 12+ all show ~30 min. Numbers tick down by 1 every real minute, and reset lower when guests ahead are seated or cancel.</p>
+      </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <div class="input-group" style="flex:1;min-width:90px;"><label>Base (min)</label><input type="number" id="settingsBase" min="1"></div>
         <div class="input-group" style="flex:1;min-width:90px;"><label>Increment</label><input type="number" id="settingsIncrement" min="1"></div>
