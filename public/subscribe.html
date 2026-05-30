@@ -173,7 +173,50 @@ async function startSubscription() {
       name: 'flock',
       description: _isReturning ? 'Subscription — ₹999/mo' : 'Monthly subscription with 14-day trial',
       handler: async function(response) {
-        // Route based on whether user has venues
+        // Show verifying state while we wait for the webhook to flip status → active
+        const card = document.querySelector('.subscribe-card');
+        if (card) {
+          card.innerHTML = `
+            <div style="padding:20px 8px;text-align:center;">
+              <div class="heading" style="font-size:22px;margin-bottom:12px;">Verifying payment…</div>
+              <div class="subheading" style="margin-bottom:20px;">This usually takes a few seconds.</div>
+              <div style="display:inline-block;width:32px;height:32px;border:3px solid var(--accent-soft);border-top-color:var(--accent);border-radius:50%;animation:flockSpin 0.8s linear infinite;"></div>
+            </div>
+            <style>@keyframes flockSpin { to { transform: rotate(360deg); } }</style>
+          `;
+        }
+
+        // Poll status until it flips to 'active' or 'trial' (or timeout at 60s)
+        const deadline = Date.now() + 60000;
+        let activated = false;
+        while (Date.now() < deadline) {
+          try {
+            const sRes = await fetch('/api/subscription/status', {
+              headers: { 'Authorization': 'Bearer ' + token },
+            });
+            const sData = await sRes.json();
+            if (sData.status === 'active' || sData.status === 'trial') {
+              activated = true;
+              break;
+            }
+          } catch (e) {}
+          await new Promise(r => setTimeout(r, 2000));
+        }
+
+        if (!activated) {
+          if (card) {
+            card.innerHTML = `
+              <div style="padding:20px 8px;text-align:center;">
+                <div class="heading" style="font-size:20px;margin-bottom:12px;color:var(--error);">Payment confirmation delayed</div>
+                <div class="subheading" style="margin-bottom:20px;">We've received your payment but activation is taking longer than usual. Try refreshing — if it still doesn't work, email rushali.c1710@gmail.com.</div>
+                <button class="button" onclick="window.location.reload()" style="max-width:200px;margin:0 auto;">Refresh</button>
+              </div>
+            `;
+          }
+          return;
+        }
+
+        // Activated — route based on venues
         try {
           const vRes = await fetch('/api/venues', {
             headers: { 'Authorization': 'Bearer ' + token },
@@ -185,7 +228,7 @@ async function startSubscription() {
             window.location.replace('/dashboard.html');
           }
         } catch (e) {
-          window.location.replace('/setup.html');
+          window.location.replace('/dashboard.html');
         }
       },
       theme: { color: '#f5a854' },
