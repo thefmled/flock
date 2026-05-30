@@ -1354,9 +1354,9 @@ function loadSettings() {
         <p class="subheading" style="font-size:12px;margin-bottom:8px;">Upload multiple menus (Bar, Mango menu, Brunch, etc.). Guests will see them on the queue status page.</p>
         <div id="menuList"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
-          <input type="text" id="newMenuName" placeholder="Menu name (e.g. Bar menu)" style="flex:1;min-width:160px;padding:10px 12px;background:var(--card);border:1px solid var(--border-strong);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;">
+          <input type="text" id="newMenuName" placeholder="Menu name (e.g. Bar menu)" style="flex:1;min-width:160px;padding:8px 10px;background:var(--card);border:1px solid var(--border-strong);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;align-self:center;" maxlength="50">
           <input type="file" id="newMenuFile" accept="application/pdf" style="flex:1;min-width:160px;">
-          <button class="menu-action" style="background:var(--accent);color:var(--accent-text);border-color:var(--accent);font-weight:600;flex-shrink:0;" onclick="uploadMenu()">Add menu</button>
+          <button class="menu-action" style="background:var(--accent);color:var(--accent-text);border-color:var(--accent);font-weight:600;flex-shrink:0;align-self:center;" onclick="uploadMenu()">Add menu</button>
         </div>
         <p class="error" id="menuUploadError" style="margin-top:6px;"></p>
       </div>
