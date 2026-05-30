@@ -53,6 +53,7 @@ async function requireActiveSubscription(req, res, next) {
         where: { id: owner.id },
         data: { subscriptionStatus: 'expired' },
       });
+      invalidateSubCache(owner.id);
       return res.status(402).json({ error: 'Trial expired', requiresSubscription: true });
     }
 
