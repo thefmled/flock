@@ -73,8 +73,23 @@
     } catch(e) {}
   })();
 </script>
+<script>
+  (function() {
+    try {
+      const saved = localStorage.getItem('flock_landing_theme');
+      if (saved === 'light') document.documentElement.classList.add('landing-light-pre');
+    } catch(e) {}
+  })();
+</script>
 </head>
 <body class="theme-dark-premium">
+<script>
+  if (document.documentElement.classList.contains('landing-light-pre')) {
+    document.body.classList.add('landing-light');
+    document.documentElement.classList.remove('landing-light-pre');
+  }
+</script>
+<button class="theme-toggle theme-toggle-fixed" onclick="toggleAppTheme()" aria-label="Toggle theme" id="themeToggle">☀</button>
 <div class="chooser-wrap">
   <div class="chooser">
     <h1 class="chooser-logo">fl<span class="accent">o</span>ck</h1>
@@ -109,6 +124,18 @@ if (!token) {
   // Chooser is deprecated — send straight to dashboard
   window.location.replace('/dashboard.html');
 }
+
+function toggleAppTheme() {
+  document.body.classList.toggle('landing-light');
+  const isLight = document.body.classList.contains('landing-light');
+  localStorage.setItem('flock_landing_theme', isLight ? 'light' : 'dark');
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = isLight ? '☾' : '☀';
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = document.body.classList.contains('landing-light') ? '☾' : '☀';
+});
 
 </script>
 </body>
