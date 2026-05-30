@@ -972,6 +972,21 @@ function logout() {
   window.location.href = '/';
 }
 
+function promptModal(title, placeholder) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('promptModal');
+    document.getElementById('promptTitle').textContent = title;
+    const input = document.getElementById('promptInput');
+    input.value = '';
+    input.placeholder = placeholder || '';
+    modal.style.display = 'flex';
+    setTimeout(() => input.focus(), 50);
+    window._promptOk = () => { modal.style.display = 'none'; resolve(input.value.trim()); };
+    window._promptCancel = () => { modal.style.display = 'none'; resolve(null); };
+    input.onkeydown = (e) => { if (e.key === 'Enter') window._promptOk(); if (e.key === 'Escape') window._promptCancel(); };
+  });
+}
+
 function confirmAction(title, body, confirmLabel, variant) {
   return new Promise((resolve) => {
     const modal = document.getElementById('confirmModal');
@@ -1290,10 +1305,10 @@ function removeSettingsChip(i) {
   settingsSeating.splice(i, 1);
   renderSettingsChips();
 }
-function addSettingsChip() {
-  const name = prompt('New seating option:');
-  if (name && name.trim()) {
-    settingsSeating.push({ name: name.trim(), selected: true });
+async function addSettingsChip() {
+  const name = await promptModal('Add seating option', 'e.g. Bar, Rooftop');
+  if (name) {
+    settingsSeating.push({ name, selected: true });
     renderSettingsChips();
   }
 }
@@ -1859,10 +1874,10 @@ function removeNoteChip(i) {
   renderNotesChips();
 }
 
-function addNoteChip() {
-  const name = prompt('New note option:');
-  if (name && name.trim()) {
-    settingsNotes.push({ name: name.trim(), selected: true });
+async function addNoteChip() {
+  const name = await promptModal('Add note option', 'e.g. Allergy info, Birthday');
+  if (name) {
+    settingsNotes.push({ name, selected: true });
     renderNotesChips();
   }
 }
@@ -2024,6 +2039,16 @@ loadVenue().then(() => {
 let onboardingInterval = setInterval(renderOnboarding, 10000);
 
 </script>
+<div id="promptModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--card);border-radius:16px;padding:28px;max-width:360px;width:100%;border:1px solid var(--border-strong);">
+    <h3 class="heading" id="promptTitle" style="font-size:18px;margin-bottom:16px;"></h3>
+    <input type="text" id="promptInput" style="width:100%;background:var(--card-hover);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-family:inherit;font-size:14px;margin-bottom:16px;box-sizing:border-box;" />
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="window._promptCancel()" style="background:transparent;color:var(--text);border:1px solid var(--border-strong);font-family:inherit;font-size:14px;padding:10px 20px;border-radius:8px;cursor:pointer;">Cancel</button>
+      <button onclick="window._promptOk()" style="background:var(--accent);color:var(--accent-text);border:none;font-family:inherit;font-size:14px;font-weight:500;padding:10px 20px;border-radius:8px;cursor:pointer;">Add</button>
+    </div>
+  </div>
+</div>
 <div id="confirmModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--card);border-radius:16px;padding:28px;max-width:360px;width:100%;border:1px solid var(--border-strong);text-align:center;">
     <h3 class="heading" id="confirmTitle" style="font-size:20px;margin-bottom:8px;"></h3>
