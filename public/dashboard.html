@@ -475,9 +475,11 @@ window.fetch = async function(...args) {
       localStorage.clear();
       sessionStorage.setItem('flock_expired', '1');
       window.location.replace('/login.html');
+      return new Promise(() => {}); // halt callers — page is navigating away
     } else if (res.status === 402) {
       sessionStorage.setItem('flock_sub_expired', '1');
       window.location.replace('/subscribe.html');
+      return new Promise(() => {});
     }
   }
   return res;
