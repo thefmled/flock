@@ -1772,7 +1772,7 @@ function fastBootFromCache() {
 
   // Background refresh (or first-load if no cache)
   await loadVenue();
-  await Promise.all([loadQueue(), loadStats(), loadSubStatus(), loadMenus()]);
+  await Promise.all([loadQueue(), loadStats(), loadSubStatus(), loadMenus(), loadHistory()]);
   connectWebSocket();
 
   // Reveal now if we didn't fast-boot from cache
