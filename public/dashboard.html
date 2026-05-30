@@ -456,8 +456,10 @@ function connectWebSocket() {
     try {
       const msg = JSON.parse(e.data);
       if (msg.type === 'queue_changed') {
-        loadQueue();
-        loadStats();
+        loadQueueDebounced();
+        if (isTabActive('live')) loadStats();
+      } else if (msg.type === 'entry_updated' && msg.entry) {
+        patchEntryInPlace(msg.entry);
       }
     } catch(err) {}
   });
@@ -592,6 +594,22 @@ function entryHashKey(e) {
     e.seatingPreference || '', e.notes || '', notified ? 1 : 0, called ? 1 : 0,
     e.visitNumber, e.lastVisitAt || '', e.guestReply || '', e.positionEnteredAt || ''
   ].join('|');
+}
+
+function patchEntryInPlace(entry) {
+  if (!entry || !entry.id) return;
+  const existing = document.querySelector(`[data-entry-id="${entry.id}"]`);
+  if (!existing) return; // not currently rendered — ignore (will be picked up on next refetch)
+  // Preserve position/waitMinutes from the cached card; the patched entry from server
+  // doesn't include these (they're computed in /live, not stored)
+  const waitEl = existing.querySelector('.wait-time');
+  const cachedPosition = waitEl ? waitEl.getAttribute('data-position') : null;
+  const cachedWait = waitEl ? waitEl.getAttribute('data-server-wait') : null;
+  const merged = { ...entry, position: Number(cachedPosition), waitMinutes: Number(cachedWait) };
+  const tmp = document.createElement('div');
+  tmp.innerHTML = buildEntryHtml(merged).trim();
+  existing.replaceWith(tmp.firstChild);
+  _renderedEntries.set(entry.id, entryHashKey(merged));
 }
 
 let queueEverLoaded = false;
