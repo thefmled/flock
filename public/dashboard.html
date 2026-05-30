@@ -1677,9 +1677,7 @@ function ord(n) {
   
 (async () => {
   await loadVenue();
-  loadQueue();
-  loadStats();
-  await Promise.all([loadSubStatus(), loadMenus()]);
+  await Promise.all([loadQueue(), loadStats(), loadSubStatus(), loadMenus()]);
   connectWebSocket();
   try {
     const navType = performance.getEntriesByType('navigation')[0]?.type;
