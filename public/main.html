@@ -6,6 +6,7 @@
 <title>flock — main</title>
 <link rel="stylesheet" href="/styles.css">
 <script src="/chart.umd.min.js"></script>
+<script src="/qrcode.min.js"></script>
 <style>
 body { margin: 0; }
 .app {
@@ -1508,11 +1509,10 @@ async function selectTheme(themeId) {
 function loadQrSettings() {
   if (!venue) return;
   const url = window.location.origin + '/queue.html?venue=' + venue.slug;
-  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=' + encodeURIComponent(url);
   document.getElementById('settingsContent').innerHTML = `
     <p class="subheading" style="margin-bottom:20px;">Print this QR and place it at your host stand. Guests scan it to join the queue.</p>
     <div class="card qr-card" style="text-align:center;padding:32px;">
-      <img src="${qrUrl}" alt="QR code" style="width:280px;height:280px;background:white;padding:16px;border-radius:12px;" id="qrImage" crossorigin="anonymous" />
+      <div id="qrImage" style="width:280px;height:280px;background:white;padding:16px;border-radius:12px;display:inline-block;"></div>
       <div style="font-size:13px;color:var(--text-muted);margin-top:16px;word-break:break-all;">${url}</div>
       <div style="display:flex;gap:8px;justify-content:center;margin-top:24px;flex-wrap:wrap;" class="qr-actions">
         <button class="button" onclick="downloadQr()" style="max-width:200px;">Download PNG</button>
@@ -1529,17 +1529,31 @@ function loadQrSettings() {
       </ul>
     </div>
   `;
+  // Render QR locally using qrcodejs
+  new QRCode(document.getElementById('qrImage'), {
+    text: url,
+    width: 240,
+    height: 240,
+    correctLevel: QRCode.CorrectLevel.M,
+  });
 }
 
-async function downloadQr() {
+function downloadQr() {
   if (!venue) return;
-  const url = window.location.origin + '/queue.html?venue=' + venue.slug;
-  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=800x800&data=' + encodeURIComponent(url);
-  try {
-    // Fetch as blob → object URL so the browser actually downloads instead of navigating
-    const res = await fetch(qrUrl);
-    if (!res.ok) throw new Error('Failed to fetch QR');
-    const blob = await res.blob();
+  // Render a larger off-screen QR for download (sharper PNG)
+  const tmp = document.createElement('div');
+  new QRCode(tmp, {
+    text: window.location.origin + '/queue.html?venue=' + venue.slug,
+    width: 800,
+    height: 800,
+    correctLevel: QRCode.CorrectLevel.M,
+  });
+  const canvas = tmp.querySelector('canvas');
+  if (!canvas) {
+    alert('QR generation failed.');
+    return;
+  }
+  canvas.toBlob(blob => {
     const objUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = objUrl;
@@ -1547,16 +1561,22 @@ async function downloadQr() {
     document.body.appendChild(a);
     a.click();
     setTimeout(() => { a.remove(); URL.revokeObjectURL(objUrl); }, 100);
-  } catch (e) {
-    alert('QR download failed. Please try again or right-click the QR to save it.');
-  }
+  });
 }
 
 function printQr() {
-  // Open a clean popup with just the QR so the entire app chrome doesn't print
   if (!venue) return;
   const url = window.location.origin + '/queue.html?venue=' + venue.slug;
-  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=800x800&data=' + encodeURIComponent(url);
+  // Generate the QR locally and embed the dataURL into the popup
+  const tmp = document.createElement('div');
+  new QRCode(tmp, {
+    text: url,
+    width: 600,
+    height: 600,
+    correctLevel: QRCode.CorrectLevel.M,
+  });
+  const canvas = tmp.querySelector('canvas');
+  const qrDataUrl = canvas ? canvas.toDataURL('image/png') : '';
   const w = window.open('', 'qr-print', 'width=500,height=600');
   if (!w) {
     alert('Please allow popups to print the QR code.');
@@ -1578,7 +1598,7 @@ function printQr() {
     <body>
       <h1>Scan to join the queue</h1>
       <h2 style="font-size:18px;color:#888;font-weight:400;margin-top:0;">${escapeHtml(venue.name)}</h2>
-      <img src="${qrUrl}" alt="QR code" />
+      <img src="${qrDataUrl}" alt="QR code" />
       <p>${url}</p>
       <script>
         window.onload = () => { setTimeout(() => { window.print(); }, 500); };
