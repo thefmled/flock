@@ -210,12 +210,20 @@
       const errorEl = document.getElementById('setupError');
       const btn = document.querySelector('.button');
       errorEl.textContent = '';
+      // Carry over the user's auth-shell theme preference as the venue's initial theme.
+      // Light pref → light-amber (same palette as landing-light). Dark/none → dark-premium.
+      let initialTheme = 'dark-premium';
+      try {
+        if (localStorage.getItem('flock_landing_theme') === 'light') initialTheme = 'light-amber';
+      } catch(e) {}
+
       const payload = {
         floorManagerName: document.getElementById('floorManagerName').value.trim(),
         name: document.getElementById('venueName').value.trim(),
         address: document.getElementById('venueAddress').value.trim(),
         googleReviewsUrl: document.getElementById('googleReviewsUrl').value.trim() || null,
         seatingOptions: seatingOptions.filter(o => o.selected).map(o => o.name).join(',') || 'Indoor,Outdoor,No preference',
+        theme: initialTheme,
       };
       if (!payload.floorManagerName || !payload.name || !payload.address) {
         errorEl.textContent = 'Please fill in name, venue name, and address.';
