@@ -129,13 +129,25 @@ router.delete('/:id', requireAuth, requireActiveSubscription, async (req, res) =
   }
 });
 
-// Update a venue
+// Update a venue (with optimistic locking via updatedAt)
 router.patch('/:id', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const venue = await prisma.venue.findFirst({
       where: { id: req.params.id, ownerId: req.ownerId },
     });
     if (!venue) return res.status(404).json({ error: 'Venue not found' });
+
+    const expectedUpdatedAt = req.body.expectedUpdatedAt;
+    if (expectedUpdatedAt) {
+      const expected = new Date(expectedUpdatedAt).getTime();
+      const current = new Date(venue.updatedAt).getTime();
+      if (current !== expected) {
+        return res.status(409).json({
+          error: 'Venue was updated by someone else',
+          currentVenue: venue,
+        });
+      }
+    }
 
     const allowed = ['name', 'address', 'floorManagerName', 'menuPdfUrl', 'googleReviewsUrl', 'seatingOptions', 'noteOptions', 'waitTimeBase', 'waitTimeIncrement', 'waitTimeCap', 'theme'];
     const data = {};
