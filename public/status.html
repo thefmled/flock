@@ -279,7 +279,12 @@ function connectStatusWs() {
   statusWs.addEventListener('message', (e) => {
     try {
       const msg = JSON.parse(e.data);
-      if (msg.type === 'entry_changed') loadStatus();
+      if (msg.type === 'entry_changed') {
+        // Always refetch — status page needs full venue + computed position/waitMinutes
+        // which aren't in the broadcast payload. The push just triggers an immediate refetch
+        // instead of waiting for the next poll tick.
+        loadStatus();
+      }
     } catch(err) {}
   });
 
