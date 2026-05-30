@@ -117,7 +117,7 @@ async function startSubscription() {
       if (!venuesData.venues || venuesData.venues.length === 0) {
         window.location.replace('/setup.html');
       } else {
-        window.location.replace('/main.html');
+        window.location.replace('/dashboard.html');
       }
       return;
     }
@@ -141,7 +141,7 @@ async function startSubscription() {
           if (!vData.venues || vData.venues.length === 0) {
             window.location.replace('/setup.html');
           } else {
-            window.location.replace('/main.html');
+            window.location.replace('/dashboard.html');
           }
         } catch (e) {
           window.location.replace('/setup.html');
