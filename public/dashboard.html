@@ -557,18 +557,21 @@ async function selectVenue(id) {
 }
 
 async function deleteVenue(id, name) {
-  const ok = await confirmAction('Delete "' + name + '"?', 'This cannot be undone. All historical queue data for this venue stays in your records.', 'Delete venue', 'danger');
+  const ok = await confirmAction('Delete "' + name + '"?', 'This cannot be undone. Historical queue data is retained.', 'Delete venue', 'danger');
   if (!ok) return;
   const res = await fetch('/api/venues/' + id, {
     method: 'DELETE',
     headers: { 'Authorization': 'Bearer ' + token },
   });
+  const data = await res.json().catch(() => ({}));
   if (res.ok) {
     if (venue && venue.id === id) {
       localStorage.removeItem('flock_venue');
       venue = null;
     }
     loadVenue().then(loadQueue);
+  } else if (res.status === 400 && data.error) {
+    showToast(data.error);
   } else {
     showToast('Failed to delete venue.');
   }
