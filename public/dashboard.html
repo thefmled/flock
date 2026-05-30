@@ -1318,10 +1318,7 @@ async function showAudit(entryId, guestName) {
   modal.style.display = 'flex';
 
   let logs = [];
-  const cached = historyCache.find(e => e.id === entryId);
-  if (cached && cached.auditLogs) {
-    logs = cached.auditLogs;
-  } else {
+  {
     content.innerHTML = `
       <div style="padding:12px 0;border-bottom:1px solid var(--border);">
         <div style="height:14px;width:60%;background:var(--card-hover);border-radius:4px;margin-bottom:6px;"></div>
