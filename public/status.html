@@ -145,6 +145,22 @@ try {
   }
 } catch(e) {}
 
+function tickStatusWait() {
+  const wait = document.getElementById('wait');
+  if (!wait || wait.style.display === 'none') return;
+  const position = Number(wait.getAttribute('data-position'));
+  if (!position || position === 1) return; // pos 1 is static
+  const serverWait = Number(wait.getAttribute('data-server-wait'));
+  const baseWait = Number(wait.getAttribute('data-base-wait'));
+  const lastSync = Number(wait.getAttribute('data-last-sync'));
+  if (!serverWait || !lastSync) return;
+  const minutesSinceSync = Math.floor((Date.now() - lastSync) / 60000);
+  const ticked = Math.max(baseWait, serverWait - minutesSinceSync);
+  const display = '~' + ticked + ' minutes';
+  if (wait.textContent !== display) wait.textContent = display;
+}
+setInterval(tickStatusWait, 1000);
+  
 async function loadStatus() {
   if (!entryId) return;
   try {
@@ -200,6 +216,10 @@ async function loadStatus() {
       wait.style.display = 'block';
       waitLabel.style.display = 'block';
       wait.textContent = '~' + data.waitMinutes + ' minutes';
+      wait.setAttribute('data-position', data.position);
+      wait.setAttribute('data-server-wait', data.waitMinutes);
+      wait.setAttribute('data-base-wait', venue.waitTimeBase || 8);
+      wait.setAttribute('data-last-sync', Date.now());
       document.getElementById('leaveBtn').style.display = 'block';
     }
 
