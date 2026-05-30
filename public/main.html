@@ -987,6 +987,22 @@ function promptModal(title, placeholder) {
   });
 }
 
+function showToast(msg, variant) {
+  let t = document.getElementById('flockToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'flockToast';
+    document.body.appendChild(t);
+  }
+  const bg = variant === 'info' ? 'var(--accent)' : 'var(--error,#ef4444)';
+  const color = variant === 'info' ? 'var(--accent-text)' : '#fff';
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:' + bg + ';color:' + color + ';padding:12px 20px;border-radius:8px;font-size:14px;font-weight:500;z-index:2000;box-shadow:0 4px 16px rgba(0,0,0,0.3);max-width:90vw;text-align:center;';
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.display = 'none'; }, 4000);
+}
+
 function confirmAction(title, body, confirmLabel, variant) {
   return new Promise((resolve) => {
     const modal = document.getElementById('confirmModal');
@@ -1455,7 +1471,7 @@ async function cancelSubscription() {
       loadSubscription();
       loadSubStatus();
     } else {
-      alert('Failed to cancel. Please email us at rushali.c1710@gmail.com.');
+      showToast('Failed to cancel. Please email rushali.c1710@gmail.com.');
       loadSubscription();
     }
   });
@@ -1566,7 +1582,7 @@ function downloadQr() {
   });
   const canvas = tmp.querySelector('canvas');
   if (!canvas) {
-    alert('QR generation failed.');
+    showToast('QR generation failed. Please refresh the page.');
     return;
   }
   canvas.toBlob(blob => {
@@ -1595,7 +1611,7 @@ function printQr() {
   const qrDataUrl = canvas ? canvas.toDataURL('image/png') : '';
   const w = window.open('', 'qr-print', 'width=500,height=600');
   if (!w) {
-    alert('Please allow popups to print the QR code.');
+    showToast('Please allow popups to print the QR code.', 'info');
     return;
   }
   w.document.write(`
