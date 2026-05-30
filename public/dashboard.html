@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard — flock</title>
 <link rel="stylesheet" href="/styles.css">
+<script src="/qrcode.min.js"></script>
 <style>
 .topbar {
   display: flex;
@@ -1165,7 +1166,84 @@ async function saveSettings() {
 function showQr() {
   if (!venue) return;
   const url = window.location.origin + '/queue.html?venue=' + venue.slug;
-  window.open('https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=' + encodeURIComponent(url), '_blank');
+  const modal = document.getElementById('qrModal');
+  const container = document.getElementById('qrModalImage');
+  container.innerHTML = '';
+  document.getElementById('qrModalUrl').textContent = url;
+  modal.style.display = 'flex';
+  // Render locally
+  new QRCode(container, {
+    text: url,
+    width: 240,
+    height: 240,
+    correctLevel: QRCode.CorrectLevel.M,
+  });
+}
+
+function closeQrModal() {
+  document.getElementById('qrModal').style.display = 'none';
+}
+
+function downloadQr() {
+  if (!venue) return;
+  const tmp = document.createElement('div');
+  new QRCode(tmp, {
+    text: window.location.origin + '/queue.html?venue=' + venue.slug,
+    width: 800,
+    height: 800,
+    correctLevel: QRCode.CorrectLevel.M,
+  });
+  const canvas = tmp.querySelector('canvas');
+  if (!canvas) { showToast('QR generation failed.'); return; }
+  canvas.toBlob(blob => {
+    const objUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objUrl;
+    a.download = 'flock-qr-' + venue.slug + '.png';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { a.remove(); URL.revokeObjectURL(objUrl); }, 100);
+  });
+}
+
+function printQr() {
+  if (!venue) return;
+  const url = window.location.origin + '/queue.html?venue=' + venue.slug;
+  const tmp = document.createElement('div');
+  new QRCode(tmp, {
+    text: url,
+    width: 600,
+    height: 600,
+    correctLevel: QRCode.CorrectLevel.M,
+  });
+  const canvas = tmp.querySelector('canvas');
+  const qrDataUrl = canvas ? canvas.toDataURL('image/png') : '';
+  const w = window.open('', 'qr-print', 'width=500,height=600');
+  if (!w) {
+    showToast('Please allow popups to print the QR code.');
+    return;
+  }
+  w.document.write(`
+    <!DOCTYPE html>
+    <html><head><title>flock QR — ${escapeHtml(venue.name)}</title>
+    <style>
+      body { margin: 0; padding: 40px; font-family: -apple-system, sans-serif; text-align: center; }
+      img { width: 380px; height: 380px; }
+      h1 { font-size: 28px; margin-bottom: 8px; font-weight: 400; }
+      p { font-size: 14px; color: #666; margin-top: 24px; }
+      @media print { body { padding: 20px; } @page { margin: 1cm; } }
+    </style></head>
+    <body>
+      <h1>Scan to join the queue</h1>
+      <h2 style="font-size:18px;color:#888;font-weight:400;margin-top:0;">${escapeHtml(venue.name)}</h2>
+      <img src="${qrDataUrl}" alt="QR code" />
+      <p>${url}</p>
+      <script>
+        window.onload = () => { setTimeout(() => { window.print(); }, 500); };
+      <\/script>
+    </body></html>
+  `);
+  w.document.close();
 }
 
 function logout() {
@@ -1529,6 +1607,20 @@ setInterval(() => { if (isTabActive('live')) loadStats(); }, 15000);
       <button onclick="window._promptCancel()" style="background:transparent;color:var(--text);border:1px solid var(--border-strong);font-family:inherit;font-size:14px;padding:10px 20px;border-radius:8px;cursor:pointer;">Cancel</button>
       <button onclick="window._promptOk()" style="background:var(--accent);color:var(--accent-text);border:none;font-family:inherit;font-size:14px;font-weight:500;padding:10px 20px;border-radius:8px;cursor:pointer;">Add</button>
     </div>
+  </div>
+</div>
+
+<div id="qrModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center;padding:20px;" onclick="if (event.target === this) closeQrModal();">
+  <div style="background:var(--card);border-radius:16px;padding:28px;max-width:380px;width:100%;border:1px solid var(--border-strong);text-align:center;">
+    <h3 class="heading" style="font-size:20px;margin-bottom:8px;">QR for guests</h3>
+    <p class="subheading" style="margin-bottom:20px;">Print this and place it at your host stand. Guests scan to join the queue.</p>
+    <div id="qrModalImage" style="background:white;padding:16px;border-radius:12px;display:inline-block;margin-bottom:16px;"></div>
+    <div id="qrModalUrl" style="font-size:12px;color:var(--text-muted);word-break:break-all;margin-bottom:20px;"></div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+      <button class="button" onclick="downloadQr()" style="max-width:140px;">Download PNG</button>
+      <button class="button" onclick="printQr()" style="max-width:140px;background:transparent;color:var(--text);border:1px solid var(--border-strong);">Print</button>
+    </div>
+    <button onclick="closeQrModal()" style="background:transparent;color:var(--text-muted);border:none;font-family:inherit;font-size:13px;margin-top:16px;cursor:pointer;">Close</button>
   </div>
 </div>
 
