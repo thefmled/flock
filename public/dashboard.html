@@ -609,6 +609,8 @@ function buildEntryHtml(e) {
       </div>
       <div class="queue-actions">
         <button class="btn-notify btn-action-notify ${notified ? 'btn-done' : ''}" onclick="notifyGuest('${e.id}')">${notified ? '✓ Notified' : 'Notify'}</button>
+        ${notified && e.lastNotificationStatus === 'failed' ? '<span title="WhatsApp delivery failed — please call the guest" style="color:var(--error);font-size:12px;margin-right:4px;align-self:center;">⚠ WA not delivered</span>' : ''}
+        ${notified && e.lastNotificationStatus === 'pending' ? '<span style="color:var(--text-muted);font-size:12px;margin-right:4px;align-self:center;">⌛ Sending…</span>' : ''}
         <button class="btn-notify btn-action-call ${called ? 'btn-done' : ''}" onclick="callGuest('${e.id}', '${e.guestPhone}')">${called ? '✓ Called' : 'Call'}</button>
         <button class="btn-seat" onclick="seatGuest('${e.id}')">Mark seated</button>
         <button class="btn-cancel" onclick="cancelGuest('${e.id}')">Cancel</button>
@@ -624,7 +626,8 @@ function entryHashKey(e) {
   const called = !!e.calledAt || calledLocally.has(e.id);
   return [e.id, e.position, e.waitMinutes, e.guestName, e.guestPhone, e.partySize,
     e.seatingPreference || '', e.notes || '', notified ? 1 : 0, called ? 1 : 0,
-    e.visitNumber, e.lastVisitAt || '', e.guestReply || '', e.positionEnteredAt || ''
+    e.visitNumber, e.lastVisitAt || '', e.guestReply || '', e.positionEnteredAt || '',
+    e.lastNotificationStatus || ''
   ].join('|');
 }
 
