@@ -190,7 +190,7 @@ setInterval(retryFailedSyncs, 10 * 60 * 1000);
 // Mark expired trials — runs every hour
 async function expireOldTrials() {
   try {
-    const graceMs = 3 * 24 * 60 * 60 * 1000;
+    const graceMs = 24 * 60 * 60 * 1000; // matches middleware grace period
     const cutoff = new Date(Date.now() - graceMs);
     const owners = await prisma.owner.findMany({
       where: {
