@@ -426,6 +426,20 @@ body.flock-ready { visibility: visible; }
 <script>
 const token = localStorage.getItem('flock_token');
 
+// Cache layer: instant renders on reload, refresh in background
+function _cacheSet(key, data) {
+  try { localStorage.setItem('flock_cache_' + key, JSON.stringify({ data, ts: Date.now() })); } catch(e) {}
+}
+function _cacheGet(key, maxAgeMs = 10 * 60 * 1000) {
+  try {
+    const raw = localStorage.getItem('flock_cache_' + key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || (Date.now() - parsed.ts > maxAgeMs)) return null;
+    return parsed.data;
+  } catch(e) { return null; }
+}
+
 // Intercept 401s globally — redirect to login
 const _origFetch = window.fetch;
 window.fetch = async function(...args) {
@@ -684,6 +698,8 @@ async function loadQueue() {
   const data = await res.json();
   queueEverLoaded = true;
   const empty = document.getElementById('emptyState');
+
+  _cacheSet('queue_' + venue.id, data.entries || []);
 
   // Skip entries with pending actions OR hidden ones (already optimistically removed)
   data.entries = (data.entries || []).filter(e => !hiddenEntries.has(e.id) && !pendingActions.has(e.id));
@@ -1390,6 +1406,7 @@ async function loadMenus() {
     });
     const data = await res.json();
     venueMenus = data.menus || [];
+    _cacheSet('menus_' + venue.id, venueMenus);
     renderMenuList();
   } catch (e) {
     console.error('Load menus failed:', e);
@@ -1509,6 +1526,7 @@ async function loadStats() {
     headers: { 'Authorization': 'Bearer ' + token },
   });
   const data = await res.json();
+  _cacheSet('stats_' + venue.id, data);
   document.getElementById('statTotal').textContent = data.totalGuests;
   document.getElementById('statSeated').textContent = data.seatedCount;
   document.getElementById('statCancelled').textContent = data.cancelledCount;
@@ -1585,11 +1603,7 @@ function closeAudit() {
   document.getElementById('auditModal').style.display = 'none';
 }
 
-async function loadSubStatus() {
-  const res = await fetch('/api/subscription/status', {
-    headers: { 'Authorization': 'Bearer ' + token },
-  });
-  const data = await res.json();
+function _renderSubStatusFromData(data) {
   const el = document.getElementById('subStatus');
   
   const billing = data.venueQuantity > 0 ? ' · ₹' + data.monthlyAmount + '/mo (' + data.venueQuantity + ' venue' + (data.venueQuantity !== 1 ? 's' : '') + ')' : '';
@@ -1620,6 +1634,15 @@ async function loadSubStatus() {
   }
 
   renderTrialBanner(showTrialBanner, trialBannerText);
+}
+
+async function loadSubStatus() {
+  const res = await fetch('/api/subscription/status', {
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
+  const data = await res.json();
+  _cacheSet('subscription', data);
+  _renderSubStatusFromData(data);
 }
 
 function renderTrialBanner(show, text) {
@@ -1674,11 +1697,67 @@ function ord(n) {
   const v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
+
+function fastBootFromCache() {
+  try {
+    const cachedVenue = JSON.parse(localStorage.getItem('flock_venue') || 'null');
+    if (!cachedVenue) return false;
+
+    venue = cachedVenue;
+    document.body.classList.add('theme-' + (venue.theme || 'dark-premium'));
+    document.getElementById('venueButtonLabel').textContent = venue.name;
+
+    // Queue
+    const cQueue = _cacheGet('queue_' + cachedVenue.id);
+    if (cQueue !== null) {
+      const listEl = document.getElementById('queueList');
+      const empty = document.getElementById('emptyState');
+      const visible = cQueue.filter(e => !hiddenEntries.has(e.id) && !pendingActions.has(e.id));
+      if (visible.length === 0) {
+        listEl.innerHTML = '';
+        empty.style.display = 'block';
+      } else {
+        listEl.innerHTML = visible.map(e => buildEntryHtml(e)).join('');
+        visible.forEach(e => _renderedEntries.set(e.id, entryHashKey(e)));
+        empty.style.display = 'none';
+      }
+      queueEverLoaded = true;
+    }
+
+    // Stats
+    const cStats = _cacheGet('stats_' + cachedVenue.id);
+    if (cStats) {
+      document.getElementById('statTotal').textContent = cStats.totalGuests;
+      document.getElementById('statSeated').textContent = cStats.seatedCount;
+      document.getElementById('statCancelled').textContent = cStats.cancelledCount;
+      document.getElementById('statAvg').textContent = (cStats.seatedCount >= 3 && cStats.avgWaitMinutes) ? cStats.avgWaitMinutes + 'm' : '—';
+    }
+
+    // Menus
+    const cMenus = _cacheGet('menus_' + cachedVenue.id);
+    if (cMenus) {
+      venueMenus = cMenus;
+      renderMenuList();
+    }
+
+    // Subscription
+    const cSub = _cacheGet('subscription');
+    if (cSub) _renderSubStatusFromData(cSub);
+
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
   
 (async () => {
-  await loadVenue();
-  await Promise.all([loadQueue(), loadStats(), loadSubStatus(), loadMenus()]);
-  connectWebSocket();
+  // Fast path: instant render from cache, then refresh in background
+  const fastBooted = fastBootFromCache();
+  if (fastBooted) {
+    document.body.classList.add('flock-ready');
+  }
+
+  // Tab restore (cheap, do before fetch)
   try {
     const navType = performance.getEntriesByType('navigation')[0]?.type;
     if (navType === 'reload') {
@@ -1690,11 +1769,16 @@ function ord(n) {
       sessionStorage.removeItem('flock_dashboard_tab');
     }
   } catch(e) {}
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      document.body.classList.add('flock-ready');
-    });
-  });
+
+  // Background refresh (or first-load if no cache)
+  await loadVenue();
+  await Promise.all([loadQueue(), loadStats(), loadSubStatus(), loadMenus()]);
+  connectWebSocket();
+
+  // Reveal now if we didn't fast-boot from cache
+  if (!fastBooted) {
+    document.body.classList.add('flock-ready');
+  }
 })();
 
 // Debounce loadQueue: coalesce WS event + poll bursts; prevent overlapping in-flight calls
