@@ -311,7 +311,7 @@ router.post('/notify/:entryId', requireAuth, requireActiveSubscription, async (r
       data: { notifiedAt: new Date(), status: 'notified' },
     });
 
-    logAudit(entry.id, 'called');
+    logAudit(entry.id, 'notified', reportingTime ? `Reporting in ${reportingTime} min` : null);
     const updatedEntry = await prisma.queueEntry.findUnique({ where: { id: entry.id } });
     broadcast('venue:' + entry.venueId, { type: 'entry_updated', entry: updatedEntry });
     broadcast('entry:' + entry.id, { type: 'entry_changed', entry: updatedEntry });
@@ -359,10 +359,9 @@ router.post('/seat/:entryId', requireAuth, requireActiveSubscription, async (req
       data: { seatedAt: new Date(), status: 'seated' },
     });
 
-    await logAudit(entry.id, 'seated');
-    const updatedEntry = await prisma.queueEntry.findUnique({ where: { id: entry.id } });
-    broadcast('venue:' + entry.venueId, { type: 'entry_updated', entry: updatedEntry });
-    broadcast('entry:' + entry.id, { type: 'entry_changed', entry: updatedEntry });
+    logAudit(entry.id, 'seated');
+    broadcast('venue:' + entry.venueId, { type: 'queue_changed' });
+    broadcast('entry:' + entry.id, { type: 'entry_changed' });
     res.json({ success: true });
   } catch (error) {
     console.error('Seat error:', error);
@@ -508,14 +507,14 @@ router.post('/call/:entryId', requireAuth, requireActiveSubscription, async (req
       return res.status(403).json({ error: 'Not authorized' });
     }
 
-    await prisma.queueEntry.update({
+    const updatedEntry = await prisma.queueEntry.update({
       where: { id: entry.id },
       data: { calledAt: new Date() },
     });
 
-    await logAudit(entry.id, 'called');
-    broadcast('venue:' + entry.venueId, { type: 'queue_changed' });
-    broadcast('entry:' + entry.id, { type: 'entry_changed' });
+    logAudit(entry.id, 'called');
+    broadcast('venue:' + entry.venueId, { type: 'entry_updated', entry: updatedEntry });
+    broadcast('entry:' + entry.id, { type: 'entry_changed', entry: updatedEntry });
 
     res.json({ success: true });
   } catch (error) {
