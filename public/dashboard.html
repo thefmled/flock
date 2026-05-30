@@ -464,7 +464,7 @@ function connectWebSocket() {
   ws.addEventListener('open', () => {
     wsBackoff = 1000;
     setReconnecting(false);
-    ws.send(JSON.stringify({ type: 'subscribe', key: 'venue:' + venue.id }));
+    ws.send(JSON.stringify({ type: 'subscribe', key: 'venue:' + venue.id, token }));
   });
   
   ws.addEventListener('message', (e) => {
