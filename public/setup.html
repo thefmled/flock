@@ -209,13 +209,6 @@
             });
           }
         }
-          formData.append('name', 'Main menu');
-          fetch('/api/venues/' + data.venue.id + '/menus', {
-            method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('flock_token') },
-            body: formData,
-          });
-        }
         
         window.location.replace('/main.html');
       } catch (err) {
