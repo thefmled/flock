@@ -903,6 +903,7 @@ function showSection(s) {
     const btn = document.querySelector('[data-section="' + name + '"]');
     if (btn) btn.classList.toggle('active', name === s);
   });
+  try { sessionStorage.setItem('flock_main_section', s); } catch(e) {}
   if (s === 'analytics') loadAnalytics();
   if (s === 'insights') loadInsights();
   if (s === 'settings') loadSettings();
@@ -952,7 +953,12 @@ async function selectVenue(id) {
     localStorage.setItem('flock_venue', JSON.stringify(venue));
     document.getElementById('venueButtonLabel').textContent = venue.name;
     document.body.className = 'theme-' + (venue.theme || 'dark-premium');
-    loadAnalytics();
+    let initial = 'analytics';
+    try {
+      const saved = sessionStorage.getItem('flock_main_section');
+      if (saved && ['analytics','insights','settings','subscription','reports'].includes(saved)) initial = saved;
+    } catch(e) {}
+    showSection(initial);
     loadSubStatus();
     renderOnboarding();
   }
@@ -1547,7 +1553,6 @@ const THEMES = [
   { id: 'forest-tavern', name: 'Forest Tavern', desc: 'Deep forest green with cream.' },
   { id: 'terracotta-bistro', name: 'Terracotta Bistro', desc: 'Warm terracotta on cream.' },
   { id: 'midnight-indigo', name: 'Midnight Indigo', desc: 'Deep indigo with champagne gold.' },
-  { id: 'sun-sand', name: 'Sun Sand', desc: 'Warm yellow on dusty cream.' },
   { id: 'bombay-blue', name: 'Bombay Blue', desc: 'Deep teal with antique brass.' },
   { id: 'spice-market', name: 'Spice Market', desc: 'Burnt orange with maroon.' },
   { id: 'charcoal-linen', name: 'Charcoal Linen', desc: 'Soft charcoal on linen white.' },
@@ -2112,7 +2117,12 @@ async function deleteMenu(id, name) {
 }
   
 loadVenue().then(() => {
-  loadAnalytics();
+  let initial = 'analytics';
+  try {
+    const saved = sessionStorage.getItem('flock_main_section');
+    if (saved && ['analytics','insights','settings','subscription','reports'].includes(saved)) initial = saved;
+  } catch(e) {}
+  showSection(initial);
   loadSubStatus();
   renderOnboarding();
 });
