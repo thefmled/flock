@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard — flock</title>
 <link rel="stylesheet" href="/styles.css">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 .topbar {
   display: flex;
@@ -552,7 +551,8 @@ async function selectVenue(id) {
 }
 
 async function deleteVenue(id, name) {
-  if (!confirm('Delete "' + name + '"? This cannot be undone.')) return;
+  const ok = await confirmAction('Delete "' + name + '"?', 'This cannot be undone. All historical queue data for this venue stays in your records.', 'Delete venue', 'danger');
+  if (!ok) return;
   const res = await fetch('/api/venues/' + id, {
     method: 'DELETE',
     headers: { 'Authorization': 'Bearer ' + token },
