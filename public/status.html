@@ -278,9 +278,11 @@ let statusWsReconnectTimer = null;
 let statusWsBackoff = 1000;
 let statusInterval = null;
 
-function setStatusPollRate(fast) {
+function setStatusPollRate() {
   if (statusInterval) clearInterval(statusInterval);
-  statusInterval = setInterval(loadStatus, fast ? 2000 : 15000);
+  // Always poll at 3s — queue-wide position changes flow through venue: channel
+  // which status page can't subscribe to. WS push is bonus on top, for self-events.
+  statusInterval = setInterval(loadStatus, 3000);
 }
 
 function connectStatusWs() {
@@ -293,7 +295,6 @@ function connectStatusWs() {
   statusWs.addEventListener('open', () => {
     statusWsBackoff = 1000;
     statusWs.send(JSON.stringify({ type: 'subscribe', key: 'entry:' + entryId }));
-    setStatusPollRate(false); // slow fallback when WS healthy
   });
 
   statusWs.addEventListener('message', (e) => {
@@ -309,7 +310,6 @@ function connectStatusWs() {
   });
 
   statusWs.addEventListener('close', () => {
-    setStatusPollRate(true); // back to fast polling
     if (statusWsReconnectTimer) clearTimeout(statusWsReconnectTimer);
     statusWsReconnectTimer = setTimeout(connectStatusWs, statusWsBackoff);
     statusWsBackoff = Math.min(statusWsBackoff * 2, 30000);
@@ -320,8 +320,7 @@ function connectStatusWs() {
   });
 }
 
-// Start fast polling immediately; WS will downshift it once connected
-setStatusPollRate(true);
+setStatusPollRate();
 loadStatus();
 connectStatusWs();
 </script>
