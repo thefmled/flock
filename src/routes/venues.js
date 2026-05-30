@@ -93,7 +93,7 @@ router.get('/', requireAuth, requireActiveSubscription, async (req, res) => {
       where: { ownerId: req.ownerId },
       orderBy: { createdAt: 'desc' },
     });
-    res.set('Cache-Control', 'private, max-age=30');
+    res.set('Cache-Control', 'no-store');
     res.json({ venues });
   } catch (error) {
     console.error('Get venues error:', error);
