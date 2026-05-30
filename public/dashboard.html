@@ -320,6 +320,7 @@
 <div class="tabs">
   <button class="tab active" data-tab="live" onclick="switchTab('live')">Live queue</button>
   <button class="tab" data-tab="history" onclick="switchTab('history')">History</button>
+  <button class="tab" data-tab="waittime" onclick="switchTab('waittime')">Wait time</button>
   <button class="tab" data-tab="settings" onclick="switchTab('settings')">Settings</button>
 </div>
 
@@ -354,65 +355,63 @@
   <div id="historyList"></div>
 </div>
   
+<div class="tab-content" id="waittimeTab" style="display:none;">
+  <div class="card">
+    <h2 class="heading">Wait time formula</h2>
+    <p class="subheading">min(base + increment × (position − 1), cap)</p>
+    <div style="background:var(--card-hover);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:13px;line-height:1.6;color:var(--text);">
+      <p style="margin:0 0 8px;"><strong>Base</strong> — wait time shown to the guest at the front of the queue (position 1). Typical: 8 min on weekdays, 12–15 min on weekends.</p>
+      <p style="margin:0 0 8px;"><strong>Increment</strong> — how many minutes each additional position adds. Typical: 3 min for fast turnover, 5 min for slower seating.</p>
+      <p style="margin:0;"><strong>Cap</strong> — the highest wait time the guest will ever see. Prevents scary numbers like "50 min" from putting guests off.</p>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+      <span style="font-size:13px;color:var(--text-muted);margin-right:4px;">Quick start:</span>
+      <button type="button" class="chip" onclick="applyWaitPreset('cafe')">Casual cafe</button>
+      <button type="button" class="chip" onclick="applyWaitPreset('fine')">Fine dining</button>
+      <button type="button" class="chip" onclick="applyWaitPreset('bar')">Bar / lounge</button>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <div class="input-group" style="flex:1;min-width:90px;"><label>Base (min)</label><input type="number" id="settingsBase" min="1" oninput="updateWaitPreview()"></div>
+      <div class="input-group" style="flex:1;min-width:90px;"><label>Increment</label><input type="number" id="settingsIncrement" min="1" oninput="updateWaitPreview()"></div>
+      <div class="input-group" style="flex:1;min-width:90px;"><label>Cap (min)</label><input type="number" id="settingsCap" min="1" oninput="updateWaitPreview()"></div>
+    </div>
+
+    <div id="waitPreview" style="margin-top:14px;padding:12px 14px;background:var(--accent-soft);border-radius:8px;font-size:13px;color:var(--text);line-height:1.6;"></div>
+
+    <p style="margin:14px 0 0;font-size:12px;color:var(--text-muted);font-style:italic;line-height:1.5;">Guests see this as an estimate, not a guarantee. The formula trends conservative — actual seating usually happens faster as guests cancel or are bumped through quickly.</p>
+  </div>
+  <button class="button" onclick="saveWaitTimeSettings()">Save changes</button>
+  <p class="success" id="waitTimeSuccess"></p>
+  <p class="error" id="waitTimeError"></p>
+</div>
+
 <div class="tab-content" id="settingsTab" style="display:none;">
   <div class="card">
-    <h2 class="heading">Venue details</h2>
-    <p class="subheading">Update what guests see when they scan the QR.</p>
+    <h2 class="heading">Operational settings</h2>
+    <p class="subheading">Quick tweaks for the floor. For venue name, address, and other one-time details, use the full settings page.</p>
 
     <div class="input-group">
-      <label>Venue name</label>
-      <input type="text" id="settingsName">
-    </div>
-    <div class="input-group">
-      <label>Address</label>
-      <textarea id="settingsAddress" rows="2"></textarea>
-    </div>
-    <div class="input-group">
-      <label>Floor manager name</label>
-      <input type="text" id="settingsManager">
-    </div>
-    <div class="input-group">
         <label>Menus</label>
-        <p class="subheading" style="font-size:12px;margin-bottom:8px;">Upload multiple menus (Bar, Mango menu, Brunch, etc.). Guests will see them on the queue status page.</p>
+        <p class="subheading" style="font-size:13px;margin-bottom:10px;">Upload multiple menus (Bar, Mango menu, Brunch, etc.). Guests see them on the queue status page.</p>
         <div id="menuList"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
-          <input type="text" id="newMenuName" placeholder="Menu name (e.g. Bar menu)" style="flex:1;min-width:160px;padding:10px 12px;background:var(--card);border:1px solid var(--border-strong);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;">
-          <input type="file" id="newMenuFile" accept="application/pdf" style="flex:1;min-width:160px;">
-          <button class="button" style="max-width:140px;flex-shrink:0;" onclick="uploadMenu()">Add menu</button>
+          <input type="text" id="newMenuName" placeholder="Menu name (e.g. Bar menu)" style="flex:1;min-width:160px;padding:8px 10px;background:var(--card);border:1px solid var(--border-strong);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;align-self:center;" maxlength="50">
+          <input type="file" id="newMenuFile" accept="application/pdf" style="flex:1;min-width:160px;padding:7px 10px;background:var(--card);border:1px solid var(--border-strong);border-radius:8px;font-family:inherit;font-size:13px;color:var(--text);align-self:center;">
+          <button class="menu-action" style="background:var(--accent);color:var(--accent-text);border-color:var(--accent);font-weight:600;flex-shrink:0;align-self:center;" onclick="uploadMenu()">Add menu</button>
         </div>
         <p class="error" id="menuUploadError" style="margin-top:6px;"></p>
       </div>
     <div class="input-group">
-      <label>Google reviews link</label>
-      <input type="url" id="settingsReviews" placeholder="https://g.page/...">
-    </div>
-    <div class="input-group">
       <label>Seating options</label>
+      <p class="subheading" style="font-size:13px;margin-bottom:10px;">Tap a chip to toggle whether guests see it. Click × to delete. "No preference" can't be removed.</p>
       <div class="seating-chips" id="settingsChips"></div>
     </div>
     <div class="input-group">
       <label>Note options</label>
-      <p class="subheading" style="font-size:11px;margin-bottom:8px;">Optional notes guests can pick when joining the queue.</p>
+      <p class="subheading" style="font-size:13px;margin-bottom:10px;">Optional flags guests can add when joining (allergies, birthdays, etc.). Tap to toggle visibility; × to delete.</p>
       <div class="seating-chips" id="notesChips"></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2 class="heading">Wait time formula</h2>
-    <p class="subheading">min(base + increment × (position − 1), cap)</p>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      <div class="input-group" style="flex:1;min-width:90px;">
-        <label>Base (min)</label>
-        <input type="number" id="settingsBase" min="1">
-      </div>
-      <div class="input-group" style="flex:1;min-width:90px;">
-        <label>Increment</label>
-        <input type="number" id="settingsIncrement" min="1">
-      </div>
-      <div class="input-group" style="flex:1;min-width:90px;">
-        <label>Cap (min)</label>
-        <input type="number" id="settingsCap" min="1">
-      </div>
     </div>
   </div>
 
@@ -961,12 +960,15 @@ async function cancelGuest(id) {
 }
 
 function switchTab(tab) {
-  ['live','history','settings'].forEach(t => {
-    document.getElementById(t + 'Tab').style.display = (t === tab) ? 'block' : 'none';
+  ['live','history','waittime','settings'].forEach(t => {
+    const el = document.getElementById(t + 'Tab');
+    if (el) el.style.display = (t === tab) ? 'block' : 'none';
     const btn = document.querySelector('[data-tab="' + t + '"]');
     if (btn) btn.classList.toggle('active', t === tab);
   });
+  try { sessionStorage.setItem('flock_dashboard_tab', tab); } catch(e) {}
   if (tab === 'history') loadHistory();
+  if (tab === 'waittime') loadWaitTimeTab();
   if (tab === 'settings') loadSettings();
 }
 
@@ -1070,14 +1072,6 @@ let settingsNotes = [];
 
 function loadSettings() {
   if (!venue) return;
-  document.getElementById('settingsName').value = venue.name || '';
-  document.getElementById('settingsAddress').value = venue.address || '';
-  document.getElementById('settingsManager').value = venue.floorManagerName || '';
-  document.getElementById('settingsReviews').value = venue.googleReviewsUrl || '';
-  document.getElementById('settingsBase').value = venue.waitTimeBase;
-  document.getElementById('settingsIncrement').value = venue.waitTimeIncrement;
-  document.getElementById('settingsCap').value = venue.waitTimeCap;
-
   const opts = (venue.seatingOptions || 'Indoor,Outdoor,No preference').split(',');
   settingsSeating = opts.map(o => {
     const trimmed = o.trim();
@@ -1097,7 +1091,7 @@ function loadSettings() {
 }
 
 function renderSettingsChips() {
-  const protectedOpts = ['Indoor', 'Outdoor', 'No preference'];
+  const protectedOpts = ['No preference'];
   const c = document.getElementById('settingsChips');
   c.innerHTML = settingsSeating.map((opt, i) => `
     <button class="chip ${opt.selected ? 'selected' : ''}" onclick="toggleSettingsChip(${i})">
@@ -1154,6 +1148,102 @@ async function addSettingsChip() {
   }
 }
 
+const WAIT_PRESETS = {
+  cafe: { base: 6, increment: 2, cap: 25 },
+  fine: { base: 15, increment: 5, cap: 45 },
+  bar:  { base: 5, increment: 3, cap: 20 },
+};
+
+function applyWaitPreset(type) {
+  const p = WAIT_PRESETS[type];
+  if (!p) return;
+  document.getElementById('settingsBase').value = p.base;
+  document.getElementById('settingsIncrement').value = p.increment;
+  document.getElementById('settingsCap').value = p.cap;
+  updateWaitPreview();
+}
+
+function updateWaitPreview() {
+  const base = parseInt(document.getElementById('settingsBase').value) || 0;
+  const inc  = parseInt(document.getElementById('settingsIncrement').value) || 0;
+  const cap  = parseInt(document.getElementById('settingsCap').value) || 0;
+  const calc = (pos) => Math.min(base + inc * (pos - 1), cap);
+  const el = document.getElementById('waitPreview');
+  if (el) {
+    el.innerHTML = `
+      <div style="margin-bottom:4px;font-weight:600;">What guests will see</div>
+      <div style="display:flex;flex-wrap:wrap;gap:18px;">
+        <span>Position 1 → <strong style="color:var(--accent);">~${calc(1)} min</strong></span>
+        <span>Position 4 → <strong style="color:var(--accent);">~${calc(4)} min</strong></span>
+        <span>Position 8 → <strong style="color:var(--accent);">~${calc(8)} min</strong></span>
+        <span>Position 12 → <strong style="color:var(--accent);">~${calc(12)} min</strong></span>
+      </div>
+    `;
+  }
+  let activeType = null;
+  for (const [k, p] of Object.entries(WAIT_PRESETS)) {
+    if (p.base === base && p.increment === inc && p.cap === cap) {
+      activeType = k;
+      break;
+    }
+  }
+  document.querySelectorAll('[onclick^="applyWaitPreset"]').forEach(btn => {
+    const match = btn.getAttribute('onclick').match(/applyWaitPreset\('(\w+)'\)/);
+    btn.classList.toggle('selected', !!(match && match[1] === activeType));
+  });
+}
+
+function loadWaitTimeTab() {
+  if (!venue) return;
+  document.getElementById('settingsBase').value = venue.waitTimeBase;
+  document.getElementById('settingsIncrement').value = venue.waitTimeIncrement;
+  document.getElementById('settingsCap').value = venue.waitTimeCap;
+  updateWaitPreview();
+}
+
+async function saveWaitTimeSettings() {
+  const errEl = document.getElementById('waitTimeError');
+  const okEl = document.getElementById('waitTimeSuccess');
+  errEl.textContent = '';
+  okEl.textContent = '';
+
+  const payload = {
+    waitTimeBase: parseInt(document.getElementById('settingsBase').value) || 8,
+    waitTimeIncrement: parseInt(document.getElementById('settingsIncrement').value) || 3,
+    waitTimeCap: parseInt(document.getElementById('settingsCap').value) || 60,
+    expectedUpdatedAt: venue.updatedAt,
+  };
+
+  okEl.textContent = 'Saved.';
+  Object.assign(venue, payload);
+  localStorage.setItem('flock_venue', JSON.stringify(venue));
+
+  try {
+    const res = await fetch('/api/venues/' + venue.id, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (res.status === 409) {
+      okEl.textContent = '';
+      errEl.textContent = 'Someone else updated settings. Refreshing — please re-apply your changes.';
+      if (data.currentVenue) {
+        venue = data.currentVenue;
+        localStorage.setItem('flock_venue', JSON.stringify(venue));
+        loadWaitTimeTab();
+      }
+      return;
+    }
+    if (!res.ok) throw new Error(data.error || 'Failed to save');
+    venue = data.venue;
+    localStorage.setItem('flock_venue', JSON.stringify(venue));
+  } catch (err) {
+    errEl.textContent = err.message;
+    okEl.textContent = '';
+  }
+}
+
 async function saveSettings() {
   const errEl = document.getElementById('settingsError');
   const okEl = document.getElementById('settingsSuccess');
@@ -1161,24 +1251,14 @@ async function saveSettings() {
   okEl.textContent = '';
 
   const payload = {
-    name: document.getElementById('settingsName').value.trim(),
-    address: document.getElementById('settingsAddress').value.trim(),
-    floorManagerName: document.getElementById('settingsManager').value.trim(),
-    googleReviewsUrl: document.getElementById('settingsReviews').value.trim() || null,
     seatingOptions: settingsSeating.map(o => (o.selected ? '' : '_') + o.name).join(',') || 'Indoor,Outdoor,No preference',
     noteOptions: settingsNotes.map(o => (o.selected ? '' : '_') + o.name).join(',') || '',
-    waitTimeBase: parseInt(document.getElementById('settingsBase').value) || 8,
-    waitTimeIncrement: parseInt(document.getElementById('settingsIncrement').value) || 3,
-    waitTimeCap: parseInt(document.getElementById('settingsCap').value) || 60,
   };
 
   // Optimistic: show "Saved" immediately
   okEl.textContent = 'Saved.';
-  // Update local venue copy
   Object.assign(venue, payload);
   localStorage.setItem('flock_venue', JSON.stringify(venue));
-  // Update venue dropdown label
-  document.getElementById('venueButtonLabel').textContent = venue.name;
 
   payload.expectedUpdatedAt = venue.updatedAt;
 
@@ -1603,6 +1683,18 @@ loadVenue().then(() => {
   loadStats();
   loadSubStatus();
   connectWebSocket();
+  // Restore last active tab if reloading; otherwise default Live
+  try {
+    const navType = performance.getEntriesByType('navigation')[0]?.type;
+    if (navType === 'reload') {
+      const saved = sessionStorage.getItem('flock_dashboard_tab');
+      if (saved && ['live','history','waittime','settings'].includes(saved)) {
+        switchTab(saved);
+      }
+    } else {
+      sessionStorage.removeItem('flock_dashboard_tab');
+    }
+  } catch(e) {}
 });
 
 // Debounce loadQueue: coalesce WS event + poll bursts; prevent overlapping in-flight calls
