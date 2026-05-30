@@ -432,6 +432,14 @@ footer a:hover { color: var(--text); }
   font-size: 11px;
   line-height: 1.5;
   min-height: 280px;
+  /* Force dark-theme variables inside mockups regardless of body theme */
+  --text: #f5ead4;
+  --text-muted: rgba(245, 234, 212, 0.55);
+  --card: #1a1714;
+  --card-hover: #221d18;
+  --border: rgba(245,234,212,0.08);
+  --border-strong: rgba(245,234,212,0.18);
+  color: var(--text);
 }
 .mockup-frame .mock-h {
   font-family: 'Fraunces', serif;
