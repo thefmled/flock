@@ -170,7 +170,11 @@ async function loadStatus() {
       document.body.className = 'theme-' + (data.entry.venue.theme || 'dark-premium') + ' theme-loaded';
       sessionStorage.setItem('flock_venue_data', JSON.stringify(data.entry.venue));
     }
-    if (!res.ok) throw new Error(data.error);
+    if (!res.ok) {
+      const e = new Error(data.error || 'Failed to load status');
+      e.status = res.status;
+      throw e;
+    }
 
     venue = data.entry.venue;
     document.getElementById('venueLabel').textContent = venue.name;
@@ -253,6 +257,11 @@ async function loadStatus() {
     }
   } catch (err) {
     console.error(err);
+    if (err.status === 404) {
+      if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
+      if (statusWs) { try { statusWs.close(); } catch(e) {} }
+      document.body.innerHTML = '<div style="text-align:center;padding:60px 24px;color:var(--text-muted);font-size:16px;"><p style="font-size:18px;margin-bottom:12px;">This queue is no longer available.</p><p style="font-size:13px;">Please ask the venue staff for help. <a href="/" style="color:var(--accent);">Back to home</a></p></div>';
+    }
   }
 }
 
