@@ -10,16 +10,44 @@ function getSet(key) {
 
 function init(server) {
   const wss = new WebSocketServer({ server, path: '/ws' });
+  const jwt = require('jsonwebtoken');
+  const prisma = require('./prisma');
+
+  // Verify the subscriber can access a given channel.
+  // - venue:<id> requires a valid JWT and ownership of the venue
+  // - entry:<id> is open (the random ID is the access credential)
+  // - anything else is rejected
+  async function canSubscribe(key, token) {
+    if (typeof key !== 'string') return false;
+    if (key.startsWith('entry:')) return true;
+    if (key.startsWith('venue:')) {
+      if (!token) return false;
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const venueId = key.slice(6);
+        const venue = await prisma.venue.findUnique({ where: { id: venueId } });
+        return !!(venue && venue.ownerId === decoded.ownerId);
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
+  }
 
   wss.on('connection', (ws) => {
     ws.subscriptions = new Set();
     ws.isAlive = true;
     ws.on('pong', () => { ws.isAlive = true; });
 
-    ws.on('message', (raw) => {
+    ws.on('message', async (raw) => {
       try {
         const msg = JSON.parse(raw.toString());
         if (msg.type === 'subscribe' && msg.key) {
+          const ok = await canSubscribe(msg.key, msg.token);
+          if (!ok) {
+            try { ws.send(JSON.stringify({ type: 'subscribe_denied', key: msg.key })); } catch(e) {}
+            return;
+          }
           ws.subscriptions.add(msg.key);
           getSet(msg.key).add(ws);
         } else if (msg.type === 'unsubscribe' && msg.key) {
