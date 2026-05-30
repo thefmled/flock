@@ -303,6 +303,9 @@ router.post('/notify/:entryId', requireAuth, requireActiveSubscription, async (r
     if (entry.venue.ownerId !== req.ownerId) {
       return res.status(403).json({ error: 'Not authorized' });
     }
+    if (entry.status === 'seated' || entry.status === 'cancelled') {
+      return res.status(409).json({ error: 'Entry is no longer in queue', currentStatus: entry.status });
+    }
 
     const { reportingTime } = req.body;
     
@@ -353,6 +356,9 @@ router.post('/seat/:entryId', requireAuth, requireActiveSubscription, async (req
     if (entry.venue.ownerId !== req.ownerId) {
       return res.status(403).json({ error: 'Not authorized' });
     }
+    if (entry.status === 'seated' || entry.status === 'cancelled') {
+      return res.status(409).json({ error: 'Entry is no longer in queue', currentStatus: entry.status });
+    }
 
     await prisma.queueEntry.update({
       where: { id: entry.id },
@@ -372,11 +378,16 @@ router.post('/seat/:entryId', requireAuth, requireActiveSubscription, async (req
 // Cancel entry (public — guest can self-cancel, also authed for staff)
 router.post('/cancel/:entryId', async (req, res) => {
   try {
+    const current = await prisma.queueEntry.findUnique({ where: { id: req.params.entryId } });
+    if (!current) return res.status(404).json({ error: 'Entry not found' });
+    if (current.status === 'seated' || current.status === 'cancelled') {
+      return res.status(409).json({ error: 'Entry is no longer in queue', currentStatus: current.status });
+    }
     await prisma.queueEntry.update({
       where: { id: req.params.entryId },
       data: { cancelledAt: new Date(), status: 'cancelled' },
     });
-    await logAudit(req.params.entryId, 'cancelled');
+    logAudit(req.params.entryId, 'cancelled');
     const cancelledEntry = await prisma.queueEntry.findUnique({ where: { id: req.params.entryId } });
     if (cancelledEntry) {
       broadcast('venue:' + cancelledEntry.venueId, { type: 'queue_changed' });
@@ -520,6 +531,9 @@ router.post('/call/:entryId', requireAuth, requireActiveSubscription, async (req
     if (!entry) return res.status(404).json({ error: 'Entry not found' });
     if (entry.venue.ownerId !== req.ownerId) {
       return res.status(403).json({ error: 'Not authorized' });
+    }
+    if (entry.status === 'cancelled') {
+      return res.status(409).json({ error: 'Entry is no longer in queue', currentStatus: entry.status });
     }
 
     const updatedEntry = await prisma.queueEntry.update({
