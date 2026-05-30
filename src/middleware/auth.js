@@ -45,10 +45,13 @@ async function requireActiveSubscription(req, res, next) {
     if (status === 'active') return next();
 
     if (status === 'trial') {
-      if (owner.trialEndsAt && new Date(owner.trialEndsAt) > new Date()) {
+      // Grace: allow trial access for 24h past trialEndsAt so the in-app banner can show
+      const TRIAL_GRACE_MS = 24 * 60 * 60 * 1000;
+      const trialEnd = owner.trialEndsAt ? new Date(owner.trialEndsAt).getTime() : 0;
+      if (trialEnd > 0 && Date.now() < trialEnd + TRIAL_GRACE_MS) {
         return next();
       }
-      // Trial expired
+      // Trial fully expired (past grace)
       await prisma.owner.update({
         where: { id: owner.id },
         data: { subscriptionStatus: 'expired' },
