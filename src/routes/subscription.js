@@ -261,7 +261,8 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
           await updateSubscriptionQuantity(owner.id, venueCount);
         }
       }
-    } else if (event === 'subscription.cancelled' || event === 'subscription.completed') {
+    } else if (event === 'subscription.cancelled') {
+      // User cancelled, but cycle is still running — middleware allows access until 'completed' fires
       const subscriptionId = payload.subscription.entity.id;
       const owner = await prisma.owner.findFirst({
         where: { razorpaySubscriptionId: subscriptionId },
@@ -270,6 +271,19 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         await prisma.owner.update({
           where: { id: owner.id },
           data: { subscriptionStatus: 'cancelled' },
+        });
+        invalidateSubCache(owner.id);
+      }
+    } else if (event === 'subscription.completed') {
+      // Subscription has truly ended — block access
+      const subscriptionId = payload.subscription.entity.id;
+      const owner = await prisma.owner.findFirst({
+        where: { razorpaySubscriptionId: subscriptionId },
+      });
+      if (owner) {
+        await prisma.owner.update({
+          where: { id: owner.id },
+          data: { subscriptionStatus: 'expired' },
         });
         invalidateSubCache(owner.id);
       }
