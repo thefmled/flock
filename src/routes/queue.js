@@ -425,6 +425,15 @@ router.post('/clear/:venueId', requireAuth, requireActiveSubscription, async (re
     });
     if (!venue) return res.status(404).json({ error: 'Venue not found' });
 
+    // Get the entries being cancelled BEFORE bulk update so we can log per-entry
+    const toCancel = await prisma.queueEntry.findMany({
+      where: {
+        venueId: venue.id,
+        status: { in: ['waiting', 'notified'] },
+      },
+      select: { id: true },
+    });
+
     await prisma.queueEntry.updateMany({
       where: {
         venueId: venue.id,
@@ -432,6 +441,12 @@ router.post('/clear/:venueId', requireAuth, requireActiveSubscription, async (re
       },
       data: { status: 'cancelled', cancelledAt: new Date() },
     });
+
+    // Fire-and-forget audit logs for each cancelled entry
+    for (const e of toCancel) {
+      logAudit(e.id, 'cancelled', 'queue cleared by staff');
+    }
+
     broadcast('venue:' + req.params.venueId, { type: 'queue_changed' });
     res.json({ success: true });
   } catch (error) {
