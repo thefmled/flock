@@ -570,10 +570,68 @@ footer a:hover { color: var(--text); }
 @media (max-width: 768px) {
   .mockups { grid-template-columns: 1fr; }
 }
+
+body.landing-light {
+  --bg: #faf8f3;
+  --text: #1a1814;
+  --text-muted: rgba(26,24,20,0.55);
+  --accent: #f5a854;
+  --accent-text: #1a1814;
+  --accent-soft: rgba(245,168,84,0.14);
+  --card: #ffffff;
+  --card-hover: #f6f3ed;
+  --border: rgba(26,24,20,0.08);
+  --border-strong: rgba(26,24,20,0.18);
+  --error: #c4422a;
+  --success: #4a7c4a;
+}
+body.landing-light .nav {
+  background: rgba(250, 248, 243, 0.9);
+}
+body.landing-light .cta {
+  box-shadow: 0 4px 18px rgba(245, 168, 84, 0.28);
+}
+body.landing-light .cta:hover {
+  box-shadow: 0 6px 22px rgba(245, 168, 84, 0.38);
+}
+body.landing-light .nav-cta {
+  box-shadow: 0 3px 14px rgba(245, 168, 84, 0.28);
+}
+
+.theme-toggle {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.15s;
+  margin-right: 4px;
+}
+.theme-toggle:hover { background: var(--card-hover); transform: translateY(-1px); }
   
 </style>
+<script>
+  (function() {
+    try {
+      const saved = localStorage.getItem('flock_landing_theme');
+      if (saved === 'light') document.documentElement.classList.add('landing-light-pre');
+    } catch(e) {}
+  })();
+</script>
 </head>
 <body class="theme-dark-premium">
+<script>
+  if (document.documentElement.classList.contains('landing-light-pre')) {
+    document.body.classList.add('landing-light');
+    document.documentElement.classList.remove('landing-light-pre');
+  }
+</script>
 
 <nav class="nav">
   <div class="nav-logo">fl<span class="accent">o</span>ck</div>
@@ -583,6 +641,7 @@ footer a:hover { color: var(--text); }
     <a href="#pricing">Pricing</a>
     <a href="#screenshots">Product</a>
     <a href="#faq">FAQs</a>
+    <button class="theme-toggle" onclick="toggleLandingTheme()" aria-label="Toggle theme" id="themeToggle">☀</button>
     <a href="/login.html" class="nav-cta">Log in / Sign up</a>
   </div>
 </nav>
@@ -993,6 +1052,27 @@ footer a:hover { color: var(--text); }
 </footer>
 
 <script>
+function toggleLandingTheme() {
+  document.body.classList.toggle('landing-light');
+  const isLight = document.body.classList.contains('landing-light');
+  localStorage.setItem('flock_landing_theme', isLight ? 'light' : 'dark');
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = isLight ? '☾' : '☀';
+}
+
+// Apply saved preference on load (before paint to avoid flash)
+(function() {
+  try {
+    const saved = localStorage.getItem('flock_landing_theme');
+    if (saved === 'light') document.body.classList.add('landing-light');
+  } catch(e) {}
+})();
+
+// Set correct icon after DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = document.body.classList.contains('landing-light') ? '☾' : '☀';
+});
 </script>
 </body>
 </html>
