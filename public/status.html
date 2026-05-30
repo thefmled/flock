@@ -98,7 +98,7 @@
 const params = new URLSearchParams(window.location.search);
 const entryId = params.get('id');
 let venue = null;
-let menusRendered = false;
+let lastMenuKey = null;
 let reviewRendered = false;
 
 // Pre-fill from URL params (instant render before first API call)
@@ -134,7 +134,7 @@ try {
           <span class="action-card-arrow">→</span>
         </a>
       `).join('');
-      menusRendered = true;
+      lastMenuKey = cachedVenue.menus.map(m => m.id + ':' + m.name + ':' + m.url).join('|');
     }
     if (cachedVenue.googleReviewsUrl) {
       const rc = document.getElementById('reviewCard');
@@ -227,8 +227,9 @@ async function loadStatus() {
       document.getElementById('leaveBtn').style.display = 'block';
     }
 
-    // Only render menus once (they don't change during a session)
-    if (!menusRendered) {
+    // Re-render menus if the list changed (owner may add/remove menus mid-session)
+    const menuKey = venue.menus ? venue.menus.map(m => m.id + ':' + m.name + ':' + m.url).join('|') : '';
+    if (menuKey !== lastMenuKey) {
       const menuContainer = document.getElementById('menuCardsContainer');
       if (venue.menus && venue.menus.length > 0) {
         menuContainer.innerHTML = venue.menus.map(m => `
@@ -243,8 +244,10 @@ async function loadStatus() {
             <span class="action-card-arrow">→</span>
           </a>
         `).join('');
+      } else {
+        menuContainer.innerHTML = '';
       }
-      menusRendered = true;
+      lastMenuKey = menuKey;
     }
 
     if (!reviewRendered) {
