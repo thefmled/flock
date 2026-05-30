@@ -527,6 +527,22 @@ function connectWebSocket() {
         if (isTabActive('live')) loadStats();
       } else if (msg.type === 'entry_updated' && msg.entry) {
         patchEntryInPlace(msg.entry);
+      } else if (msg.type === 'venue_updated' && msg.venue && venue && msg.venue.id === venue.id) {
+        const oldName = venue.name;
+        const oldTheme = venue.theme;
+        venue = msg.venue;
+        localStorage.setItem('flock_venue', JSON.stringify(venue));
+        if (oldName !== venue.name) {
+          const lbl = document.getElementById('venueButtonLabel');
+          if (lbl) lbl.textContent = venue.name;
+        }
+        if (oldTheme !== venue.theme) {
+          document.body.classList.remove(...Array.from(document.body.classList).filter(c => c.startsWith('theme-')));
+          document.body.classList.add('theme-' + (venue.theme || 'dark-premium'));
+        }
+        const activeTab = sessionStorage.getItem('flock_dashboard_tab') || 'live';
+        if (activeTab === 'waittime' && typeof loadWaitTimeTab === 'function') loadWaitTimeTab();
+        else if (activeTab === 'settings' && typeof loadSettings === 'function') loadSettings();
       }
     } catch(err) {}
   });
