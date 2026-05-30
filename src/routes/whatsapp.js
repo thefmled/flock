@@ -55,7 +55,7 @@ router.post('/inbound', express.json(), async (req, res) => {
       return res.json({ received: true, note: 'no matching notified entry' });
     }
 
-    const updatedEntry = await prisma.queueEntry.update({
+    await prisma.queueEntry.update({
       where: { id: entry.id },
       data: {
         guestReply: text.trim(),
@@ -71,8 +71,16 @@ router.post('/inbound', express.json(), async (req, res) => {
       },
     }).catch(() => {});
 
-    broadcast('venue:' + entry.venueId, { type: 'entry_updated', entry: updatedEntry });
-    broadcast('entry:' + entry.id, { type: 'entry_changed', entry: updatedEntry });
+    // Enrich with lastNotificationStatus so the dashboard doesn't drop the badge
+    const latestNotif = await prisma.notification.findFirst({
+      where: { queueEntryId: entry.id, payload: 'table_ready' },
+      orderBy: { sentAt: 'desc' },
+    });
+    const updatedEntry = await prisma.queueEntry.findUnique({ where: { id: entry.id } });
+    const broadcastEntry = { ...updatedEntry, lastNotificationStatus: latestNotif?.status || null };
+
+    broadcast('venue:' + entry.venueId, { type: 'entry_updated', entry: broadcastEntry });
+    broadcast('entry:' + entry.id, { type: 'entry_changed', entry: broadcastEntry });
 
     res.json({ received: true });
   } catch (error) {
