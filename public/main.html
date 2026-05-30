@@ -2370,7 +2370,7 @@ function connectMainWebSocket() {
   await loadVenue();
   showSection(window.__flockInitialSection || 'analytics');
   await loadSubStatus();
-  renderOnboarding();
+  await renderOnboarding();
   connectMainWebSocket();
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
