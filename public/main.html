@@ -1427,13 +1427,14 @@ async function addSettingsChip() {
   }
 }
 
+const WAIT_PRESETS = {
+  cafe: { base: 6, increment: 2, cap: 25 },
+  fine: { base: 15, increment: 5, cap: 45 },
+  bar:  { base: 5, increment: 3, cap: 20 },
+};
+
 function applyWaitPreset(type) {
-  const presets = {
-    cafe: { base: 6, increment: 2, cap: 25 },
-    fine: { base: 15, increment: 5, cap: 45 },
-    bar:  { base: 5, increment: 3, cap: 20 },
-  };
-  const p = presets[type];
+  const p = WAIT_PRESETS[type];
   if (!p) return;
   document.getElementById('settingsBase').value = p.base;
   document.getElementById('settingsIncrement').value = p.increment;
@@ -1447,16 +1448,29 @@ function updateWaitPreview() {
   const cap  = parseInt(document.getElementById('settingsCap').value) || 0;
   const calc = (pos) => Math.min(base + inc * (pos - 1), cap);
   const el = document.getElementById('waitPreview');
-  if (!el) return;
-  el.innerHTML = `
-    <div style="margin-bottom:4px;font-weight:600;">What guests will see</div>
-    <div style="display:flex;flex-wrap:wrap;gap:18px;">
-      <span>Position 1 → <strong style="color:var(--accent);">~${calc(1)} min</strong></span>
-      <span>Position 4 → <strong style="color:var(--accent);">~${calc(4)} min</strong></span>
-      <span>Position 8 → <strong style="color:var(--accent);">~${calc(8)} min</strong></span>
-      <span>Position 12 → <strong style="color:var(--accent);">~${calc(12)} min</strong></span>
-    </div>
-  `;
+  if (el) {
+    el.innerHTML = `
+      <div style="margin-bottom:4px;font-weight:600;">What guests will see</div>
+      <div style="display:flex;flex-wrap:wrap;gap:18px;">
+        <span>Position 1 → <strong style="color:var(--accent);">~${calc(1)} min</strong></span>
+        <span>Position 4 → <strong style="color:var(--accent);">~${calc(4)} min</strong></span>
+        <span>Position 8 → <strong style="color:var(--accent);">~${calc(8)} min</strong></span>
+        <span>Position 12 → <strong style="color:var(--accent);">~${calc(12)} min</strong></span>
+      </div>
+    `;
+  }
+  // Highlight whichever preset chip matches the current values (if any)
+  let activeType = null;
+  for (const [k, p] of Object.entries(WAIT_PRESETS)) {
+    if (p.base === base && p.increment === inc && p.cap === cap) {
+      activeType = k;
+      break;
+    }
+  }
+  document.querySelectorAll('[onclick^="applyWaitPreset"]').forEach(btn => {
+    const match = btn.getAttribute('onclick').match(/applyWaitPreset\('(\w+)'\)/);
+    btn.classList.toggle('selected', !!(match && match[1] === activeType));
+  });
 }
 
 async function saveSettings() {
