@@ -423,10 +423,15 @@ const token = localStorage.getItem('flock_token');
 const _origFetch = window.fetch;
 window.fetch = async function(...args) {
   const res = await _origFetch.apply(this, args);
-  if (res.status === 401 && args[0] && typeof args[0] === 'string' && args[0].includes('/api/')) {
-    localStorage.clear();
-    sessionStorage.setItem('flock_expired', '1');
-    window.location.replace('/login.html');
+  if (args[0] && typeof args[0] === 'string' && args[0].includes('/api/')) {
+    if (res.status === 401) {
+      localStorage.clear();
+      sessionStorage.setItem('flock_expired', '1');
+      window.location.replace('/login.html');
+    } else if (res.status === 402) {
+      sessionStorage.setItem('flock_sub_expired', '1');
+      window.location.replace('/subscribe.html');
+    }
   }
   return res;
 };
