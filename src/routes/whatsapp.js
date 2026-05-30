@@ -55,7 +55,7 @@ router.post('/inbound', express.json(), async (req, res) => {
       return res.json({ received: true, note: 'no matching notified entry' });
     }
 
-    await prisma.queueEntry.update({
+    const updatedEntry = await prisma.queueEntry.update({
       where: { id: entry.id },
       data: {
         guestReply: text.trim(),
@@ -63,15 +63,16 @@ router.post('/inbound', express.json(), async (req, res) => {
       },
     });
 
-    await prisma.auditLog.create({
+    prisma.auditLog.create({
       data: {
         queueEntryId: entry.id,
         action: 'guest_reply',
         details: text.trim(),
       },
-    });
+    }).catch(() => {});
 
-    broadcast('venue:' + entry.venueId, { type: 'queue_changed' });
+    broadcast('venue:' + entry.venueId, { type: 'entry_updated', entry: updatedEntry });
+    broadcast('entry:' + entry.id, { type: 'entry_changed', entry: updatedEntry });
 
     res.json({ received: true });
   } catch (error) {
