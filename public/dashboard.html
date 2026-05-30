@@ -1265,6 +1265,24 @@ async function loadStats() {
     : '—';
 }
 
+// Smooth wait-time countdown between server polls.
+// Server remains source of truth; ticker only bridges the gap between syncs.
+function tickWaitTimes() {
+  document.querySelectorAll('.wait-time').forEach(el => {
+    const position = Number(el.getAttribute('data-position'));
+    if (!position || position === 1) return; // pos 1 is static — only changes on server
+    const serverWait = Number(el.getAttribute('data-server-wait'));
+    const baseWait = Number(el.getAttribute('data-base-wait'));
+    const lastSync = Number(el.getAttribute('data-last-sync'));
+    if (!serverWait || !lastSync) return;
+    const minutesSinceSync = Math.floor((Date.now() - lastSync) / 60000);
+    const ticked = Math.max(baseWait, serverWait - minutesSinceSync);
+    const display = '~' + ticked + 'm';
+    if (el.textContent !== display) el.textContent = display;
+  });
+}
+setInterval(tickWaitTimes, 1000);
+
 let historyCache = [];
 
 async function showAudit(entryId, guestName) {
