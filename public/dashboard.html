@@ -561,6 +561,8 @@ async function selectVenue(id) {
     loadQueue();
     loadStats();
     loadSubStatus();
+    venueMenus = [];
+    loadMenus();
   }
 }
 
@@ -1081,6 +1083,7 @@ function loadSettings() {
     return { name: trimmed, selected: true };
   });
   renderNotesChips();
+  if (venueMenus.length > 0) renderMenuList();
   loadMenus();
 }
 
@@ -1676,7 +1679,7 @@ function ord(n) {
   await loadVenue();
   loadQueue();
   loadStats();
-  await loadSubStatus();
+  await Promise.all([loadSubStatus(), loadMenus()]);
   connectWebSocket();
   try {
     const navType = performance.getEntriesByType('navigation')[0]?.type;
