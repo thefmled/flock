@@ -13,9 +13,13 @@ async function sendTemplate(toPhone, templateName, params, buttonParams = null) 
     return null;
   }
 
+  // Normalize to a bare 91XXXXXXXXXX (no '+'). Strip a leading 0 (e.g. 0XXXXXXXXXX) and a
+  // leading 91 country code if already present, then prepend 91. This is idempotent — an
+  // already-prefixed '919876543210' normalizes back to itself instead of becoming '9191...'.
   let destination = String(toPhone).replace(/\D/g, '');
+  if (destination.startsWith('0')) destination = destination.slice(1);
+  if (destination.length === 12 && destination.startsWith('91')) destination = destination.slice(2);
   if (destination.length === 10) destination = '91' + destination;
-
   try {
     const template = {
       id: templateName,
