@@ -466,8 +466,7 @@ router.get('/history/:venueId', requireAuth, requireActiveSubscription, async (r
     });
     if (!venue) return res.status(404).json({ error: 'Venue not found' });
 
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+    const startOfDay = istStartOfDay();
 
     const entries = await prisma.queueEntry.findMany({
       where: {
