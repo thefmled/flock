@@ -29,7 +29,6 @@ model Venue {
   name              String
   address           String
   floorManagerName  String
-  menuPdfUrl        String?
   googleReviewsUrl  String?
   
   waitTimeBase      Int           @default(8)
