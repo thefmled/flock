@@ -267,7 +267,9 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
       return res.status(400).json({ error: 'Missing signature' });
     }
     const expected = crypto.createHmac('sha256', secret).update(req.body).digest('hex');
-    if (expected !== signature) {
+    const sigBuf = Buffer.from(String(signature), 'utf8');
+    const expBuf = Buffer.from(expected, 'utf8');
+    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
       console.warn('Webhook signature mismatch');
       return res.status(400).json({ error: 'Invalid signature' });
     }
