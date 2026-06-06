@@ -159,6 +159,23 @@ async function adaptSubscribeCopy() {
         card.insertBefore(banner, card.firstChild);
       }
     }
+
+    // #50: cancelled but still inside the paid cycle — reassure them access continues, and
+    // show until when, so they don't think resubscribing is to regain lost access.
+    if (data.status === 'cancelled' && data.subscriptionEndsAt) {
+      const ends = new Date(data.subscriptionEndsAt);
+      if (ends > new Date()) {
+        const card = document.querySelector('.subscribe-card');
+        if (card && !document.getElementById('graceBanner')) {
+          const dateStr = ends.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+          const banner = document.createElement('div');
+          banner.id = 'graceBanner';
+          banner.style.cssText = 'background:var(--card-hover);color:var(--text);padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px;';
+          banner.textContent = 'Your access continues until ' + dateStr + '. Resubscribe to keep flock active after that.';
+          card.insertBefore(banner, card.firstChild);
+        }
+      }
+    }
   } catch (e) {}
 }
 
