@@ -9,7 +9,7 @@ datasource db {
 
 model Owner {
   id        String   @id @default(cuid())
-  phone     String   @unique
+  email     String   @unique
   name      String?
   razorpayCustomerId    String?
   razorpaySubscriptionId String?
@@ -52,13 +52,13 @@ model Venue {
 
 model OtpCode {
   id        String   @id @default(cuid())
-  phone     String
+  email     String
   code      String
   expiresAt DateTime
   consumed  Boolean  @default(false)
   createdAt DateTime @default(now())
   
-  @@index([phone])
+  @@index([email])
 }
 
 model QueueEntry {
