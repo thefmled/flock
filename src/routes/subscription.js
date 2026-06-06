@@ -334,7 +334,9 @@ router.post('/cancel', requireAuth, async (req, res) => {
       if (endUnix) subscriptionEndsAt = new Date(endUnix * 1000);
     } catch (e) {
       console.error('Razorpay cancel failed:', e.message || e);
-      // Continue anyway — mark cancelled locally
+      // Do NOT mark cancelled locally — Razorpay still considers the subscription active
+      // and would keep billing the customer. Surface the failure so the user can retry.
+      return res.status(502).json({ error: 'Could not cancel with the payment provider. Please try again.' });
     }
 
     await prisma.owner.update({
