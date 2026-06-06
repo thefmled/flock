@@ -167,17 +167,20 @@ setInterval(tickStatusWait, 1000);
   
 async function loadStatus() {
   if (!entryId) return;
+  if (loadStatusInFlight) return; // #41: a fetch is already in flight — skip the duplicate
+  loadStatusInFlight = true;
   try {
     const res = await fetch('/api/queue/status/' + entryId);
-    const data = await res.json();
-    if (data.entry && data.entry.venue) {
-      document.body.className = 'theme-' + (data.entry.venue.theme || 'dark-premium') + ' theme-loaded';
-      sessionStorage.setItem('flock_venue_data', JSON.stringify(data.entry.venue));
-    }
+    let data = {};
+    try { data = await res.json(); } catch (_) { /* #40: non-JSON error body (e.g. gateway error) */ }
     if (!res.ok) {
       const e = new Error(data.error || 'Failed to load status');
       e.status = res.status;
       throw e;
+    }
+    if (data.entry && data.entry.venue) {
+      document.body.className = 'theme-' + (data.entry.venue.theme || 'dark-premium') + ' theme-loaded';
+      sessionStorage.setItem('flock_venue_data', JSON.stringify(data.entry.venue));
     }
 
     venue = data.entry.venue;
@@ -205,7 +208,7 @@ async function loadStatus() {
       wait.style.display = 'none';
       waitLabel.style.display = 'none';
       document.getElementById('leaveBtn').style.display = 'none';
-      if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
+      stopStatusUpdates(); // #42: terminal state — stop polling and close the WS
       // Show review prompt prominently if available
       const rc = document.getElementById('reviewCard');
       if (venue.googleReviewsUrl && rc) {
@@ -220,7 +223,7 @@ async function loadStatus() {
       wait.style.display = 'none';
       waitLabel.style.display = 'none';
       document.getElementById('leaveBtn').style.display = 'none';
-      if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
+      stopStatusUpdates(); // #42: terminal state — stop polling and close the WS
     } else {
       banner.style.display = 'none';
       document.getElementById('position').textContent = '#' + data.position;
@@ -269,10 +272,11 @@ async function loadStatus() {
   } catch (err) {
     console.error(err);
     if (err.status === 404) {
-      if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
-      if (statusWs) { try { statusWs.close(); } catch(e) {} }
+      stopStatusUpdates();
       document.body.innerHTML = '<div style="text-align:center;padding:60px 24px;color:var(--text-muted);font-size:16px;"><p style="font-size:18px;margin-bottom:12px;">This queue is no longer available.</p><p style="font-size:13px;">Please ask the venue staff for help. <a href="/" style="color:var(--accent);">Back to home</a></p></div>';
     }
+  } finally {
+    loadStatusInFlight = false;
   }
 }
 
@@ -305,6 +309,8 @@ let statusWsReconnectTimer = null;
 let statusWsBackoff = 1000;
 let statusInterval = null;
 let statusVenueId = null;
+let loadStatusInFlight = false; // #41: dedup overlapping loadStatus calls
+let statusDone = false;         // #42: terminal state reached — stop polling/reconnecting
 
 // Subscribe to the venue's PII-free public channel so queue-wide position changes push
 // in real time. Safe to call repeatedly — the server dedups, and it no-ops until the WS
@@ -322,8 +328,17 @@ function setStatusPollRate() {
   statusInterval = setInterval(loadStatus, 15000);
 }
 
+// #42: tear down all live updates once the guest reaches a terminal state (seated / cancelled /
+// queue gone) so the WebSocket doesn't keep reconnecting in the background indefinitely.
+function stopStatusUpdates() {
+  statusDone = true;
+  if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
+  if (statusWsReconnectTimer) { clearTimeout(statusWsReconnectTimer); statusWsReconnectTimer = null; }
+  if (statusWs) { try { statusWs.close(); } catch (e) {} statusWs = null; }
+}
+
 function connectStatusWs() {
-  if (!entryId) return;
+  if (!entryId || statusDone) return;
   if (statusWs && (statusWs.readyState === WebSocket.OPEN || statusWs.readyState === WebSocket.CONNECTING)) return;
 
   const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -349,6 +364,7 @@ function connectStatusWs() {
   });
 
   statusWs.addEventListener('close', () => {
+    if (statusDone) return; // #42: don't reconnect after a terminal state
     if (statusWsReconnectTimer) clearTimeout(statusWsReconnectTimer);
     statusWsReconnectTimer = setTimeout(connectStatusWs, statusWsBackoff);
     statusWsBackoff = Math.min(statusWsBackoff * 2, 30000);
