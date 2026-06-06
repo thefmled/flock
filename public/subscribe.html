@@ -89,7 +89,7 @@
 
   <div class="card subscribe-card">
     <div class="trial-badge">14-day free trial</div>
-    <div class="price">₹999</div>
+    <div class="price">₹<span data-flock-price="{price}">999</span></div>
     <div class="price-period">per venue, per month — after trial</div>
 
     <div class="features-list">
@@ -104,12 +104,13 @@
     <button class="button" onclick="startSubscription()" id="payBtn">Start free trial</button>
     <p class="error" id="payError"></p>
 
-    <p class="fineprint">No charges for 14 days. Your card will be charged ₹999 automatically every month after the trial. Cancel anytime.</p>
+    <p class="fineprint">No charges for 14 days. Your card will be charged ₹<span data-flock-price="{price}">999</span> automatically every month after the trial. Cancel anytime.</p>
   </div>
 </main>
 
+<script src="/pricing.js"></script>
 <script>
-// Intercept 401s globally — redirect to login
+// Intercept 401s globally
 const _origFetch = window.fetch;
 window.fetch = async function(...args) {
   const res = await _origFetch.apply(this, args);
@@ -144,7 +145,7 @@ async function adaptSubscribeCopy() {
     if (badge) badge.textContent = isPaused ? 'Reactivate your subscription' : 'Resume your subscription';
     if (period) period.textContent = 'per venue, per month';
     if (btn) btn.textContent = 'Add payment method';
-    if (fineprint) fineprint.textContent = 'Your card will be charged ₹999 immediately and every month thereafter. Cancel anytime from settings.';
+    if (fineprint) fineprint.textContent = 'Your card will be charged ₹' + (data.monthlyPrice || 999) + ' immediately and every month thereafter. Cancel anytime from settings.';
 
     // Paused = a renewal charge failed and Razorpay halted the subscription. Explain why,
     // rather than leaving the generic "start your free trial" copy.
@@ -216,7 +217,7 @@ async function startSubscription() {
       key: data.keyId,
       subscription_id: data.subscriptionId,
       name: 'flock',
-      description: _isReturning ? 'Subscription — ₹999/mo' : 'Monthly subscription with 14-day trial',
+      description: _isReturning ? ('Subscription — ₹' + (window.FLOCK_MONTHLY_PRICE || 999) + '/mo') : 'Monthly subscription with 14-day trial',
       handler: async function(response) {
         // Show verifying state while we wait for the webhook to flip status → active
         const card = document.querySelector('.subscribe-card');
