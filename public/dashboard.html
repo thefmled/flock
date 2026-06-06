@@ -702,6 +702,10 @@ function patchEntryInPlace(entry) {
   tmp.innerHTML = buildEntryHtml(merged).trim();
   existing.replaceWith(tmp.firstChild);
   _renderedEntries.set(entry.id, entryHashKey(merged));
+  // #47: the in-place patch is optimistic and only touches this one card — follow it with a
+  // coalesced full refetch so positions / wait-times for every entry reconcile with the
+  // server and no stale state lingers.
+  loadQueueDebounced();
 }
 
 async function loadQueue() {
