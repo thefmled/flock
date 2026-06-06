@@ -132,7 +132,8 @@ async function adaptSubscribeCopy() {
     });
     if (!res.ok) return;
     const data = await res.json();
-    const isReturning = !!data.hasSubscription && (data.status === 'expired' || data.status === 'cancelled' || data.status === 'pending');
+    const isPaused = !!data.hasSubscription && data.status === 'paused';
+    const isReturning = !!data.hasSubscription && (data.status === 'expired' || data.status === 'cancelled' || data.status === 'pending' || data.status === 'paused');
     if (!isReturning) return;
     
     // Update card copy for resubscription
@@ -140,10 +141,23 @@ async function adaptSubscribeCopy() {
     const period = document.querySelector('.price-period');
     const btn = document.getElementById('payBtn');
     const fineprint = document.querySelector('.fineprint');
-    if (badge) badge.textContent = 'Resume your subscription';
+    if (badge) badge.textContent = isPaused ? 'Reactivate your subscription' : 'Resume your subscription';
     if (period) period.textContent = 'per venue, per month';
     if (btn) btn.textContent = 'Add payment method';
     if (fineprint) fineprint.textContent = 'Your card will be charged ₹999 immediately and every month thereafter. Cancel anytime from settings.';
+
+    // Paused = a renewal charge failed and Razorpay halted the subscription. Explain why,
+    // rather than leaving the generic "start your free trial" copy.
+    if (isPaused) {
+      const card = document.querySelector('.subscribe-card');
+      if (card && !document.getElementById('pausedBanner')) {
+        const banner = document.createElement('div');
+        banner.id = 'pausedBanner';
+        banner.style.cssText = 'background:var(--error,#ef4444);color:#fff;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px;';
+        banner.textContent = "Your subscription was paused because a payment didn't go through. Add a payment method to restore access.";
+        card.insertBefore(banner, card.firstChild);
+      }
+    }
   } catch (e) {}
 }
 
