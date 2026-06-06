@@ -1021,8 +1021,8 @@ async function selectVenue(id) {
     if (ws) { try { ws.close(); } catch(e) {} ws = null; }
     connectMainWebSocket();
     showSection(window.__flockInitialSection || 'analytics');
-    loadSubStatus();
-    renderOnboarding();
+    await loadSubStatus();
+    await renderOnboarding();
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         document.body.classList.add('flock-ready');
