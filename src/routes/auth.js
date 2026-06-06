@@ -52,11 +52,12 @@ cleanupOldOtpCodes(); // run once at startup
 // Request OTP
 router.post('/request-otp', async (req, res) => {
   try {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ error: 'Email is required' });
+    const { email: rawEmail } = req.body;
+    if (!rawEmail) return res.status(400).json({ error: 'Email is required' });
+    const email = rawEmail.trim().toLowerCase();
 
     // Rate limit: 1 request per 30s and max 5 per hour per email
-    const key = email.toLowerCase();
+    const key = email;
     const now = Date.now();
     const rec = requestRate.get(key) || { count: 0, windowStart: now, lastAt: 0 };
     if (rec.lastAt && now - rec.lastAt < REQUEST_MIN_INTERVAL_MS) {
@@ -97,11 +98,12 @@ router.post('/request-otp', async (req, res) => {
 // Verify OTP
 router.post('/verify-otp', async (req, res) => {
   try {
-    const { email, code } = req.body;
-    if (!email || !code) return res.status(400).json({ error: 'Email and code required' });
+    const { email: rawEmail, code } = req.body;
+    if (!rawEmail || !code) return res.status(400).json({ error: 'Email and code required' });
+    const email = rawEmail.trim().toLowerCase();
 
     // Rate limit: 5 wrong attempts then 10-min lock per email
-    const key = email.toLowerCase();
+    const key = email;
     const now = Date.now();
     const vrec = verifyRate.get(key) || { count: 0, windowStart: now };
     if (vrec.lockedUntil && now < vrec.lockedUntil) {
