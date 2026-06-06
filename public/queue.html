@@ -243,7 +243,6 @@
         if (data.position != null) queryObj.position = data.position;
         if (data.waitMinutes != null) queryObj.wait = data.waitMinutes;
         queryObj.venueName = document.getElementById('venueLabel').textContent;
-        if (venueData.menuPdfUrl) queryObj.menuPdfUrl = venueData.menuPdfUrl;
         if (venueData.googleReviewsUrl) queryObj.googleReviewsUrl = venueData.googleReviewsUrl;
         const params = new URLSearchParams(queryObj);
         window.location.replace('/status.html?' + params.toString());
