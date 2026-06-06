@@ -3,6 +3,7 @@ const prisma = require('../lib/prisma');
 const { broadcast } = require('../lib/realtime');
 const { requireAuth, requireActiveSubscription } = require('../middleware/auth');
 const { sendTemplate } = require('../lib/whatsapp');
+const { notifyOps } = require('../lib/notify-ops');
 
 const router = express.Router();
 
@@ -387,6 +388,7 @@ router.post('/notify/:entryId', requireAuth, requireActiveSubscription, async (r
           String(reportingTime || 5),
         ]);
         const newStatus = result ? 'sent' : 'failed';
+        if (newStatus === 'failed') notifyOps('whatsapp_table_ready_failed', { entryId: entry.id, venueId: entry.venueId }, 'warning');
         await prisma.notification.update({
           where: { id: notifId },
           data: { status: newStatus },
