@@ -2332,10 +2332,25 @@ function connectMainWebSocket() {
   ws.addEventListener('message', (e) => {
     try {
       const msg = JSON.parse(e.data);
+
+      // Current venue deleted on another device — re-sync (loadVenue falls back to another
+      // venue, or to /setup if it was the last one).
+      if (msg.type === 'venue_deleted') {
+        if (venue && msg.venueId === venue.id) window.location.reload();
+        return;
+      }
+
+      // Menu added / renamed / deleted on another device — refresh the list if it's on screen.
+      if (msg.type === 'menus_changed') {
+        if (typeof loadMenus === 'function') loadMenus();
+        return;
+      }
+
       if (msg.type !== 'venue_updated' || !msg.venue) return;
       if (!venue || msg.venue.id !== venue.id) return;
       const oldName = venue.name;
       const oldTheme = venue.theme;
+      const oldDismissed = venue.onboardingDismissed;
       venue = msg.venue;
       localStorage.setItem('flock_venue', JSON.stringify(venue));
       if (oldName !== venue.name) {
@@ -2345,6 +2360,9 @@ function connectMainWebSocket() {
       if (oldTheme !== venue.theme) {
         document.body.classList.remove(...Array.from(document.body.classList).filter(c => c.startsWith('theme-')));
         document.body.classList.add('theme-' + (venue.theme || 'dark-premium'));
+      }
+      if (oldDismissed !== venue.onboardingDismissed && typeof renderOnboarding === 'function') {
+        renderOnboarding();
       }
       const activeSection = sessionStorage.getItem('flock_main_section') || 'analytics';
       if (activeSection === 'settings' && typeof showSettingsSub === 'function') {
