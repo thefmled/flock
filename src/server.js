@@ -9,6 +9,10 @@ app.use(cors({
   origin: ['https://getflock.in', 'https://www.getflock.in'],
   credentials: true,
 }));
+// Razorpay webhook signature verification needs the raw request body.
+// This must run BEFORE express.json() — otherwise json() consumes the stream
+// and the HMAC is computed over the wrong bytes (every webhook fails to verify).
+app.use('/api/subscription/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
