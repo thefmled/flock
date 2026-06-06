@@ -39,7 +39,7 @@ function slugify(text) {
 // Create a venue (first-time setup)
 router.post('/', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
-    const { name, address, floorManagerName, menuPdfUrl, googleReviewsUrl, theme } = req.body;
+    const { name, address, floorManagerName, googleReviewsUrl, theme } = req.body;
 
     if (!name || !address || !floorManagerName) {
       return res.status(400).json({ error: 'Name, address, and floor manager name are required' });
@@ -67,7 +67,6 @@ router.post('/', requireAuth, requireActiveSubscription, async (req, res) => {
         name,
         address,
         floorManagerName,
-        menuPdfUrl: menuPdfUrl || null,
         googleReviewsUrl: googleReviewsUrl || null,
         seatingOptions: seatingOptions || 'Indoor,Outdoor,No preference',
         theme: safeTheme,
@@ -163,7 +162,7 @@ router.patch('/:id', requireAuth, requireActiveSubscription, async (req, res) =>
       }
     }
 
-    const allowed = ['name', 'address', 'floorManagerName', 'menuPdfUrl', 'googleReviewsUrl', 'seatingOptions', 'noteOptions', 'waitTimeBase', 'waitTimeIncrement', 'waitTimeCap', 'theme'];
+    const allowed = ['name', 'address', 'floorManagerName', 'googleReviewsUrl', 'seatingOptions', 'noteOptions', 'waitTimeBase', 'waitTimeIncrement', 'waitTimeCap', 'theme'];
     const data = {};
     for (const key of allowed) {
       if (key in req.body) data[key] = req.body[key];
@@ -178,43 +177,6 @@ router.patch('/:id', requireAuth, requireActiveSubscription, async (req, res) =>
   } catch (error) {
     console.error('Update venue error:', error);
     res.status(500).json({ error: 'Failed to update venue' });
-  }
-});
-
-// Upload menu PDF for a venue
-router.post('/:id/menu', requireAuth, requireActiveSubscription, upload.single('menu'), async (req, res) => {
-  try {
-    const venue = await prisma.venue.findFirst({
-      where: { id: req.params.id, ownerId: req.ownerId },
-    });
-    if (!venue) return res.status(404).json({ error: 'Venue not found' });
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-    if (req.file.mimetype !== 'application/pdf') {
-      return res.status(400).json({ error: 'Only PDF files are allowed' });
-    }
-
-    const filename = `${venue.slug}-${Date.now()}.pdf`;
-    const { data, error } = await supabase.storage
-      .from('menus')
-      .upload(filename, req.file.buffer, {
-        contentType: 'application/pdf',
-        upsert: true,
-      });
-
-    if (error) throw error;
-
-    const { data: publicData } = supabase.storage.from('menus').getPublicUrl(filename);
-    const menuPdfUrl = publicData.publicUrl;
-
-    const updated = await prisma.venue.update({
-      where: { id: venue.id },
-      data: { menuPdfUrl },
-    });
-
-    res.json({ success: true, venue: updated });
-  } catch (error) {
-    console.error('Menu upload error:', error);
-    res.status(500).json({ error: 'Failed to upload menu' });
   }
 });
 
