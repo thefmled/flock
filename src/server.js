@@ -2,6 +2,22 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 
+// Fail loud at boot if any core secret is missing, rather than letting auth, the database,
+// billing, or menu uploads break silently at request time. Runs before the route modules are
+// required (some, e.g. Supabase, construct clients at import). Gupshup is intentionally NOT
+// here — WhatsApp degrades gracefully and the queue still works without it.
+const REQUIRED_ENV = [
+  'JWT_SECRET',
+  'DATABASE_URL',
+  'RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_PLAN_ID', 'RAZORPAY_WEBHOOK_SECRET',
+  'SUPABASE_URL', 'SUPABASE_SERVICE_KEY',
+];
+const missingEnv = REQUIRED_ENV.filter((k) => !process.env[k]);
+if (missingEnv.length) {
+  console.error('FATAL: missing required env vars: ' + missingEnv.join(', ') + '. Set them and redeploy.');
+  process.exit(1);
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -60,15 +76,6 @@ app.use((err, req, res, next) => {
 
 const http = require('http');
 const realtime = require('./lib/realtime');
-
-// #57/#58: fail loud at boot if Razorpay billing isn't configured, rather than letting
-// subscription signups and webhook verification break silently in production.
-const REQUIRED_RAZORPAY_ENV = ['RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_PLAN_ID', 'RAZORPAY_WEBHOOK_SECRET'];
-const missingRazorpayEnv = REQUIRED_RAZORPAY_ENV.filter((k) => !process.env[k]);
-if (missingRazorpayEnv.length) {
-  console.error('FATAL: missing required Razorpay env vars: ' + missingRazorpayEnv.join(', ') + '. Set them and redeploy.');
-  process.exit(1);
-}
 
 const server = http.createServer(app);
 realtime.init(server);
