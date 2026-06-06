@@ -783,7 +783,7 @@ body.landing-light .nav-cta {
     <div class="why-item">
       <span class="why-check">✓</span>
       <div>
-        <h4>₹999 per venue, not per staff</h4>
+        <h4>₹<span data-flock-price="{price}">999</span> per venue, not per staff</h4>
         <p>Flat pricing. Unlimited team members. No surprise add-ons. Cancel any time.</p>
       </div>
     </div>
@@ -806,7 +806,7 @@ body.landing-light .nav-cta {
         <tr>
           <td class="feature">Cost</td>
           <td class="miss" style="font-size:14px;">Free, costs you time</td>
-          <td class="flock-col" style="font-size:22px;font-weight:600;padding-top:8px;padding-bottom:8px;">₹999<span style="font-size:13px;font-weight:400;opacity:0.7;"> /venue/mo</span></td>
+          <td class="flock-col" style="font-size:22px;font-weight:600;padding-top:8px;padding-bottom:8px;">₹<span data-flock-price="{price}">999</span><span style="font-size:13px;font-weight:400;opacity:0.7;"> /venue/mo</span></td>
           <td class="miss" style="font-size:14px;">₹3,000+ per month</td>
         </tr>
       </thead>
@@ -1041,7 +1041,7 @@ body.landing-light .nav-cta {
   
   <section class="cta-section">
   <h2>Ready to ditch the clipboard?</h2>
-  <p>14-day free trial. ₹999/month after. Cancel anytime.</p>
+  <p>14-day free trial. ₹<span data-flock-price="{price}">999</span>/month after. Cancel anytime.</p>
   <a href="/login.html" class="cta">Start your free trial</a>
 </section>
 
@@ -1081,5 +1081,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btn) btn.textContent = document.body.classList.contains('landing-light') ? '☾' : '☀';
 });
 </script>
+<script src="/pricing.js"></script>
 </body>
 </html>
