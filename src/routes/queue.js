@@ -26,12 +26,14 @@ function istStartOfDay(offsetDays = 0) {
 // notification status. Pass `overrides` to set fields explicitly (e.g. set
 // lastNotificationStatus='pending' on a fresh notify before the record exists).
 async function enrichEntryForBroadcast(entryId, overrides = {}) {
-  const entry = await prisma.queueEntry.findUnique({ where: { id: entryId } });
+  const [entry, latestNotif] = await Promise.all([
+    prisma.queueEntry.findUnique({ where: { id: entryId } }),
+    prisma.notification.findFirst({
+      where: { queueEntryId: entryId, payload: 'table_ready' },
+      orderBy: { sentAt: 'desc' },
+    }),
+  ]);
   if (!entry) return null;
-  const latestNotif = await prisma.notification.findFirst({
-    where: { queueEntryId: entryId, payload: 'table_ready' },
-    orderBy: { sentAt: 'desc' },
-  });
   return {
     ...entry,
     lastNotificationStatus: latestNotif?.status || null,
