@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const { notifyOps } = require('./lib/notify-ops');
 
 // Fail loud at boot if any core secret is missing, rather than letting auth, the database,
 // billing, or menu uploads break silently at request time. Runs before the route modules are
@@ -72,6 +73,7 @@ app.use('/api', (req, res) => {
 // Generic error handler — catches any unhandled error
 app.use((err, req, res, next) => {
   console.error(`[${req.reqId}] Unhandled error:`, err);
+  notifyOps('unhandled_5xx', { reqId: req.reqId, path: req.path, message: err && err.message ? err.message : String(err) }, 'error');
   res.status(500).json({ error: 'Something went wrong on our end. Please try again.', reqId: req.reqId });
 });
 
