@@ -2,6 +2,7 @@ const express = require('express');
 const Razorpay = require('razorpay');
 const prisma = require('../lib/prisma');
 const crypto = require('crypto');
+const { notifyOps } = require('../lib/notify-ops');
 const { requireAuth, invalidateSubCache } = require('../middleware/auth');
 
 const router = express.Router();
@@ -271,6 +272,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     const expBuf = Buffer.from(expected, 'utf8');
     if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
       console.warn('Webhook signature mismatch');
+      notifyOps('webhook_signature_mismatch', 'A Razorpay webhook failed signature verification — check RAZORPAY_WEBHOOK_SECRET matches the dashboard.', 'critical');
       return res.status(400).json({ error: 'Invalid signature' });
     }
 
@@ -343,6 +345,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     res.json({ received: true });
   } catch (error) {
     console.error('Webhook error:', error);
+    notifyOps('webhook_handler_error', error && error.message ? error.message : String(error), 'critical');
     res.status(500).json({ error: 'Webhook handling failed' });
   }
 });
