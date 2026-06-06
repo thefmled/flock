@@ -31,6 +31,8 @@ jobs:
           echo "Using $PGDUMP"
           "$PGDUMP" "$SRC" --no-owner --no-acl --schema=public | gzip > dump.sql.gz
           echo "Dump size: $(du -h dump.sql.gz | cut -f1)"
+          echo "Schemas present in dump:"
+          zcat dump.sql.gz | grep -oE 'CREATE TABLE [^ (]+' | sed 's/CREATE TABLE //' | cut -d. -f1 | sort -u
 
       - name: Reset target public schema
         env:
