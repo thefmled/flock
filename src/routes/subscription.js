@@ -46,7 +46,7 @@ router.post('/create', requireAuth, async (req, res) => {
       total_count: 120,
       notes: {
         ownerId: owner.id,
-        email: owner.phone,
+        email: owner.email,
       },
     };
     let trialEndsAt = null;
