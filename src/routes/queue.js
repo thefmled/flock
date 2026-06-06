@@ -510,9 +510,11 @@ router.post('/clear/:venueId', requireAuth, requireActiveSubscription, async (re
       data: { status: 'cancelled', cancelledAt: new Date() },
     });
 
-    // Fire-and-forget audit logs for each cancelled entry
+    // Fire-and-forget audit logs + per-entry broadcast so each guest's status page updates
+    // immediately (status pages subscribe to entry:<id>, not the venue channel).
     for (const e of toCancel) {
       logAudit(e.id, 'cancelled', 'queue cleared by staff');
+      broadcast('entry:' + e.id, { type: 'entry_changed' });
     }
 
     broadcast('venue:' + req.params.venueId, { type: 'queue_changed' });
