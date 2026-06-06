@@ -80,7 +80,7 @@ router.post('/request-otp', async (req, res) => {
     await prisma.otpCode.create({
       data: {
         id: generateId(),
-        phone: email, // reusing phone field for email
+        email,
         code,
         expiresAt,
       },
@@ -111,7 +111,7 @@ router.post('/verify-otp', async (req, res) => {
 
     const otp = await prisma.otpCode.findFirst({
       where: {
-        phone: email,
+        email,
         code,
         consumed: false,
         expiresAt: { gt: new Date() },
@@ -136,14 +136,14 @@ router.post('/verify-otp', async (req, res) => {
     });
 
     // Find or create owner
-    let owner = await prisma.owner.findUnique({ where: { phone: email } });
+    let owner = await prisma.owner.findUnique({ where: { email } });
     let isNewUser = false;
 
     if (!owner) {
       owner = await prisma.owner.create({
         data: {
           id: generateId(),
-          phone: email,
+          email,
         },
       });
       isNewUser = true;
