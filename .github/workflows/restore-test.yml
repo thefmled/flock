@@ -26,7 +26,10 @@ jobs:
         env:
           SRC: ${{ secrets.BACKUP_DATABASE_URL }}
         run: |
-          pg_dump "$SRC" --no-owner --no-acl | gzip > dump.sql.gz
+          set -euo pipefail
+          PGDUMP=$(ls /usr/lib/postgresql/*/bin/pg_dump | sort -V | tail -1)
+          echo "Using $PGDUMP"
+          "$PGDUMP" "$SRC" --no-owner --no-acl | gzip > dump.sql.gz
           echo "Dump size: $(du -h dump.sql.gz | cut -f1)"
 
       - name: Reset target public schema
