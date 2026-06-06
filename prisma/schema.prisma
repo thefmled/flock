@@ -105,6 +105,10 @@ model QueueEntry {
   
   notifications Notification[]
   auditLogs   AuditLog[]
+
+  @@index([venueId, status, joinedAt])
+  @@index([venueId, joinedAt])
+  @@index([venueId, guestPhone])
 }
 
 model Notification {
@@ -117,6 +121,8 @@ model Notification {
   payload      String?
   
   sentAt       DateTime   @default(now())
+
+  @@index([queueEntryId, sentAt])
 }
 
 model AuditLog {
