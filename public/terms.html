@@ -79,7 +79,7 @@
 
   <h2>3. Subscription and billing</h2>
   <ul>
-    <li>flock costs ₹999 per venue per month after a 14-day free trial.</li>
+    <li>flock costs ₹<span data-flock-price="{price}">999</span> per venue per month after a 14-day free trial.</li>
     <li>Your subscription auto-renews monthly. We charge the payment method on file at the start of each billing cycle.</li>
     <li>You can cancel anytime from your dashboard. Cancellation takes effect at the end of the current billing cycle.</li>
     <li>We don't issue refunds for partial months, but you keep access for the time you've paid for.</li>
@@ -136,5 +136,6 @@
 <script>
 setInterval(() => fetch('/health'), 5 * 60 * 1000);
 </script>
+<script src="/pricing.js"></script>
 </body>
 </html>
