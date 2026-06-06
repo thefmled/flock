@@ -181,6 +181,10 @@ async function loadStatus() {
     }
 
     venue = data.entry.venue;
+    if (venue && venue.id && venue.id !== statusVenueId) {
+      statusVenueId = venue.id;
+      subscribeVenuePublic(); // we now know the venue id — subscribe for real-time position
+    }
     document.getElementById('venueLabel').textContent = venue.name;
 
     const banner = document.getElementById('notifiedBanner');
@@ -300,12 +304,22 @@ let statusWs = null;
 let statusWsReconnectTimer = null;
 let statusWsBackoff = 1000;
 let statusInterval = null;
+let statusVenueId = null;
+
+// Subscribe to the venue's PII-free public channel so queue-wide position changes push
+// in real time. Safe to call repeatedly — the server dedups, and it no-ops until the WS
+// is open and we know the venue id (learned from the first loadStatus).
+function subscribeVenuePublic() {
+  if (statusVenueId && statusWs && statusWs.readyState === WebSocket.OPEN) {
+    statusWs.send(JSON.stringify({ type: 'subscribe', key: 'venue-public:' + statusVenueId }));
+  }
+}
 
 function setStatusPollRate() {
   if (statusInterval) clearInterval(statusInterval);
-  // Always poll at 3s — queue-wide position changes flow through venue: channel
-  // which status page can't subscribe to. WS push is bonus on top, for self-events.
-  statusInterval = setInterval(loadStatus, 3000);
+  // Poll as a slow fallback — real-time position changes now arrive via the venue-public
+  // WS channel, so we no longer need an aggressive 3s poll.
+  statusInterval = setInterval(loadStatus, 15000);
 }
 
 function connectStatusWs() {
@@ -318,15 +332,17 @@ function connectStatusWs() {
   statusWs.addEventListener('open', () => {
     statusWsBackoff = 1000;
     statusWs.send(JSON.stringify({ type: 'subscribe', key: 'entry:' + entryId }));
+    subscribeVenuePublic(); // (re)subscribe to the venue channel if we already know the id
   });
 
   statusWs.addEventListener('message', (e) => {
     try {
       const msg = JSON.parse(e.data);
-      if (msg.type === 'entry_changed') {
+      if (msg.type === 'entry_changed' || msg.type === 'queue_changed') {
         // Always refetch — status page needs full venue + computed position/waitMinutes
         // which aren't in the broadcast payload. The push just triggers an immediate refetch
-        // instead of waiting for the next poll tick.
+        // instead of waiting for the next poll tick. (entry_changed = self events;
+        // queue_changed = someone ahead moved, via the venue-public channel.)
         loadStatus();
       }
     } catch(err) {}
