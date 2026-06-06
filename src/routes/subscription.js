@@ -149,6 +149,7 @@ router.get('/status', requireAuth, async (req, res) => {
       status: owner.subscriptionStatus,
       trialEndsAt: owner.trialEndsAt,
       subscriptionStartedAt: owner.subscriptionStartedAt,
+      subscriptionEndsAt: owner.subscriptionEndsAt,
       hasSubscription: !!owner.razorpaySubscriptionId,
       venueQuantity: owner.venueQuantity,
       monthlyPrice: MONTHLY_PRICE_INR,
