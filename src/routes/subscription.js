@@ -85,31 +85,35 @@ router.post('/create', requireAuth, async (req, res) => {
 // Get current subscription status (lazy-reconciles 'pending' state with Razorpay)
 // Background reconcile guard — prevents duplicate concurrent Razorpay fetches per owner
 const reconcileInFlight = new Set();
+// Throttle for reconciling *active* owners so we don't hit Razorpay on every /status poll
+const activeReconcileAt = new Map(); // ownerId -> last active-reconcile timestamp
+const ACTIVE_RECONCILE_THROTTLE_MS = 6 * 60 * 60 * 1000; // 6h
 
 // Reconcile local status against Razorpay (a fallback for missed webhooks). Runs OFF the
 // request path so /status stays fast; the next poll reflects any change it makes.
+// Mirrors Razorpay's authoritative state, matching the webhook handler's mappings.
 async function reconcileFromRazorpay(ownerId, razorpaySubscriptionId, subscriptionStartedAt) {
   if (reconcileInFlight.has(ownerId)) return;
   reconcileInFlight.add(ownerId);
   try {
     const rzSub = await razorpay.subscriptions.fetch(razorpaySubscriptionId);
-    // Razorpay status values: 'active', 'authenticated', 'completed', 'cancelled', 'created'
-    if (rzSub.status === 'active' || rzSub.status === 'authenticated') {
-      await prisma.owner.update({
-        where: { id: ownerId },
-        data: {
-          subscriptionStatus: 'active',
-          subscriptionStartedAt: subscriptionStartedAt || new Date(),
-        },
-      });
-      invalidateSubCache(ownerId);
-    } else if (rzSub.status === 'cancelled' || rzSub.status === 'completed') {
-      await prisma.owner.update({
-        where: { id: ownerId },
-        data: { subscriptionStatus: 'cancelled' },
-      });
-      invalidateSubCache(ownerId);
+    // Razorpay statuses: created, authenticated, active, pending, halted, cancelled, completed, expired
+    let newStatus = null;
+    if (rzSub.status === 'active' || rzSub.status === 'authenticated') newStatus = 'active';
+    else if (rzSub.status === 'cancelled') newStatus = 'cancelled';                            // access until cycle end
+    else if (rzSub.status === 'completed' || rzSub.status === 'expired') newStatus = 'expired'; // fully ended → block
+    else if (rzSub.status === 'halted' || rzSub.status === 'paused') newStatus = 'paused';      // payment issue → block + recovery UI
+    if (!newStatus) return; // created/pending — nothing settled yet
+
+    const data = { subscriptionStatus: newStatus };
+    if (newStatus === 'active') data.subscriptionStartedAt = subscriptionStartedAt || new Date();
+    if (newStatus === 'cancelled') {
+      // Capture the cycle-end so the expiry cron (#19/#23) can eventually expire them
+      const endUnix = rzSub.current_end || rzSub.end_at;
+      if (endUnix) data.subscriptionEndsAt = new Date(endUnix * 1000);
     }
+    await prisma.owner.update({ where: { id: ownerId }, data });
+    invalidateSubCache(ownerId);
   } catch (e) {
     console.error('Razorpay reconcile fetch failed:', e.message || e);
   } finally {
@@ -122,11 +126,17 @@ router.get('/status', requireAuth, async (req, res) => {
     const owner = await prisma.owner.findUnique({ where: { id: req.ownerId } });
     if (!owner) return res.status(404).json({ error: 'Owner not found' });
 
-    // If local status is stale (pending OR trial-in-grace) and the webhook may not have
-    // reached us, reconcile against Razorpay in the BACKGROUND — don't block the response.
-    // The next /status poll will reflect any change.
+    // Background reconcile against Razorpay (fallback for missed webhooks) — never blocks
+    // the response; the next poll reflects any change.
+    //  - pending / trial-in-grace: catch a subscription that activated but whose webhook was missed
+    //  - active: catch one that was cancelled/ended on Razorpay but whose webhook was missed
+    //    (otherwise the user keeps access forever). Throttled so we don't poll Razorpay constantly.
     const trialInGrace = owner.subscriptionStatus === 'trial' && owner.trialEndsAt && new Date(owner.trialEndsAt) < new Date();
-    if ((owner.subscriptionStatus === 'pending' || trialInGrace) && owner.razorpaySubscriptionId) {
+    const staleReconcile = (owner.subscriptionStatus === 'pending' || trialInGrace) && owner.razorpaySubscriptionId;
+    const activeReconcile = owner.subscriptionStatus === 'active' && owner.razorpaySubscriptionId
+      && (Date.now() - (activeReconcileAt.get(owner.id) || 0) > ACTIVE_RECONCILE_THROTTLE_MS);
+    if (staleReconcile || activeReconcile) {
+      if (activeReconcile) activeReconcileAt.set(owner.id, Date.now());
       reconcileFromRazorpay(owner.id, owner.razorpaySubscriptionId, owner.subscriptionStartedAt);
     }
 
