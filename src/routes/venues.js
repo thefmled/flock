@@ -36,6 +36,9 @@ function slugify(text) {
     .replace(/--+/g, '-');
 }
 
+// Single source for valid theme values — used by create and update.
+const ALLOWED_THEMES = ['dark-premium', 'light-amber', 'warm-editorial', 'crisp-modern', 'forest-tavern', 'terracotta-bistro', 'midnight-indigo', 'sun-sand', 'bombay-blue', 'spice-market', 'charcoal-linen', 'brick-birch', 'cloud-mint'];
+
 // Create a venue (first-time setup)
 router.post('/', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
@@ -46,8 +49,7 @@ router.post('/', requireAuth, requireActiveSubscription, async (req, res) => {
     }
 
     // Whitelist allowed themes (DB has a schema-level default, this just narrows what's accepted at creation)
-    const allowedThemes = ['dark-premium', 'light-amber', 'warm-editorial', 'crisp-modern', 'forest-tavern', 'terracotta-bistro', 'midnight-indigo', 'sun-sand', 'bombay-blue', 'spice-market', 'charcoal-linen', 'brick-birch', 'cloud-mint'];
-    const safeTheme = allowedThemes.includes(theme) ? theme : 'dark-premium';
+    const safeTheme = ALLOWED_THEMES.includes(theme) ? theme : 'dark-premium';
 
     // Generate unique slug
     let baseSlug = slugify(name);
@@ -108,7 +110,7 @@ router.get('/by-slug/:slug', async (req, res) => {
       include: { menus: { orderBy: { createdAt: 'asc' } } },
     });
     if (!venue) return res.status(404).json({ error: 'Venue not found' });
-    res.set('Cache-Control', 'public, max-age=60');
+    res.set('Cache-Control', 'no-store');
     res.json({ venue });
   } catch (error) {
     console.error('Get venue by slug error:', error);
@@ -133,6 +135,7 @@ router.delete('/:id', requireAuth, requireActiveSubscription, async (req, res) =
     }
 
     await prisma.venue.delete({ where: { id: venue.id } });
+    broadcast('venue:' + venue.id, { type: 'venue_deleted', venueId: venue.id });
     const count = await prisma.venue.count({ where: { ownerId: req.ownerId } });
     await updateSubscriptionQuantity(req.ownerId, count);
     res.json({ success: true });
@@ -167,6 +170,8 @@ router.patch('/:id', requireAuth, requireActiveSubscription, async (req, res) =>
     for (const key of allowed) {
       if (key in req.body) data[key] = req.body[key];
     }
+    // Reject any non-whitelisted theme value rather than writing it to the DB.
+    if ('theme' in data && !ALLOWED_THEMES.includes(data.theme)) delete data.theme;
 
     const updated = await prisma.venue.update({
       where: { id: venue.id },
@@ -212,6 +217,7 @@ router.post('/:id/dismiss-onboarding', requireAuth, requireActiveSubscription, a
       where: { id: venue.id },
       data: { onboardingDismissed: true },
     });
+    broadcast('venue:' + updated.id, { type: 'venue_updated', venue: updated });
     res.json({ success: true, venue: updated });
   } catch (error) {
     console.error('Dismiss onboarding error:', error);
@@ -234,7 +240,7 @@ router.get('/:id/menus', requireAuth, requireActiveSubscription, async (req, res
       where: { venueId: venue.id },
       orderBy: { createdAt: 'asc' },
     });
-    res.set('Cache-Control', 'private, max-age=60');
+    res.set('Cache-Control', 'no-store');
     res.json({ menus });
   } catch (error) {
     console.error('List menus error:', error);
@@ -267,6 +273,7 @@ router.post('/:id/menus', requireAuth, requireActiveSubscription, upload.single(
         url: publicData.publicUrl,
       },
     });
+    broadcast('venue:' + venue.id, { type: 'menus_changed' });
     res.json({ success: true, menu });
   } catch (error) {
     console.error('Menu upload error:', error);
@@ -296,6 +303,7 @@ router.patch('/:venueId/menus/:menuId', requireAuth, requireActiveSubscription, 
       where: { id: req.params.menuId },
       data: { name },
     });
+    broadcast('venue:' + venue.id, { type: 'menus_changed' });
     res.json({ success: true, menu });
   } catch (error) {
     console.error('Menu rename error:', error);
@@ -329,6 +337,7 @@ router.delete('/:venueId/menus/:menuId', requireAuth, requireActiveSubscription,
     }
 
     await prisma.menu.delete({ where: { id: req.params.menuId } });
+    broadcast('venue:' + venue.id, { type: 'menus_changed' });
     res.json({ success: true });
   } catch (error) {
     console.error('Menu delete error:', error);
