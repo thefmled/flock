@@ -20,6 +20,9 @@ function init(server) {
   async function canSubscribe(key, token) {
     if (typeof key !== 'string') return false;
     if (key.startsWith('entry:')) return true;
+    // PII-free per-venue ping channel for guest status pages — carries only a bare
+    // "queue changed" signal (never guest data), so it's open like entry: (no auth).
+    if (key.startsWith('venue-public:')) return true;
     if (key.startsWith('venue:')) {
       if (!token) return false;
       try {
@@ -103,6 +106,20 @@ function init(server) {
 }
 
 function broadcast(key, message) {
+  // Mirror any venue:<id> broadcast to the PII-free venue-public:<id> channel as a bare
+  // "queue changed" ping, so guest status pages can refetch their own position in real time
+  // without ever receiving owner-facing payloads. Runs before the early-return below so it
+  // fires even when no owner dashboard is currently subscribed to the venue channel.
+  if (typeof key === 'string' && key.startsWith('venue:')) {
+    const publicSet = subscribers.get('venue-public:' + key.slice(6));
+    if (publicSet && publicSet.size) {
+      const ping = JSON.stringify({ type: 'queue_changed' });
+      publicSet.forEach(ws => {
+        try { if (ws.readyState === 1) ws.send(ping); } catch (e) {}
+      });
+    }
+  }
+
   const set = subscribers.get(key);
   if (!set || set.size === 0) return;
   const payload = JSON.stringify(message);
