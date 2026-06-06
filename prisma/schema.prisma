@@ -44,23 +44,11 @@ model Venue {
   ownerId           String
   owner             Owner         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   
-  staff             Staff[]
   queueEntries      QueueEntry[]
   menus              Menu[]
   
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
-}
-
-model Staff {
-  id        String   @id @default(cuid())
-  phone     String
-  name      String
-  venueId   String
-  venue     Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  
-  @@unique([phone, venueId])
 }
 
 model OtpCode {
