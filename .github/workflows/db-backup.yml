@@ -1,0 +1,40 @@
+name: DB Backup
+on:
+  schedule:
+    - cron: '30 19 * * *'   # daily ~01:00 IST
+  workflow_dispatch: {}       # adds a manual "Run workflow" button
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install latest pg_dump
+        run: |
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update && sudo apt-get install -y postgresql-client-17
+
+      - name: Dump + gzip
+        env:
+          DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+        run: |
+          STAMP=$(date -u +%Y-%m-%d)
+          pg_dump "$DATABASE_URL" --no-owner --no-acl | gzip > "flock-$STAMP.sql.gz"
+          echo "Dump size: $(du -h flock-$STAMP.sql.gz | cut -f1)"
+
+      - name: Email dump to self via Resend
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          STAMP=$(date -u +%Y-%m-%d)
+          B64=$(base64 -w0 "flock-$STAMP.sql.gz")
+          jq -n --arg b64 "$B64" --arg fn "flock-$STAMP.sql.gz" --arg subj "flock DB backup $STAMP" \
+            '{from:"flock backups <noreply@getflock.in>",
+              to:"rushali.c1710@gmail.com",
+              subject:$subj,
+              text:"Daily flock DB backup attached.",
+              attachments:[{filename:$fn, content:$b64}]}' > payload.json
+          curl -sS --fail-with-body -X POST https://api.resend.com/emails \
+            -H "Authorization: Bearer $RESEND_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d @payload.json
