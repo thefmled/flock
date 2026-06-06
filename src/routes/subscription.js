@@ -194,22 +194,31 @@ async function expireOldTrials() {
   try {
     const graceMs = 24 * 60 * 60 * 1000; // matches middleware grace period
     const cutoff = new Date(Date.now() - graceMs);
-    const owners = await prisma.owner.findMany({
+    // 1) Trials that ran past their grace window
+    const expiredTrials = await prisma.owner.findMany({
       where: {
         subscriptionStatus: 'trial',
         trialEndsAt: { lt: cutoff },
       },
     });
-    for (const owner of owners) {
+    // 2) Cancelled subscriptions whose paid period has ended — backstop in case the
+    //    subscription.completed webhook was never delivered (otherwise these keep access forever)
+    const expiredCancelled = await prisma.owner.findMany({
+      where: {
+        subscriptionStatus: 'cancelled',
+        subscriptionEndsAt: { lt: new Date() },
+      },
+    });
+    for (const owner of [...expiredTrials, ...expiredCancelled]) {
       await prisma.owner.update({
         where: { id: owner.id },
         data: { subscriptionStatus: 'expired' },
       });
       invalidateSubCache(owner.id);
-      console.log(`Trial expired for owner ${owner.id}`);
+      console.log(`Subscription expired for owner ${owner.id}`);
     }
   } catch (e) {
-    console.error('Expire trials error:', e);
+    console.error('Expire subscriptions error:', e);
   }
 }
 
@@ -315,11 +324,14 @@ router.post('/cancel', requireAuth, async (req, res) => {
     if (!owner) return res.status(404).json({ error: 'Owner not found' });
     if (!owner.razorpaySubscriptionId) return res.status(400).json({ error: 'No active subscription' });
 
+    let subscriptionEndsAt = null;
     try {
-      // Razorpay flag: `true` = cancel immediately, `false` = cancel at end of current billing cycle.
-      // We want end-of-cycle so the user keeps access until their paid period ends.
-      const cancelImmediately = false;
-      await razorpay.subscriptions.cancel(owner.razorpaySubscriptionId, cancelImmediately);
+      // Razorpay's cancel(id, cancelAtCycleEnd): pass `true` to keep the subscription
+      // active until the end of the current paid cycle (Razorpay then fires
+      // subscription.completed at that point). Passing false / omitting cancels IMMEDIATELY.
+      const result = await razorpay.subscriptions.cancel(owner.razorpaySubscriptionId, true);
+      const endUnix = result && (result.current_end || result.end_at);
+      if (endUnix) subscriptionEndsAt = new Date(endUnix * 1000);
     } catch (e) {
       console.error('Razorpay cancel failed:', e.message || e);
       // Continue anyway — mark cancelled locally
@@ -327,7 +339,7 @@ router.post('/cancel', requireAuth, async (req, res) => {
 
     await prisma.owner.update({
       where: { id: owner.id },
-      data: { subscriptionStatus: 'cancelled' },
+      data: { subscriptionStatus: 'cancelled', subscriptionEndsAt },
     });
     invalidateSubCache(owner.id);
 
