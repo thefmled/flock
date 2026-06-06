@@ -6,6 +6,11 @@ const { requireAuth, invalidateSubCache } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Single source of truth for the per-venue monthly price (INR). Change it here and it
+// propagates to the /status amount, the public /pricing endpoint, and every page that reads
+// those (subscribe, main, and the marketing/legal pages via pricing.js).
+const MONTHLY_PRICE_INR = 999;
+
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
@@ -146,7 +151,8 @@ router.get('/status', requireAuth, async (req, res) => {
       subscriptionStartedAt: owner.subscriptionStartedAt,
       hasSubscription: !!owner.razorpaySubscriptionId,
       venueQuantity: owner.venueQuantity,
-      monthlyAmount: owner.venueQuantity * 999,
+      monthlyPrice: MONTHLY_PRICE_INR,
+      monthlyAmount: owner.venueQuantity * MONTHLY_PRICE_INR,
     });
   } catch (error) {
     console.error('Subscription status error:', error);
@@ -371,6 +377,11 @@ router.post('/cancel', requireAuth, async (req, res) => {
     console.error('Subscription cancel error:', error);
     res.status(500).json({ error: 'Failed to cancel' });
   }
+});
+
+// Public pricing — no auth, so marketing/legal pages can read the single-source price.
+router.get('/pricing', (req, res) => {
+  res.json({ monthlyPrice: MONTHLY_PRICE_INR });
 });
 
 module.exports = router;
