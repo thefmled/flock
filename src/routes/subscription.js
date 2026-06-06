@@ -83,40 +83,51 @@ router.post('/create', requireAuth, async (req, res) => {
 });
 
 // Get current subscription status (lazy-reconciles 'pending' state with Razorpay)
+// Background reconcile guard — prevents duplicate concurrent Razorpay fetches per owner
+const reconcileInFlight = new Set();
+
+// Reconcile local status against Razorpay (a fallback for missed webhooks). Runs OFF the
+// request path so /status stays fast; the next poll reflects any change it makes.
+async function reconcileFromRazorpay(ownerId, razorpaySubscriptionId, subscriptionStartedAt) {
+  if (reconcileInFlight.has(ownerId)) return;
+  reconcileInFlight.add(ownerId);
+  try {
+    const rzSub = await razorpay.subscriptions.fetch(razorpaySubscriptionId);
+    // Razorpay status values: 'active', 'authenticated', 'completed', 'cancelled', 'created'
+    if (rzSub.status === 'active' || rzSub.status === 'authenticated') {
+      await prisma.owner.update({
+        where: { id: ownerId },
+        data: {
+          subscriptionStatus: 'active',
+          subscriptionStartedAt: subscriptionStartedAt || new Date(),
+        },
+      });
+      invalidateSubCache(ownerId);
+    } else if (rzSub.status === 'cancelled' || rzSub.status === 'completed') {
+      await prisma.owner.update({
+        where: { id: ownerId },
+        data: { subscriptionStatus: 'cancelled' },
+      });
+      invalidateSubCache(ownerId);
+    }
+  } catch (e) {
+    console.error('Razorpay reconcile fetch failed:', e.message || e);
+  } finally {
+    reconcileInFlight.delete(ownerId);
+  }
+}
+
 router.get('/status', requireAuth, async (req, res) => {
   try {
-    let owner = await prisma.owner.findUnique({ where: { id: req.ownerId } });
+    const owner = await prisma.owner.findUnique({ where: { id: req.ownerId } });
     if (!owner) return res.status(404).json({ error: 'Owner not found' });
 
-    // If local status is stale (pending OR trial-in-grace) but Razorpay has activated
-    // the subscription, reconcile (covers cases where the webhook didn't reach us)
+    // If local status is stale (pending OR trial-in-grace) and the webhook may not have
+    // reached us, reconcile against Razorpay in the BACKGROUND — don't block the response.
+    // The next /status poll will reflect any change.
     const trialInGrace = owner.subscriptionStatus === 'trial' && owner.trialEndsAt && new Date(owner.trialEndsAt) < new Date();
     if ((owner.subscriptionStatus === 'pending' || trialInGrace) && owner.razorpaySubscriptionId) {
-      try {
-        const rzSub = await razorpay.subscriptions.fetch(owner.razorpaySubscriptionId);
-        // Razorpay status values: 'active', 'authenticated', 'completed', 'cancelled', 'created'
-        if (rzSub.status === 'active' || rzSub.status === 'authenticated') {
-          await prisma.owner.update({
-            where: { id: owner.id },
-            data: {
-              subscriptionStatus: 'active',
-              subscriptionStartedAt: owner.subscriptionStartedAt || new Date(),
-            },
-          });
-          invalidateSubCache(owner.id);
-          owner = await prisma.owner.findUnique({ where: { id: req.ownerId } });
-        } else if (rzSub.status === 'cancelled' || rzSub.status === 'completed') {
-          await prisma.owner.update({
-            where: { id: owner.id },
-            data: { subscriptionStatus: 'cancelled' },
-          });
-          invalidateSubCache(owner.id);
-          owner = await prisma.owner.findUnique({ where: { id: req.ownerId } });
-        }
-      } catch (e) {
-        console.error('Razorpay reconcile fetch failed:', e.message || e);
-        // Continue and return local state
-      }
+      reconcileFromRazorpay(owner.id, owner.razorpaySubscriptionId, owner.subscriptionStartedAt);
     }
 
     res.json({
