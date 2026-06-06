@@ -33,6 +33,22 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
+// Periodic OtpCode cleanup — codes expire in minutes but rows are never removed,
+// so purge anything older than 7 days to keep the table from growing unbounded.
+async function cleanupOldOtpCodes() {
+  try {
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const { count } = await prisma.otpCode.deleteMany({
+      where: { createdAt: { lt: cutoff } },
+    });
+    if (count > 0) console.log(`Cleaned up ${count} expired OTP codes`);
+  } catch (e) {
+    console.error('OTP cleanup error:', e);
+  }
+}
+setInterval(cleanupOldOtpCodes, 6 * 60 * 60 * 1000); // every 6 hours
+cleanupOldOtpCodes(); // run once at startup
+
 // Request OTP
 router.post('/request-otp', async (req, res) => {
   try {
