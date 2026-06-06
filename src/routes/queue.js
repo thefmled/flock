@@ -164,8 +164,11 @@ router.post('/join/:slug', async (req, res) => {
       return res.status(400).json({ error: 'Name, phone, and party size required' });
     }
 
-    // Validate phone (Indian 10-digit starting 6-9)
-    const phoneClean = (guestPhone || '').replace(/\D/g, '');
+    // Validate phone (Indian 10-digit starting 6-9). Tolerate +91 / 91 / leading-0 forms by
+    // taking the last 10 digits — mirrors queue.html's client normalization and #52's outbound
+    // normalization, so the API is self-protecting if called directly.
+    let phoneClean = (guestPhone || '').replace(/\D/g, '');
+    if (phoneClean.length > 10) phoneClean = phoneClean.slice(-10);
     if (!/^[6-9]\d{9}$/.test(phoneClean)) {
       return res.status(400).json({ error: 'Please enter a valid 10-digit Indian phone number.' });
     }
@@ -691,9 +694,12 @@ router.get('/analytics/:venueId', requireAuth, requireActiveSubscription, async 
       const avgParty = dayEntries.length > 0
         ? dayEntries.reduce((sum, e) => sum + e.partySize, 0) / dayEntries.length
         : 0;
+      // d is IST-midnight stored as a UTC instant; shift into IST before deriving the calendar
+      // date / weekday so the label matches the IST day the bucket actually represents.
+      const dIST = new Date(d.getTime() + 5.5 * 3600 * 1000);
       daily.push({
-        date: d.toISOString().split('T')[0],
-        dayOfWeek: d.getDay(), // 0 = Sunday, 1 = Monday...
+        date: dIST.toISOString().split('T')[0],
+        dayOfWeek: dIST.getUTCDay(), // 0 = Sunday, 1 = Monday...
         count: dayEntries.length,
         avgPartySize: parseFloat(avgParty.toFixed(1)),
       });
@@ -783,13 +789,14 @@ router.get('/report/:venueId', requireAuth, requireActiveSubscription, async (re
     });
     if (!venue) return res.status(404).json({ error: 'Venue not found' });
 
-    const from = req.query.from ? new Date(req.query.from) : null;
-    const to = req.query.to ? new Date(req.query.to) : null;
-    if (!from || !to) return res.status(400).json({ error: 'from and to required' });
-
-    // Make 'to' inclusive of the whole day
-    const toEnd = new Date(to);
-    toEnd.setHours(23, 59, 59, 999);
+    if (!req.query.from || !req.query.to) return res.status(400).json({ error: 'from and to required' });
+    // Anchor the range to IST calendar days (the venue's operating timezone) so a guest who
+    // joins just after IST midnight isn't counted under the previous day. Accept bare YYYY-MM-DD.
+    const fromStr = String(req.query.from).slice(0, 10);
+    const toStr = String(req.query.to).slice(0, 10);
+    const from = new Date(fromStr + 'T00:00:00+05:30');
+    const toEnd = new Date(toStr + 'T23:59:59.999+05:30');
+    if (isNaN(from) || isNaN(toEnd)) return res.status(400).json({ error: 'Invalid from/to date' });
 
     const entries = await prisma.queueEntry.findMany({
       where: { venueId: venue.id, joinedAt: { gte: from, lte: toEnd } },
@@ -799,9 +806,8 @@ router.get('/report/:venueId', requireAuth, requireActiveSubscription, async (re
     // Daily buckets
     const daily = [];
     const dayMs = 86400000;
-    const start = new Date(from); start.setHours(0,0,0,0);
-    const end = new Date(toEnd); end.setHours(0,0,0,0);
-    const numDays = Math.ceil((end - start) / dayMs) + 1;
+    const start = from; // already IST midnight of the first day
+    const numDays = Math.ceil((toEnd - start) / dayMs);
     for (let i = 0; i < numDays; i++) {
       const d = new Date(start.getTime() + i * dayMs);
       const next = new Date(d.getTime() + dayMs);
@@ -809,9 +815,10 @@ router.get('/report/:venueId', requireAuth, requireActiveSubscription, async (re
       const avgParty = dayEntries.length > 0
         ? dayEntries.reduce((s, e) => s + e.partySize, 0) / dayEntries.length
         : 0;
+      const dIST = new Date(d.getTime() + 5.5 * 3600 * 1000);
       daily.push({
-        date: d.toISOString().split('T')[0],
-        dayOfWeek: d.getDay(),
+        date: dIST.toISOString().split('T')[0],
+        dayOfWeek: dIST.getUTCDay(),
         count: dayEntries.length,
         avgPartySize: parseFloat(avgParty.toFixed(1)),
       });
