@@ -1,0 +1,52 @@
+name: Restore test
+on:
+  workflow_dispatch: {}    # manual only — never scheduled
+
+jobs:
+  restore-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Safety guard — target must not be prod
+        env:
+          SRC: ${{ secrets.BACKUP_DATABASE_URL }}
+          DST: ${{ secrets.RESTORE_TARGET_DATABASE_URL }}
+        run: |
+          if [ -z "$DST" ]; then echo "RESTORE_TARGET_DATABASE_URL is not set"; exit 1; fi
+          if [ "$SRC" = "$DST" ]; then
+            echo "REFUSING: restore target equals the backup source. The target MUST be a separate throwaway project."; exit 1
+          fi
+
+      - name: Install latest pg client
+        run: |
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update && sudo apt-get install -y postgresql-client-17
+
+      - name: Dump prod
+        env:
+          SRC: ${{ secrets.BACKUP_DATABASE_URL }}
+        run: |
+          pg_dump "$SRC" --no-owner --no-acl | gzip > dump.sql.gz
+          echo "Dump size: $(du -h dump.sql.gz | cut -f1)"
+
+      - name: Reset target public schema
+        env:
+          DST: ${{ secrets.RESTORE_TARGET_DATABASE_URL }}
+        run: |
+          psql "$DST" -v ON_ERROR_STOP=1 -c "DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;"
+
+      - name: Restore into target
+        env:
+          DST: ${{ secrets.RESTORE_TARGET_DATABASE_URL }}
+        run: |
+          gunzip -c dump.sql.gz | psql "$DST" 2> restore-errors.log || true
+          echo "----- restore stderr (a few NOTICE lines are normal; scan for real errors) -----"
+          cat restore-errors.log || true
+
+      - name: Row counts in restored DB
+        env:
+          DST: ${{ secrets.RESTORE_TARGET_DATABASE_URL }}
+        run: |
+          echo "table | rows"
+          psql "$DST" -At -c "SELECT format('SELECT %L AS tbl, count(*) AS n FROM %I.%I;', tablename, schemaname, tablename) FROM pg_tables WHERE schemaname='public' ORDER BY tablename" \
+            | psql "$DST" -At -F' | '
