@@ -22,7 +22,7 @@ jobs:
           STAMP=$(date -u +%Y-%m-%d)
           PGDUMP=$(ls /usr/lib/postgresql/*/bin/pg_dump | sort -V | tail -1)
           echo "Using $PGDUMP"
-          "$PGDUMP" "$DATABASE_URL" --no-owner --no-acl | gzip > "flock-$STAMP.sql.gz"
+          "$PGDUMP" "$DATABASE_URL" --no-owner --no-acl --schema=public | gzip > "flock-$STAMP.sql.gz"
           echo "Dump size: $(du -h flock-$STAMP.sql.gz | cut -f1)"
 
       - name: Email dump to self via Resend
