@@ -1587,7 +1587,7 @@ async function loadSubscription() {
   }
 
   html += '<div class="sub-amount"><span class="sub-currency">₹</span>' + (data.monthlyAmount || 0) + '<span class="sub-period"> / month</span></div>';
-  html += '<div class="sub-amount-sub">' + (data.venueQuantity || 0) + ' venue' + (data.venueQuantity !== 1 ? 's' : '') + ' × ₹999</div>';
+  html += '<div class="sub-amount-sub">' + (data.venueQuantity || 0) + ' venue' + (data.venueQuantity !== 1 ? 's' : '') + ' × ₹' + (data.monthlyPrice || 999) + '</div>';
   
   if (data.status === 'trial' && data.trialEndsAt) {
     html += '<div class="sub-charge-next">First charge on ' + new Date(data.trialEndsAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) + '</div>';
@@ -1615,7 +1615,7 @@ async function loadSubscription() {
     html += '<h3 class="heading" style="font-size:16px;margin-bottom:12px;">Your venues</h3>';
     html += '<div class="sub-venue-list">';
     venues.forEach(v => {
-      html += '<div class="sub-venue-row"><span>' + escapeHtml(v.name) + '</span><span class="sub-venue-price">₹999/mo</span></div>';
+      html += '<div class="sub-venue-row"><span>' + escapeHtml(v.name) + '</span><span class="sub-venue-price">₹' + (data.monthlyPrice || 999) + '/mo</span></div>';
     });
     html += '<div class="sub-venue-total"><span>Total</span><span>₹' + (data.monthlyAmount || 0) + '/mo</span></div>';
     html += '</div></div>';
