@@ -61,6 +61,15 @@ app.use((err, req, res, next) => {
 const http = require('http');
 const realtime = require('./lib/realtime');
 
+// #57/#58: fail loud at boot if Razorpay billing isn't configured, rather than letting
+// subscription signups and webhook verification break silently in production.
+const REQUIRED_RAZORPAY_ENV = ['RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_PLAN_ID', 'RAZORPAY_WEBHOOK_SECRET'];
+const missingRazorpayEnv = REQUIRED_RAZORPAY_ENV.filter((k) => !process.env[k]);
+if (missingRazorpayEnv.length) {
+  console.error('FATAL: missing required Razorpay env vars: ' + missingRazorpayEnv.join(', ') + '. Set them and redeploy.');
+  process.exit(1);
+}
+
 const server = http.createServer(app);
 realtime.init(server);
 server.listen(PORT, () => {
