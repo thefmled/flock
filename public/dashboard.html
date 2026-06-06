@@ -580,14 +580,20 @@ async function loadVenue() {
 
   document.getElementById('venueButtonLabel').textContent = venue.name;
 
+  renderVenueMenu(data.venues);
+}
+
+// Render the venue switcher dropdown — shared by loadVenue and selectVenue so the list
+// stays in sync after a switch (#49).
+function renderVenueMenu(venues) {
   const menu = document.getElementById('venueMenu');
-  menu.innerHTML = data.venues.map(v =>
+  if (!menu) return;
+  menu.innerHTML = venues.map(v =>
     '<div class="venue-menu-item" onclick="selectVenue(\'' + v.id + '\')">' +
     '<span>' + escapeHtml(v.name) + '</span>' +
     '</div>'
   ).join('');
 }
-
 function toggleDropdown(e) {
   if (e) e.stopPropagation();
   const m = document.getElementById('venueMenu');
@@ -601,6 +607,7 @@ async function selectVenue(id) {
     headers: { 'Authorization': 'Bearer ' + token },
   });
   const data = await res.json();
+  renderVenueMenu(data.venues); // #49: keep the dropdown in sync with the latest venue list
   venue = data.venues.find(v => v.id === id);
   if (venue) {
     localStorage.setItem('flock_venue', JSON.stringify(venue));
@@ -621,27 +628,6 @@ async function selectVenue(id) {
     loadSubStatus();
     venueMenus = [];
     loadMenus();
-  }
-}
-
-async function deleteVenue(id, name) {
-  const ok = await confirmAction('Delete "' + name + '"?', 'This cannot be undone. Historical queue data is retained.', 'Delete venue', 'danger');
-  if (!ok) return;
-  const res = await fetch('/api/venues/' + id, {
-    method: 'DELETE',
-    headers: { 'Authorization': 'Bearer ' + token },
-  });
-  const data = await res.json().catch(() => ({}));
-  if (res.ok) {
-    if (venue && venue.id === id) {
-      localStorage.removeItem('flock_venue');
-      venue = null;
-    }
-    loadVenue().then(loadQueue);
-  } else if (res.status === 400 && data.error) {
-    showToast(data.error);
-  } else {
-    showToast('Failed to delete venue.');
   }
 }
 
@@ -1551,20 +1537,27 @@ async function clearQueue() {
   });
 }
 
+let _loadStatsInFlight = false; // #44: coalesce overlapping loadStats calls (WS + poll + clear)
 async function loadStats() {
   if (!venue) return;
-  const res = await fetch('/api/queue/stats/' + venue.id, {
-    headers: { 'Authorization': 'Bearer ' + token },
-  });
-  const data = await res.json();
-  _cacheSet('stats_' + venue.id, data);
-  document.getElementById('statTotal').textContent = data.totalGuests;
-  document.getElementById('statSeated').textContent = data.seatedCount;
-  document.getElementById('statCancelled').textContent = data.cancelledCount;
-  // Avg wait is noisy below 3 samples — show em dash instead
-  document.getElementById('statAvg').textContent = (data.seatedCount >= 3 && data.avgWaitMinutes)
-    ? data.avgWaitMinutes + 'm'
-    : '—';
+  if (_loadStatsInFlight) return;
+  _loadStatsInFlight = true;
+  try {
+    const res = await fetch('/api/queue/stats/' + venue.id, {
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    const data = await res.json();
+    _cacheSet('stats_' + venue.id, data);
+    document.getElementById('statTotal').textContent = data.totalGuests;
+    document.getElementById('statSeated').textContent = data.seatedCount;
+    document.getElementById('statCancelled').textContent = data.cancelledCount;
+    // Avg wait is noisy below 3 samples — show em dash instead
+    document.getElementById('statAvg').textContent = (data.seatedCount >= 3 && data.avgWaitMinutes)
+      ? data.avgWaitMinutes + 'm'
+      : '—';
+  } finally {
+    _loadStatsInFlight = false;
+  }
 }
 
 // Smooth wait-time countdown between server polls.
