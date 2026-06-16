@@ -184,8 +184,25 @@ body { margin: 0; }
   .sidebar { width: 64px; }
   .sidebar-item-label, .sidebar-logo span:first-child { display: none; }
   .main-tab-content { padding: 16px; }
+  .settings-subnav {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .settings-subnav::-webkit-scrollbar { display: none; }
+  .settings-subnav-btn { white-space: nowrap; flex-shrink: 0; }
 }
 
+@media (max-width: 480px) {
+  .sidebar { width: 56px; padding: 14px 8px; }
+  .main-topbar { padding: 12px 14px; gap: 8px; }
+  .main-topbar-left { gap: 8px; }
+  .main-tab-content { padding: 14px 14px 24px; }
+  .go-live-btn { padding: 8px 16px; font-size: 13px; }
+  .venue-button { padding: 7px 12px; font-size: 13px; }
+  .settings-subnav-btn { padding: 11px 14px; font-size: 14px; }
+  .range-btn { padding: 6px 10px; font-size: 12px; }
+}
 .settings-subnav {
   display: flex;
   gap: 4px;
