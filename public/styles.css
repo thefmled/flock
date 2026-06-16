@@ -568,4 +568,16 @@ body.theme-light-amber {
   .container { padding: 24px 16px; }
   .card { padding: 22px 18px; border-radius: 16px; }
   .heading { font-size: 24px; }
+
+  /* Prevent iOS Safari from zooming in when an input gets focus (must be ≥16px) */
+  .input-group input,
+  .input-group textarea,
+  .input-group select { font-size: 16px; }
+
+  /* Tighten queue cards on phones (used in dashboard, status, history) */
+  .queue-entry { padding: 16px 14px; }
+  .queue-entry-info h4 { font-size: 16px; }
+  .wait-time { font-size: 22px; }
+  .queue-actions { gap: 6px; }
+  .queue-actions button { padding: 9px 13px; font-size: 13px; }
 }
