@@ -140,11 +140,22 @@
 .history-header a:hover { opacity: 0.8; }
 
 @media (max-width: 480px) {
-  .topbar { padding: 14px 16px; }
+  .topbar { padding: 12px 14px; gap: 8px; }
+  .topbar-logo { font-size: 22px; }
+  .topbar-actions { gap: 5px; }
   .topbar-actions button { padding: 7px 10px; font-size: 11px; }
   .venue-button { padding: 7px 10px; font-size: 13px; }
-  .tab { padding: 10px 14px; font-size: 13px; }
-  .tab-content { padding: 18px 16px; }
+  .tabs {
+    padding: 12px 14px 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { padding: 10px 14px; font-size: 13px; white-space: nowrap; flex-shrink: 0; }
+  .tab-content { padding: 16px 14px; }
+  #statsBar { grid-template-columns: repeat(2, 1fr) !important; }
+  #statsBar .card { padding: 12px !important; }
 }
 
 .btn-notify.btn-done {
