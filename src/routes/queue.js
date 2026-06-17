@@ -71,7 +71,7 @@ async function computeWaitTimes(entries, venue, options = {}) {
     const updateData = {};
 
     if (entry.lastPosition !== currentPos) {
-      // Position changed — record new entry time. Preserve lockedWait as ceiling.
+      // Position changed, record new entry time. Preserve lockedWait as ceiling.
       updateData.lastPosition = currentPos;
       updateData.positionEnteredAt = new Date();
       // Only write startingWait if it's not already null (avoid noise)
@@ -157,7 +157,7 @@ async function computeWaitTimes(entries, venue, options = {}) {
   return waitTimes;
 }
 
-// Add a guest to the queue (public — guest scans QR)
+// Add a guest to the queue (public, guest scans QR)
 router.post('/join/:slug', async (req, res) => {
   try {
     const { guestName, guestPhone, partySize, seatingPreference, notes } = req.body;
@@ -166,7 +166,7 @@ router.post('/join/:slug', async (req, res) => {
     }
 
     // Validate phone (Indian 10-digit starting 6-9). Tolerate +91 / 91 / leading-0 forms by
-    // taking the last 10 digits — mirrors queue.html's client normalization and #52's outbound
+    // taking the last 10 digits, mirrors queue.html's client normalization and #52's outbound
     // normalization, so the API is self-protecting if called directly.
     let phoneClean = (guestPhone || '').replace(/\D/g, '');
     if (phoneClean.length > 10) phoneClean = phoneClean.slice(-10);
@@ -245,7 +245,7 @@ router.post('/join/:slug', async (req, res) => {
   }
 });
 
-// Get live queue (authed — staff view)
+// Get live queue (authed, staff view)
 router.get('/live/:venueId', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const venue = await prisma.venue.findFirst({
@@ -258,7 +258,7 @@ router.get('/live/:venueId', requireAuth, requireActiveSubscription, async (req,
     });
     const waitTimes = await computeWaitTimes(entries, venue);
 
-    // Compute visit history per unique phone — single grouped aggregate query
+    // Compute visit history per unique phone, single grouped aggregate query
     // (DB does the counting; we don't pull every historical row)
     const phones = [...new Set(entries.map(e => e.guestPhone))];
     const visitData = {};
@@ -314,7 +314,7 @@ router.get('/live/:venueId', requireAuth, requireActiveSubscription, async (req,
   }
 });
 
-// Get guest status (public — guest checks position)
+// Get guest status (public, guest checks position)
 router.get('/status/:entryId', async (req, res) => {
   try {
     const entry = await prisma.queueEntry.findUnique({
@@ -363,7 +363,7 @@ router.post('/notify/:entryId', requireAuth, requireActiveSubscription, async (r
     });
 
     logAudit(entry.id, 'notified', reportingTime ? `Reporting in ${reportingTime} min` : null);
-    // Broadcast with explicit 'pending' status — Notification row will be created in the async chain below
+    // Broadcast with explicit 'pending' status, Notification row will be created in the async chain below
     const broadcastEntry = await enrichEntryForBroadcast(entry.id, { lastNotificationStatus: 'pending' });
     broadcast('venue:' + entry.venueId, { type: 'entry_updated', entry: broadcastEntry });
     broadcast('entry:' + entry.id, { type: 'entry_changed', entry: broadcastEntry });
@@ -440,7 +440,7 @@ router.post('/seat/:entryId', requireAuth, requireActiveSubscription, async (req
   }
 });
 
-// Cancel entry (public — guest can self-cancel, also authed for staff)
+// Cancel entry (public, guest can self-cancel, also authed for staff)
 router.post('/cancel/:entryId', async (req, res) => {
   try {
     const current = await prisma.queueEntry.findUnique({ where: { id: req.params.entryId } });
@@ -465,7 +465,7 @@ router.post('/cancel/:entryId', async (req, res) => {
   }
 });
 
-// Get queue history (today's entries — all statuses)
+// Get queue history (today's entries, all statuses)
 router.get('/history/:venueId', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const venue = await prisma.venue.findFirst({
@@ -586,7 +586,7 @@ router.get('/audit/:entryId', requireAuth, requireActiveSubscription, async (req
   }
 });
 
-// Mark guest as called (logs the call action — does not actually dial)
+// Mark guest as called (logs the call action, does not actually dial)
 router.post('/call/:entryId', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const entry = await prisma.queueEntry.findUnique({
@@ -619,7 +619,7 @@ router.post('/call/:entryId', requireAuth, requireActiveSubscription, async (req
   }
 });
 
-// Analytics — today + past 7 days
+// Analytics, today + past 7 days
 router.get('/analytics/:venueId', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const venue = await prisma.venue.findFirst({
@@ -707,7 +707,7 @@ router.get('/analytics/:venueId', requireAuth, requireActiveSubscription, async 
       });
     }
 
-    // Hours — grouped by day-of-week (so frontend can compute weighted averages)
+    // Hours, grouped by day-of-week (so frontend can compute weighted averages)
     // hoursByDow[dow][hour] = count
     const hoursByDow = Array.from({ length: 7 }, () => Array(24).fill(0));
     const daysSeen = Array.from({ length: 7 }, () => new Set());
@@ -764,7 +764,7 @@ router.get('/analytics/:venueId', requireAuth, requireActiveSubscription, async 
   }
 });
 
-// Lightweight check — does this venue have at least one queue entry?
+// Lightweight check, does this venue have at least one queue entry?
 router.get('/has-any/:venueId', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const venue = await prisma.venue.findFirst({
@@ -783,7 +783,7 @@ router.get('/has-any/:venueId', requireAuth, requireActiveSubscription, async (r
   }
 });
 
-// Report data — full export with metrics + guest entries for the given range
+// Report data, full export with metrics + guest entries for the given range
 router.get('/report/:venueId', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const venue = await prisma.venue.findFirst({
@@ -882,7 +882,7 @@ router.get('/report/:venueId', requireAuth, requireActiveSubscription, async (re
   }
 });
 
-// Insights — heuristic-based recommendations from venue's queue data
+// Insights, heuristic-based recommendations from venue's queue data
 router.get('/insights/:venueId', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const venue = await prisma.venue.findFirst({
@@ -913,10 +913,10 @@ router.get('/insights/:venueId', requireAuth, requireActiveSubscription, async (
       return res.json({ insights, hasData: entries.length > 0 });
     }
 
-    // Helper — IST conversion
+    // Helper, IST conversion
     const toIST = d => new Date(new Date(d).getTime() + 5.5 * 3600 * 1000);
 
-    // 1. Wait time accuracy — predicted vs actual
+    // 1. Wait time accuracy, predicted vs actual
     const seatedWithPrediction = entries.filter(e => e.seatedAt && e.waitTimeBaseAtJoin);
     if (seatedWithPrediction.length >= 10) {
       let totalOvershoot = 0;
@@ -947,7 +947,7 @@ router.get('/insights/:venueId', requireAuth, requireActiveSubscription, async (
       }
     }
 
-    // 2. Cancellation trend — last 7 days vs prior 7
+    // 2. Cancellation trend, last 7 days vs prior 7
     const last7 = entries.filter(e => new Date(e.joinedAt) >= sevenDaysAgo);
     const prior7 = entries.filter(e => new Date(e.joinedAt) >= fourteenDaysAgo && new Date(e.joinedAt) < sevenDaysAgo);
     if (last7.length >= 5 && prior7.length >= 5) {
@@ -962,12 +962,12 @@ router.get('/insights/:venueId', requireAuth, requireActiveSubscription, async (
           metric: (last7Cancel * 100).toFixed(0) + '% this week vs ' + (prior7Cancel * 100).toFixed(0) + '% last',
           body: delta > 0
             ? 'More guests are leaving the queue before being seated. Possible causes: wait times feel too long, no notification reaching them, or poor seating mix. Check your wait time accuracy and notification delivery.'
-            : 'Cancellations dropped — whatever you changed is working.',
+            : 'Cancellations dropped, whatever you changed is working.',
         });
       }
     }
 
-    // 3. Peak hour pressure — when does queue stack up?
+    // 3. Peak hour pressure, when does queue stack up?
     const hourCountsByDow = Array.from({ length: 7 }, () => Array(24).fill(0));
     entries.forEach(e => {
       const d = toIST(e.joinedAt);
@@ -1007,8 +1007,8 @@ router.get('/insights/:venueId', requireAuth, requireActiveSubscription, async (
         title: repeatRate >= 15 ? 'Healthy repeat guest rate' : 'Few guests are returning',
         metric: repeatGuests + ' of ' + totalUnique + ' guests have been here multiple times (' + repeatRate.toFixed(0) + '%)',
         body: repeatRate >= 15
-          ? 'You have a loyal base. Consider rewarding regulars to deepen the relationship — birthday acknowledgments, a thank-you message after their 5th visit, or a small perk.'
-          : 'Most guests visit once. Could be a discovery business (tourists, drop-ins) — or there\'s an opportunity to bring people back. A simple win-back message at 30/60 days could help.',
+          ? 'You have a loyal base. Consider rewarding regulars to deepen the relationship, birthday acknowledgments, a thank-you message after their 5th visit, or a small perk.'
+          : 'Most guests visit once. Could be a discovery business (tourists, drop-ins), or there\'s an opportunity to bring people back. A simple win-back message at 30/60 days could help.',
       });
     }
 
@@ -1036,7 +1036,7 @@ router.get('/insights/:venueId', requireAuth, requireActiveSubscription, async (
       }
     }
 
-    // 6. Average party size shift — split entries cleanly in half
+    // 6. Average party size shift, split entries cleanly in half
     if (entries.length >= 20) {
       const mid = Math.floor(entries.length / 2);
       const earlierHalf = entries.slice(0, mid);

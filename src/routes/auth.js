@@ -33,7 +33,7 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
-// Periodic OtpCode cleanup — codes expire in minutes but rows are never removed,
+// Periodic OtpCode cleanup, codes expire in minutes but rows are never removed,
 // so purge anything older than 7 days to keep the table from growing unbounded.
 async function cleanupOldOtpCodes() {
   try {
@@ -129,7 +129,7 @@ router.post('/verify-otp', async (req, res) => {
       verifyRate.set(key, vrec);
       return res.status(400).json({ error: 'Invalid or expired code' });
     }
-    // Success — clear rate state
+    // Success, clear rate state
     verifyRate.delete(key);
 
     await prisma.otpCode.update({

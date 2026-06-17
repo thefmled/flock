@@ -6,7 +6,7 @@ const { notifyOps } = require('./lib/notify-ops');
 // Fail loud at boot if any core secret is missing, rather than letting auth, the database,
 // billing, or menu uploads break silently at request time. Runs before the route modules are
 // required (some, e.g. Supabase, construct clients at import). Gupshup is intentionally NOT
-// here — WhatsApp degrades gracefully and the queue still works without it.
+// here, WhatsApp degrades gracefully and the queue still works without it.
 const REQUIRED_ENV = [
   'JWT_SECRET',
   'DATABASE_URL',
@@ -28,7 +28,7 @@ app.use(cors({
   credentials: true,
 }));
 // Razorpay webhook signature verification needs the raw request body.
-// This must run BEFORE express.json() — otherwise json() consumes the stream
+// This must run BEFORE express.json(), otherwise json() consumes the stream
 // and the HMAC is computed over the wrong bytes (every webhook fails to verify).
 app.use('/api/subscription/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
@@ -70,7 +70,7 @@ app.use('/api', (req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });
 
-// Generic error handler — catches any unhandled error
+// Generic error handler, catches any unhandled error
 app.use((err, req, res, next) => {
   console.error(`[${req.reqId}] Unhandled error:`, err);
   notifyOps('unhandled_5xx', { reqId: req.reqId, path: req.path, message: err && err.message ? err.message : String(err) }, 'error');

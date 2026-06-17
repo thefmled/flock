@@ -5,7 +5,7 @@ const APP_NAME = process.env.GUPSHUP_APP_NAME;
 const SOURCE = process.env.GUPSHUP_SOURCE_NUMBER;
 
 async function sendTemplate(toPhone, templateName, params, buttonParams = null) {
-  // Sanitized log — masks phone, doesn't log params
+  // Sanitized log, masks phone, doesn't log params
   const maskedPhone = String(toPhone || '').replace(/^(\d{2})(\d+)(\d{2})$/, '$1***$3');
   console.log('WA SEND:', { phone: maskedPhone, template: templateName });
   if (!API_KEY || !APP_NAME || !SOURCE) {
@@ -14,7 +14,7 @@ async function sendTemplate(toPhone, templateName, params, buttonParams = null) 
   }
 
   // Normalize to a bare 91XXXXXXXXXX (no '+'). Strip a leading 0 (e.g. 0XXXXXXXXXX) and a
-  // leading 91 country code if already present, then prepend 91. This is idempotent — an
+  // leading 91 country code if already present, then prepend 91. This is idempotent, an
   // already-prefixed '919876543210' normalizes back to itself instead of becoming '9191...'.
   let destination = String(toPhone).replace(/\D/g, '');
   if (destination.startsWith('0')) destination = destination.slice(1);

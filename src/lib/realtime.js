@@ -20,7 +20,7 @@ function init(server) {
   async function canSubscribe(key, token) {
     if (typeof key !== 'string') return false;
     if (key.startsWith('entry:')) return true;
-    // PII-free per-venue ping channel for guest status pages — carries only a bare
+    // PII-free per-venue ping channel for guest status pages, carries only a bare
     // "queue changed" signal (never guest data), so it's open like entry: (no auth).
     if (key.startsWith('venue-public:')) return true;
     if (key.startsWith('venue:')) {
@@ -80,7 +80,7 @@ function init(server) {
   });
 
   console.log('WebSocket server initialized on /ws');
-  // Periodic cleanup — remove dead sockets every minute
+  // Periodic cleanup, remove dead sockets every minute
   setInterval(() => {
     subscribers.forEach((set, key) => {
       const dead = [];

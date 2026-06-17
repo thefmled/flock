@@ -4,7 +4,7 @@
 <meta name="robots" content="noindex">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard — flock</title>
+<title>Dashboard · flock</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Inter:wght@400;500;600&display=optional">
@@ -350,19 +350,19 @@ body.flock-ready { visibility: visible; }
 <div class="tab-content" id="liveTab">
   <div id="statsBar" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
     <div class="card" style="padding:14px;margin-bottom:0;text-align:center;">
-      <div style="font-family:'Fraunces',serif;font-style:italic;font-size:28px;color:var(--accent);" id="statTotal">—</div>
+      <div style="font-family:'Fraunces',serif;font-style:italic;font-size:28px;color:var(--accent);" id="statTotal">·</div>
       <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.08em;text-transform:uppercase;margin-top:2px;">Guest parties</div>
     </div>
     <div class="card" style="padding:14px;margin-bottom:0;text-align:center;">
-      <div style="font-family:'Fraunces',serif;font-style:italic;font-size:28px;color:var(--accent);" id="statSeated">—</div>
+      <div style="font-family:'Fraunces',serif;font-style:italic;font-size:28px;color:var(--accent);" id="statSeated">·</div>
       <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.08em;text-transform:uppercase;margin-top:2px;">Seated</div>
     </div>
     <div class="card" style="padding:14px;margin-bottom:0;text-align:center;">
-      <div style="font-family:'Fraunces',serif;font-style:italic;font-size:28px;color:var(--accent);" id="statCancelled">—</div>
+      <div style="font-family:'Fraunces',serif;font-style:italic;font-size:28px;color:var(--accent);" id="statCancelled">·</div>
       <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.08em;text-transform:uppercase;margin-top:2px;">Cancelled</div>
     </div>
     <div class="card" style="padding:14px;margin-bottom:0;text-align:center;">
-      <div style="font-family:'Fraunces',serif;font-style:italic;font-size:28px;color:var(--accent);" id="statAvg">—</div>
+      <div style="font-family:'Fraunces',serif;font-style:italic;font-size:28px;color:var(--accent);" id="statAvg">·</div>
       <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.08em;text-transform:uppercase;margin-top:2px;">Avg wait</div>
     </div>
   </div>
@@ -383,9 +383,9 @@ body.flock-ready { visibility: visible; }
     <h2 class="heading">Wait time formula</h2>
     <p class="subheading">min(base + increment × (position − 1), cap)</p>
     <div style="background:var(--card-hover);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:13px;line-height:1.6;color:var(--text);">
-      <p style="margin:0 0 8px;"><strong>Base</strong> — wait time shown to the guest at the front of the queue (position 1). Typical: 8 min on weekdays, 12–15 min on weekends.</p>
-      <p style="margin:0 0 8px;"><strong>Increment</strong> — how many minutes each additional position adds. Typical: 3 min for fast turnover, 5 min for slower seating.</p>
-      <p style="margin:0;"><strong>Cap</strong> — the highest wait time the guest will ever see. Prevents scary numbers like "50 min" from putting guests off.</p>
+      <p style="margin:0 0 8px;"><strong>Base</strong>, wait time shown to the guest at the front of the queue (position 1). Typical: 8 min on weekdays, 12–15 min on weekends.</p>
+      <p style="margin:0 0 8px;"><strong>Increment</strong>, how many minutes each additional position adds. Typical: 3 min for fast turnover, 5 min for slower seating.</p>
+      <p style="margin:0;"><strong>Cap</strong>, the highest wait time the guest will ever see. Prevents scary numbers like "50 min" from putting guests off.</p>
     </div>
 
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
@@ -403,7 +403,7 @@ body.flock-ready { visibility: visible; }
 
     <div id="waitPreview" style="margin-top:14px;padding:12px 14px;background:var(--accent-soft);border-radius:8px;font-size:13px;color:var(--text);line-height:1.6;"></div>
 
-    <p style="margin:14px 0 0;font-size:12px;color:var(--text-muted);font-style:italic;line-height:1.5;">Guests see this as an estimate, not a guarantee. The formula trends conservative — actual seating usually happens faster as guests cancel or are bumped through quickly.</p>
+    <p style="margin:14px 0 0;font-size:12px;color:var(--text-muted);font-style:italic;line-height:1.5;">Guests see this as an estimate, not a guarantee. The formula trends conservative, actual seating usually happens faster as guests cancel or are bumped through quickly.</p>
   </div>
   <button class="button" onclick="saveWaitTimeSettings()">Save changes</button>
   <p class="success" id="waitTimeSuccess"></p>
@@ -486,7 +486,7 @@ window.addEventListener('storage', (e) => {
   } catch(e) {}
 });
 
-// Intercept 401s globally — redirect to login
+// Intercept 401s globally, redirect to login
 const _origFetch = window.fetch;
 window.fetch = async function(...args) {
   const res = await _origFetch.apply(this, args);
@@ -495,7 +495,7 @@ window.fetch = async function(...args) {
       localStorage.clear();
       sessionStorage.setItem('flock_expired', '1');
       window.location.replace('/login.html');
-      return new Promise(() => {}); // halt callers — page is navigating away
+      return new Promise(() => {}); // halt callers, page is navigating away
     } else if (res.status === 402) {
       sessionStorage.setItem('flock_sub_expired', '1');
       window.location.replace('/subscribe.html');
@@ -603,7 +603,7 @@ async function loadVenue() {
   renderVenueMenu(data.venues);
 }
 
-// Render the venue switcher dropdown — shared by loadVenue and selectVenue so the list
+// Render the venue switcher dropdown, shared by loadVenue and selectVenue so the list
 // stays in sync after a switch (#49).
 function renderVenueMenu(venues) {
   const menu = document.getElementById('venueMenu');
@@ -660,7 +660,7 @@ document.addEventListener('click', (e) => {
 
 let queueEverLoaded = false;
 
-// Per-entry HTML cache for diff rendering — kills full innerHTML thrash
+// Per-entry HTML cache for diff rendering, kills full innerHTML thrash
 let _renderedEntries = new Map(); // id -> html string
 
 function buildEntryHtml(e) {
@@ -686,7 +686,7 @@ function buildEntryHtml(e) {
       </div>
       <div class="queue-actions">
         <button class="btn-notify btn-action-notify ${notified ? 'btn-done' : ''}" onclick="notifyGuest('${e.id}')">${notified ? '✓ Notified' : 'Notify'}</button>
-        ${notified && e.lastNotificationStatus === 'failed' ? '<span title="WhatsApp delivery failed — please call the guest" style="color:var(--error);font-size:12px;margin-right:4px;align-self:center;">⚠ WA not delivered</span>' : ''}
+        ${notified && e.lastNotificationStatus === 'failed' ? '<span title="WhatsApp delivery failed, please call the guest" style="color:var(--error);font-size:12px;margin-right:4px;align-self:center;">⚠ WA not delivered</span>' : ''}
         ${notified && e.lastNotificationStatus === 'pending' ? '<span style="color:var(--text-muted);font-size:12px;margin-right:4px;align-self:center;">⌛ Sending…</span>' : ''}
         <button class="btn-notify btn-action-call ${called ? 'btn-done' : ''}" onclick="callGuest('${e.id}', '${e.guestPhone}')">${called ? '✓ Called' : 'Call'}</button>
         <button class="btn-seat" onclick="seatGuest('${e.id}')">Mark seated</button>
@@ -711,7 +711,7 @@ function entryHashKey(e) {
 function patchEntryInPlace(entry) {
   if (!entry || !entry.id) return;
   const existing = document.querySelector(`[data-entry-id="${entry.id}"]`);
-  if (!existing) return; // not currently rendered — ignore (will be picked up on next refetch)
+  if (!existing) return; // not currently rendered, ignore (will be picked up on next refetch)
   // Preserve position/waitMinutes from the cached card; the patched entry from server
   // doesn't include these (they're computed in /live, not stored)
   const waitEl = existing.querySelector('.wait-time');
@@ -722,7 +722,7 @@ function patchEntryInPlace(entry) {
   tmp.innerHTML = buildEntryHtml(merged).trim();
   existing.replaceWith(tmp.firstChild);
   _renderedEntries.set(entry.id, entryHashKey(merged));
-  // #47: the in-place patch is optimistic and only touches this one card — follow it with a
+  // #47: the in-place patch is optimistic and only touches this one card, follow it with a
   // coalesced full refetch so positions / wait-times for every entry reconcile with the
   // server and no stale state lingers.
   loadQueueDebounced();
@@ -732,7 +732,7 @@ async function loadQueue() {
   if (!venue) return;
   const listEl = document.getElementById('queueList');
   
-  // First load only — show skeletons
+  // First load only, show skeletons
   const res = await fetch('/api/queue/live/' + venue.id, {
     headers: { 'Authorization': 'Bearer ' + token },
   });
@@ -777,7 +777,7 @@ async function loadQueue() {
     const cached = _renderedEntries.get(e.id);
     
     if (!existing) {
-      // New card — insert in correct position
+      // New card, insert in correct position
       const tmp = document.createElement('div');
       tmp.innerHTML = buildEntryHtml(e).trim();
       const newEl = tmp.firstChild;
@@ -791,14 +791,14 @@ async function loadQueue() {
       _renderedEntries.set(e.id, hash);
       prevEl = newEl;
     } else if (cached !== hash) {
-      // Changed — replace contents only (preserves the outer element)
+      // Changed, replace contents only (preserves the outer element)
       const tmp = document.createElement('div');
       tmp.innerHTML = buildEntryHtml(e).trim();
       existing.replaceWith(tmp.firstChild);
       _renderedEntries.set(e.id, hash);
       prevEl = listEl.querySelector(`[data-entry-id="${e.id}"]`);
     } else {
-      // Unchanged — skip DOM work entirely
+      // Unchanged, skip DOM work entirely
       prevEl = existing;
     }
   }
@@ -828,7 +828,7 @@ async function notifyGuest(id) {
       body: JSON.stringify({ reportingTime }),
     });
     if (res.status === 409) {
-      // Entry no longer in queue — revert and refresh
+      // Entry no longer in queue, revert and refresh
       notifiedLocally.delete(id);
       if (notifyBtn) {
         notifyBtn.classList.remove('btn-done');
@@ -845,7 +845,7 @@ async function notifyGuest(id) {
       notifyBtn.classList.remove('btn-done');
       notifyBtn.textContent = 'Notify';
     }
-    showToast('Notify failed — please try again.');
+    showToast('Notify failed, please try again.');
   }
 }
 
@@ -944,7 +944,7 @@ function callGuest(id, phone) {
     }
   }
 
-  // Fire log async — don't block the dial
+  // Fire log async, don't block the dial
   fetch('/api/queue/call/' + id, {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + token },
@@ -1281,7 +1281,7 @@ async function saveWaitTimeSettings() {
     const data = await res.json();
     if (res.status === 409) {
       okEl.textContent = '';
-      errEl.textContent = 'Someone else updated settings. Refreshing — please re-apply your changes.';
+      errEl.textContent = 'Someone else updated settings. Refreshing, please re-apply your changes.';
       if (data.currentVenue) {
         venue = data.currentVenue;
         localStorage.setItem('flock_venue', JSON.stringify(venue));
@@ -1328,7 +1328,7 @@ async function saveSettings() {
     const data = await res.json();
     if (res.status === 409) {
       okEl.textContent = '';
-      errEl.textContent = 'Someone else updated settings. Refreshing — please re-apply your changes.';
+      errEl.textContent = 'Someone else updated settings. Refreshing, please re-apply your changes.';
       if (data.currentVenue) {
         venue = data.currentVenue;
         localStorage.setItem('flock_venue', JSON.stringify(venue));
@@ -1407,7 +1407,7 @@ function printQr() {
   }
   w.document.write(`
     <!DOCTYPE html>
-    <html><head><title>flock QR — ${escapeHtml(venue.name)}</title>
+    <html><head><title>flock QR · ${escapeHtml(venue.name)}</title>
     <style>
       body { margin: 0; padding: 40px; font-family: -apple-system, sans-serif; text-align: center; }
       img { width: 380px; height: 380px; }
@@ -1575,10 +1575,10 @@ async function loadStats() {
     document.getElementById('statTotal').textContent = data.totalGuests;
     document.getElementById('statSeated').textContent = data.seatedCount;
     document.getElementById('statCancelled').textContent = data.cancelledCount;
-    // Avg wait is noisy below 3 samples — show em dash instead
+    // Avg wait is noisy below 3 samples, show em dash instead
     document.getElementById('statAvg').textContent = (data.seatedCount >= 3 && data.avgWaitMinutes)
       ? data.avgWaitMinutes + 'm'
-      : '—';
+      : '·';
   } finally {
     _loadStatsInFlight = false;
   }
@@ -1589,7 +1589,7 @@ async function loadStats() {
 function tickWaitTimes() {
   document.querySelectorAll('.wait-time').forEach(el => {
     const position = Number(el.getAttribute('data-position'));
-    if (!position || position === 1) return; // pos 1 is static — only changes on server
+    if (!position || position === 1) return; // pos 1 is static, only changes on server
     const serverWait = Number(el.getAttribute('data-server-wait'));
     const baseWait = Number(el.getAttribute('data-base-wait'));
     const lastSync = Number(el.getAttribute('data-last-sync'));
@@ -1664,9 +1664,9 @@ function _renderSubStatusFromData(data) {
     el.innerHTML = '<span style="color:var(--accent);">Trial · ' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : '') + ' left' + billing + '</span>';
     // Urgent banner conditions
     if (msLeft < 0) {
-      // In post-trial grace period — must add card
+      // In post-trial grace period, must add card
       showTrialBanner = true;
-      trialBannerText = 'Your trial has ended. Add a payment method to keep access — your account will be cancelled soon if no card is added.';
+      trialBannerText = 'Your trial has ended. Add a payment method to keep access, your account will be cancelled soon if no card is added.';
     } else if (daysLeft <= 3) {
       showTrialBanner = true;
       trialBannerText = 'Trial ends in ' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : '') + '. Add a payment method to continue without interruption.';
@@ -1778,7 +1778,7 @@ function fastBootFromCache() {
       document.getElementById('statTotal').textContent = cStats.totalGuests;
       document.getElementById('statSeated').textContent = cStats.seatedCount;
       document.getElementById('statCancelled').textContent = cStats.cancelledCount;
-      document.getElementById('statAvg').textContent = (cStats.seatedCount >= 3 && cStats.avgWaitMinutes) ? cStats.avgWaitMinutes + 'm' : '—';
+      document.getElementById('statAvg').textContent = (cStats.seatedCount >= 3 && cStats.avgWaitMinutes) ? cStats.avgWaitMinutes + 'm' : '·';
     }
 
     // Menus
@@ -1850,7 +1850,7 @@ function isTabActive(name) {
 // Only poll the live queue when viewing it; same for stats
 setInterval(() => { if (isTabActive('live')) loadQueueDebounced(); }, 5000);
 setInterval(() => { if (isTabActive('live')) loadStats(); }, 15000);
-// loadVenue removed from interval — only runs on mount + settings save + venue switch
+// loadVenue removed from interval, only runs on mount + settings save + venue switch
 
   
 </script>

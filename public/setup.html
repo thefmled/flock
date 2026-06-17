@@ -4,7 +4,7 @@
   <meta name="robots" content="noindex">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Set up your venue — flock</title>
+  <title>Set up your venue · flock</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Inter:wght@400;500;600&display=optional">
@@ -46,7 +46,7 @@
 
 <script>
 
-  // Intercept 401s globally — redirect to login
+  // Intercept 401s globally, redirect to login
   const _origFetch = window.fetch;
   window.fetch = async function(...args) {
   const res = await _origFetch.apply(this, args);
@@ -55,7 +55,7 @@
       localStorage.clear();
       sessionStorage.setItem('flock_expired', '1');
       window.location.replace('/login.html');
-      return new Promise(() => {}); // halt callers — page is navigating away
+      return new Promise(() => {}); // halt callers, page is navigating away
     } else if (res.status === 402) {
       sessionStorage.setItem('flock_sub_expired', '1');
       window.location.replace('/subscribe.html');
@@ -70,7 +70,7 @@
       const v = JSON.parse(localStorage.getItem('flock_venue') || 'null');
       const t = (v && v.theme) ? v.theme : 'dark-premium';
       document.addEventListener('DOMContentLoaded', function() {
-        // Swap only the theme-* class — preserve landing-light (the light-mode overlay) and
+        // Swap only the theme-* class, preserve landing-light (the light-mode overlay) and
         // any other body classes, instead of clobbering className wholesale.
         [...document.body.classList].filter(c => c.startsWith('theme-')).forEach(c => document.body.classList.remove(c));
         document.body.classList.add('theme-' + t);
@@ -262,7 +262,7 @@
         
         localStorage.setItem('flock_venue', JSON.stringify(data.venue));
         
-        // Navigate immediately — menu PDF upload happens in background
+        // Navigate immediately, menu PDF upload happens in background
         const fileInput = document.getElementById('menuPdf');
         if (fileInput.files.length > 0) {
           const file = fileInput.files[0];

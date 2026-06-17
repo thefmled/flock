@@ -4,7 +4,7 @@
 <meta name="robots" content="noindex">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>flock — main</title>
+<title>flock · main</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Inter:wght@400;500;600&display=optional">
@@ -203,6 +203,7 @@ body { margin: 0; }
   .settings-subnav-btn { padding: 11px 14px; font-size: 14px; }
   .range-btn { padding: 6px 10px; font-size: 12px; }
 }
+
 .settings-subnav {
   display: flex;
   gap: 4px;
@@ -290,7 +291,7 @@ body { margin: 0; }
 .theme-card-desc { color: var(--text-muted); font-size: 13px; line-height: 1.5; }
 .theme-card-current { color: var(--accent); font-size: 13px; font-weight: 500; margin-top: 8px; }
 
-/* Theme-specific mockup styles — synced with styles.css */
+/* Theme-specific mockup styles, synced with styles.css */
 .theme-preview.theme-dark-premium .theme-preview-frame { background: #0f0d0a; color: #f5ead4; }
 .theme-preview.theme-dark-premium .theme-accent { color: #f5a854; }
 .theme-preview.theme-dark-premium .theme-mock-card { background: #1a1714; border: 1px solid rgba(245,234,212,0.18); }
@@ -845,7 +846,7 @@ body.flock-ready .app { visibility: visible; }
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
         <h2 class="heading" style="margin:0;font-size:24px;">Insights</h2>
       </div>
-      <p class="subheading" style="margin-bottom:20px;">What your data is telling you — and what to do about it.</p>
+      <p class="subheading" style="margin-bottom:20px;">What your data is telling you, and what to do about it.</p>
       <div id="insightsContent"></div>
     </div>
     
@@ -919,7 +920,7 @@ body.flock-ready .app { visibility: visible; }
         initial = saved;
       }
     } else {
-      // Not a reload — clear stale state so future reloads start clean
+      // Not a reload, clear stale state so future reloads start clean
       try { sessionStorage.removeItem('flock_main_section'); } catch(e) {}
       try { sessionStorage.removeItem('flock_main_settings_sub'); } catch(e) {}
     }
@@ -934,7 +935,7 @@ body.flock-ready .app { visibility: visible; }
 
 const token = localStorage.getItem('flock_token');
 
-// Intercept 401s globally — redirect to login
+// Intercept 401s globally, redirect to login
 const _origFetch = window.fetch;
 window.fetch = async function(...args) {
   const res = await _origFetch.apply(this, args);
@@ -943,7 +944,7 @@ window.fetch = async function(...args) {
       localStorage.clear();
       sessionStorage.setItem('flock_expired', '1');
       window.location.replace('/login.html');
-      return new Promise(() => {}); // halt callers — page is navigating away
+      return new Promise(() => {}); // halt callers, page is navigating away
     } else if (res.status === 402) {
       sessionStorage.setItem('flock_sub_expired', '1');
       window.location.replace('/subscribe.html');
@@ -1157,7 +1158,7 @@ async function loadSubStatus() {
     el.innerHTML = '<span style="color:var(--accent);">Trial · ' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : '') + ' left' + billing + '</span>';
     if (msLeft < 0) {
       showTrialBanner = true;
-      trialBannerText = 'Your trial has ended. Add a payment method to keep access — your account will be cancelled soon if no card is added.';
+      trialBannerText = 'Your trial has ended. Add a payment method to keep access, your account will be cancelled soon if no card is added.';
     } else if (daysLeft <= 3) {
       showTrialBanner = true;
       trialBannerText = 'Trial ends in ' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : '') + '. Add a payment method to continue without interruption.';
@@ -1191,7 +1192,7 @@ function renderTrialBanner(show, text) {
   `;
 }
 
-// Analytics — copied from dashboard
+// Analytics, copied from dashboard
 let dailyChart=null, hoursChart=null, partyChart=null, analyticsData=null;
 let selectedDows = new Set(['all','0','1','2','3','4','5','6']);
 let currentRange = 'L7D';
@@ -1230,7 +1231,7 @@ function getThemeColors() {
 }
 
 function hexToRgba(hex, alpha) {
-  // Accepts #rgb, #rrggbb, or rgba(...) — returns rgba string
+  // Accepts #rgb, #rrggbb, or rgba(...), returns rgba string
   if (hex.startsWith('rgba')) return hex;
   if (hex.startsWith('rgb(')) return hex.replace('rgb(', 'rgba(').replace(')', ',' + alpha + ')');
   let h = hex.replace('#','');
@@ -1562,7 +1563,7 @@ async function saveSettings() {
     const data = await res.json();
     if (res.status === 409) {
       okEl.textContent = '';
-      errEl.textContent = 'Someone else updated settings. Refreshing — please re-apply your changes.';
+      errEl.textContent = 'Someone else updated settings. Refreshing, please re-apply your changes.';
       if (data.currentVenue) {
         venue = data.currentVenue;
         localStorage.setItem('flock_venue', JSON.stringify(venue));
@@ -1599,7 +1600,7 @@ async function loadSubscription() {
 
   let html = '';
 
-  // Hero card — current bill
+  // Hero card, current bill
   html += '<div class="card sub-hero">';
   if (data.status === 'trial' && data.trialEndsAt) {
     const daysLeft = Math.floor((new Date(data.trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24));
@@ -1628,7 +1629,7 @@ async function loadSubscription() {
   html += '<li>WhatsApp notifications when tables are ready</li>';
   html += '<li>Real-time wait-time predictions for guests</li>';
   html += '<li>Staff dashboard with full guest history + audit logs</li>';
-  html += '<li>Analytics — daily counts, busiest hours, party-size trends</li>';
+  html += '<li>Analytics, daily counts, busiest hours, party-size trends</li>';
   html += '<li>Custom reports with date range + guest field selection</li>';
   html += '<li>12 theme options across venues</li>';
   html += '<li>Unlimited staff devices per venue</li>';
@@ -1707,9 +1708,9 @@ function loadWaitTimeSettings() {
       <h2 class="heading">Wait time formula</h2>
       <p class="subheading">min(base + increment × (position − 1), cap)</p>
       <div style="background:var(--card-hover);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:13px;line-height:1.6;color:var(--text);">
-        <p style="margin:0 0 8px;"><strong>Base</strong> — wait time shown to the guest at the front of the queue (position 1). Typical: 8 min on weekdays, 12–15 min on weekends.</p>
-        <p style="margin:0 0 8px;"><strong>Increment</strong> — how many minutes each additional position adds. Typical: 3 min for fast turnover, 5 min for slower seating.</p>
-        <p style="margin:0;"><strong>Cap</strong> — the highest wait time the guest will ever see. Prevents scary numbers like "50 min" from putting guests off.</p>
+        <p style="margin:0 0 8px;"><strong>Base</strong>, wait time shown to the guest at the front of the queue (position 1). Typical: 8 min on weekdays, 12–15 min on weekends.</p>
+        <p style="margin:0 0 8px;"><strong>Increment</strong>, how many minutes each additional position adds. Typical: 3 min for fast turnover, 5 min for slower seating.</p>
+        <p style="margin:0;"><strong>Cap</strong>, the highest wait time the guest will ever see. Prevents scary numbers like "50 min" from putting guests off.</p>
       </div>
 
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
@@ -1727,7 +1728,7 @@ function loadWaitTimeSettings() {
 
       <div id="waitPreview" style="margin-top:14px;padding:12px 14px;background:var(--accent-soft);border-radius:8px;font-size:13px;color:var(--text);line-height:1.6;"></div>
 
-      <p style="margin:14px 0 0;font-size:12px;color:var(--text-muted);font-style:italic;line-height:1.5;">Guests see this as an estimate, not a guarantee. The formula trends conservative — actual seating usually happens faster as guests cancel or are bumped through quickly.</p>
+      <p style="margin:14px 0 0;font-size:12px;color:var(--text-muted);font-style:italic;line-height:1.5;">Guests see this as an estimate, not a guarantee. The formula trends conservative, actual seating usually happens faster as guests cancel or are bumped through quickly.</p>
     </div>
     <button class="button" onclick="saveWaitTimeSettings()">Save changes</button>
     <p class="success" id="waitTimeSuccess"></p>
@@ -1765,7 +1766,7 @@ async function saveWaitTimeSettings() {
     const data = await res.json();
     if (res.status === 409) {
       okEl.textContent = '';
-      errEl.textContent = 'Someone else updated settings. Refreshing — please re-apply your changes.';
+      errEl.textContent = 'Someone else updated settings. Refreshing, please re-apply your changes.';
       if (data.currentVenue) {
         venue = data.currentVenue;
         localStorage.setItem('flock_venue', JSON.stringify(venue));
@@ -1846,7 +1847,7 @@ function loadQrSettings() {
       <h3 class="heading" style="font-size:16px;">Tips</h3>
       <ul style="color:var(--text-muted);font-size:14px;line-height:1.8;padding-left:20px;margin:8px 0;">
         <li>Print on A5 or larger so guests can scan from 2-3 feet away.</li>
-        <li>Laminate it — host stands get spills.</li>
+        <li>Laminate it, host stands get spills.</li>
         <li>Add "Scan to join the queue" text below the QR for clarity.</li>
         <li>Keep one near the door, another at the host stand.</li>
       </ul>
@@ -1907,7 +1908,7 @@ function printQr() {
   }
   w.document.write(`
     <!DOCTYPE html>
-    <html><head><title>flock QR — ${venue.name}</title>
+    <html><head><title>flock QR · ${venue.name}</title>
     <style>
       body { margin: 0; padding: 40px; font-family: -apple-system, sans-serif; text-align: center; }
       img { width: 380px; height: 380px; }
@@ -2359,14 +2360,14 @@ function connectMainWebSocket() {
     try {
       const msg = JSON.parse(e.data);
 
-      // Current venue deleted on another device — re-sync (loadVenue falls back to another
+      // Current venue deleted on another device, re-sync (loadVenue falls back to another
       // venue, or to /setup if it was the last one).
       if (msg.type === 'venue_deleted') {
         if (venue && msg.venueId === venue.id) window.location.reload();
         return;
       }
 
-      // Menu added / renamed / deleted on another device — refresh the list if it's on screen.
+      // Menu added / renamed / deleted on another device, refresh the list if it's on screen.
       if (msg.type === 'menus_changed') {
         if (typeof loadMenus === 'function') loadMenus();
         return;

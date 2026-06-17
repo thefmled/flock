@@ -18,7 +18,7 @@ function requireAuth(req, res, next) {
   }
 }
 
-// Check subscription status — used on protected routes that require an active subscription
+// Check subscription status, used on protected routes that require an active subscription
 const subCache = new Map(); // ownerId -> { status, trialEndsAt, expiresAt }
 const SUB_TTL_MS = 60 * 1000;
 

@@ -4,7 +4,7 @@
 <meta name="robots" content="noindex">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Start your trial — flock</title>
+<title>Start your trial · flock</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Inter:wght@400;500;600&display=optional">
@@ -63,14 +63,14 @@
       const token = localStorage.getItem('flock_token');
       const venue = JSON.parse(localStorage.getItem('flock_venue') || 'null');
       if (token && venue && venue.theme) {
-        // Logged-in user — apply their venue theme
+        // Logged-in user, apply their venue theme
         document.addEventListener('DOMContentLoaded', function() {
           document.body.classList.remove(...Array.from(document.body.classList).filter(c => c.startsWith('landing-')));
           document.body.classList.add('theme-' + venue.theme);
         });
         return;
       }
-      // Logged-out — landing aesthetic with optional light toggle
+      // Logged-out, landing aesthetic with optional light toggle
       const saved = localStorage.getItem('flock_landing_theme');
       if (saved === 'light') document.documentElement.classList.add('landing-light-pre');
     } catch(e) {}
@@ -99,7 +99,7 @@
   <div class="card subscribe-card">
     <div class="trial-badge">14-day free trial</div>
     <div class="price">₹<span data-flock-price="{price}">999</span></div>
-    <div class="price-period">per venue, per month — after trial</div>
+    <div class="price-period">per venue, per month, after trial</div>
 
     <div class="features-list">
       <div>✓ Unlimited guests & staff</div>
@@ -169,7 +169,7 @@ async function adaptSubscribeCopy() {
       }
     }
 
-    // #50: cancelled but still inside the paid cycle — reassure them access continues, and
+    // #50: cancelled but still inside the paid cycle, reassure them access continues, and
     // show until when, so they don't think resubscribing is to regain lost access.
     if (data.status === 'cancelled' && data.subscriptionEndsAt) {
       const ends = new Date(data.subscriptionEndsAt);
@@ -243,7 +243,7 @@ async function startSubscription() {
       key: data.keyId,
       subscription_id: data.subscriptionId,
       name: 'flock',
-      description: _isReturning ? ('Subscription — ₹' + (window.FLOCK_MONTHLY_PRICE || 999) + '/mo') : 'Monthly subscription with 14-day trial',
+      description: _isReturning ? ('Subscription, ₹' + (window.FLOCK_MONTHLY_PRICE || 999) + '/mo') : 'Monthly subscription with 14-day trial',
       handler: async function(response) {
         // Show verifying state while we wait for the webhook to flip status → active
         const card = document.querySelector('.subscribe-card');
@@ -280,7 +280,7 @@ async function startSubscription() {
             card.innerHTML = `
               <div style="padding:20px 8px;text-align:center;">
                 <div class="heading" style="font-size:20px;margin-bottom:12px;color:var(--error);">Payment confirmation delayed</div>
-                <div class="subheading" style="margin-bottom:20px;">We've received your payment but activation is taking longer than usual. Try refreshing — if it still doesn't work, email rushali.c1710@gmail.com.</div>
+                <div class="subheading" style="margin-bottom:20px;">We've received your payment but activation is taking longer than usual. Try refreshing, if it still doesn't work, email rushali.c1710@gmail.com.</div>
                 <button class="button" onclick="window.location.reload()" style="max-width:200px;margin:0 auto;">Refresh</button>
               </div>
             `;
@@ -288,7 +288,7 @@ async function startSubscription() {
           return;
         }
 
-        // Activated — route based on venues
+        // Activated, route based on venues
         try {
           const vRes = await fetch('/api/venues', {
             headers: { 'Authorization': 'Bearer ' + token },

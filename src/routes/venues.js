@@ -36,7 +36,7 @@ function slugify(text) {
     .replace(/--+/g, '-');
 }
 
-// Single source for valid theme values — used by create and update.
+// Single source for valid theme values, used by create and update.
 const ALLOWED_THEMES = ['dark-premium', 'light-amber', 'warm-editorial', 'crisp-modern', 'forest-tavern', 'terracotta-bistro', 'midnight-indigo', 'sun-sand', 'bombay-blue', 'spice-market', 'charcoal-linen', 'brick-birch', 'cloud-mint'];
 
 // Create a venue (first-time setup)
@@ -102,7 +102,7 @@ router.get('/', requireAuth, requireActiveSubscription, async (req, res) => {
   }
 });
 
-// Get a venue by slug (public — for guest queue page)
+// Get a venue by slug (public, for guest queue page)
 router.get('/by-slug/:slug', async (req, res) => {
   try {
     const venue = await prisma.venue.findUnique({
@@ -126,7 +126,7 @@ router.delete('/:id', requireAuth, requireActiveSubscription, async (req, res) =
     });
     if (!venue) return res.status(404).json({ error: 'Venue not found' });
 
-    // Refuse to delete the last venue — Razorpay can't have quantity 0
+    // Refuse to delete the last venue, Razorpay can't have quantity 0
     const totalCount = await prisma.venue.count({ where: { ownerId: req.ownerId } });
     if (totalCount === 1) {
       return res.status(400).json({

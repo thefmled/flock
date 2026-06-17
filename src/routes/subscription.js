@@ -17,18 +17,18 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// Create a subscription with 14-day trial — starts at quantity 1
+// Create a subscription with 14-day trial, starts at quantity 1
 router.post('/create', requireAuth, async (req, res) => {
   try {
     const owner = await prisma.owner.findUnique({ where: { id: req.ownerId } });
     if (!owner) return res.status(404).json({ error: 'Owner not found' });
 
-    // Active subscription, or trial that's still running — treat as already-exists.
+    // Active subscription, or trial that's still running, treat as already-exists.
     const trialStillValid = owner.subscriptionStatus === 'trial' && owner.trialEndsAt && new Date(owner.trialEndsAt) > new Date();
     if (owner.razorpaySubscriptionId && (owner.subscriptionStatus === 'active' || trialStillValid)) {
       return res.json({ subscriptionId: owner.razorpaySubscriptionId, alreadyExists: true });
     }
-    // Grace period (trial expired but within 24h) OR pending payment — let them resume checkout
+    // Grace period (trial expired but within 24h) OR pending payment, let them resume checkout
     // on the same Razorpay subscription rather than creating a new orphan.
     if (owner.razorpaySubscriptionId && (owner.subscriptionStatus === 'pending' || owner.subscriptionStatus === 'trial')) {
       return res.json({
@@ -61,7 +61,7 @@ router.post('/create', requireAuth, async (req, res) => {
       trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
       subParams.start_at = Math.floor(trialEndsAt.getTime() / 1000);
     }
-    // Returning user: omit start_at — Razorpay starts billing immediately
+    // Returning user: omit start_at, Razorpay starts billing immediately
 
     const subscription = await razorpay.subscriptions.create(subParams);
 
@@ -89,7 +89,7 @@ router.post('/create', requireAuth, async (req, res) => {
 });
 
 // Get current subscription status (lazy-reconciles 'pending' state with Razorpay)
-// Background reconcile guard — prevents duplicate concurrent Razorpay fetches per owner
+// Background reconcile guard, prevents duplicate concurrent Razorpay fetches per owner
 const reconcileInFlight = new Set();
 // Throttle for reconciling *active* owners so we don't hit Razorpay on every /status poll
 const activeReconcileAt = new Map(); // ownerId -> last active-reconcile timestamp
@@ -109,7 +109,7 @@ async function reconcileFromRazorpay(ownerId, razorpaySubscriptionId, subscripti
     else if (rzSub.status === 'cancelled') newStatus = 'cancelled';                            // access until cycle end
     else if (rzSub.status === 'completed' || rzSub.status === 'expired') newStatus = 'expired'; // fully ended → block
     else if (rzSub.status === 'halted' || rzSub.status === 'paused') newStatus = 'paused';      // payment issue → block + recovery UI
-    if (!newStatus) return; // created/pending — nothing settled yet
+    if (!newStatus) return; // created/pending, nothing settled yet
 
     const data = { subscriptionStatus: newStatus };
     if (newStatus === 'active') data.subscriptionStartedAt = subscriptionStartedAt || new Date();
@@ -132,7 +132,7 @@ router.get('/status', requireAuth, async (req, res) => {
     const owner = await prisma.owner.findUnique({ where: { id: req.ownerId } });
     if (!owner) return res.status(404).json({ error: 'Owner not found' });
 
-    // Background reconcile against Razorpay (fallback for missed webhooks) — never blocks
+    // Background reconcile against Razorpay (fallback for missed webhooks), never blocks
     // the response; the next poll reflects any change.
     //  - pending / trial-in-grace: catch a subscription that activated but whose webhook was missed
     //  - active: catch one that was cancelled/ended on Razorpay but whose webhook was missed
@@ -192,7 +192,7 @@ async function updateSubscriptionQuantity(ownerId, newQuantity) {
     }
   } else if (owner.subscriptionStatus === 'trial') {
     // Can't update Razorpay during trial (subscription not active yet).
-    // Flag for sync — retry loop will catch it once status flips to active.
+    // Flag for sync, retry loop will catch it once status flips to active.
     await prisma.owner.update({
       where: { id: ownerId },
       data: { needsSubscriptionSync: true },
@@ -200,7 +200,7 @@ async function updateSubscriptionQuantity(ownerId, newQuantity) {
   }
 }
 
-// Periodic retry — runs every 10 minutes
+// Periodic retry, runs every 10 minutes
 async function retryFailedSyncs() {
   try {
     const owners = await prisma.owner.findMany({
@@ -218,7 +218,7 @@ async function retryFailedSyncs() {
 // Kick off retry interval at module load
 setInterval(retryFailedSyncs, 10 * 60 * 1000);
 
-// Mark expired trials — runs every hour
+// Mark expired trials, runs every hour
 async function expireOldTrials() {
   try {
     const graceMs = 24 * 60 * 60 * 1000; // matches middleware grace period
@@ -230,7 +230,7 @@ async function expireOldTrials() {
         trialEndsAt: { lt: cutoff },
       },
     });
-    // 2) Cancelled subscriptions whose paid period has ended — backstop in case the
+    // 2) Cancelled subscriptions whose paid period has ended, backstop in case the
     //    subscription.completed webhook was never delivered (otherwise these keep access forever)
     const expiredCancelled = await prisma.owner.findMany({
       where: {
@@ -256,11 +256,11 @@ setInterval(expireOldTrials, 60 * 60 * 1000);
 // Razorpay webhook to handle subscription events
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   try {
-    // Verify signature — fail closed
+    // Verify signature, fail closed
     const signature = req.headers['x-razorpay-signature'];
     const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
     if (!secret) {
-      console.error('RAZORPAY_WEBHOOK_SECRET not configured — rejecting webhook');
+      console.error('RAZORPAY_WEBHOOK_SECRET not configured, rejecting webhook');
       return res.status(500).json({ error: 'Webhook secret not configured' });
     }
     if (!signature) {
@@ -272,7 +272,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     const expBuf = Buffer.from(expected, 'utf8');
     if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
       console.warn('Webhook signature mismatch');
-      notifyOps('webhook_signature_mismatch', 'A Razorpay webhook failed signature verification — check RAZORPAY_WEBHOOK_SECRET matches the dashboard.', 'critical');
+      notifyOps('webhook_signature_mismatch', 'A Razorpay webhook failed signature verification, check RAZORPAY_WEBHOOK_SECRET matches the dashboard.', 'critical');
       return res.status(400).json({ error: 'Invalid signature' });
     }
 
@@ -303,7 +303,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         }
       }
     } else if (event === 'subscription.cancelled') {
-      // User cancelled, but cycle is still running — middleware allows access until 'completed' fires
+      // User cancelled, but cycle is still running, middleware allows access until 'completed' fires
       const subscriptionId = payload.subscription.entity.id;
       const owner = await prisma.owner.findFirst({
         where: { razorpaySubscriptionId: subscriptionId },
@@ -316,7 +316,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         invalidateSubCache(owner.id);
       }
     } else if (event === 'subscription.completed') {
-      // Subscription has truly ended — block access
+      // Subscription has truly ended, block access
       const subscriptionId = payload.subscription.entity.id;
       const owner = await prisma.owner.findFirst({
         where: { razorpaySubscriptionId: subscriptionId },
@@ -367,7 +367,7 @@ router.post('/cancel', requireAuth, async (req, res) => {
       if (endUnix) subscriptionEndsAt = new Date(endUnix * 1000);
     } catch (e) {
       console.error('Razorpay cancel failed:', e.message || e);
-      // Do NOT mark cancelled locally — Razorpay still considers the subscription active
+      // Do NOT mark cancelled locally, Razorpay still considers the subscription active
       // and would keep billing the customer. Surface the failure so the user can retry.
       return res.status(502).json({ error: 'Could not cancel with the payment provider. Please try again.' });
     }
@@ -385,7 +385,7 @@ router.post('/cancel', requireAuth, async (req, res) => {
   }
 });
 
-// Public pricing — no auth, so marketing/legal pages can read the single-source price.
+// Public pricing, no auth, so marketing/legal pages can read the single-source price.
 router.get('/pricing', (req, res) => {
   res.json({ monthlyPrice: MONTHLY_PRICE_INR });
 });

@@ -4,7 +4,7 @@
 <meta name="robots" content="noindex">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Your queue status — flock</title>
+<title>Your queue status · flock</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Inter:wght@400;500;600&display=optional">
@@ -75,7 +75,7 @@
   <div id="notifiedBanner" class="notified-banner" style="display:none;">Your table is ready. Please head in!</div>
 
   <div class="card status-card">
-    <div class="position" id="position">—</div>
+    <div class="position" id="position">·</div>
     <div class="position-label" id="positionLabel">in queue</div>
     <div class="wait" id="wait">~ minutes</div>
     <div class="wait-label" id="waitLabel">approximate wait</div>
@@ -176,7 +176,7 @@ setInterval(tickStatusWait, 1000);
   
 async function loadStatus() {
   if (!entryId) return;
-  if (loadStatusInFlight) return; // #41: a fetch is already in flight — skip the duplicate
+  if (loadStatusInFlight) return; // #41: a fetch is already in flight, skip the duplicate
   loadStatusInFlight = true;
   try {
     const res = await fetch('/api/queue/status/' + entryId);
@@ -195,7 +195,7 @@ async function loadStatus() {
     venue = data.entry.venue;
     if (venue && venue.id && venue.id !== statusVenueId) {
       statusVenueId = venue.id;
-      subscribeVenuePublic(); // we now know the venue id — subscribe for real-time position
+      subscribeVenuePublic(); // we now know the venue id, subscribe for real-time position
     }
     document.getElementById('venueLabel').textContent = venue.name;
 
@@ -217,7 +217,7 @@ async function loadStatus() {
       wait.style.display = 'none';
       waitLabel.style.display = 'none';
       document.getElementById('leaveBtn').style.display = 'none';
-      stopStatusUpdates(); // #42: terminal state — stop polling and close the WS
+      stopStatusUpdates(); // #42: terminal state, stop polling and close the WS
       // Show review prompt prominently if available
       const rc = document.getElementById('reviewCard');
       if (venue.googleReviewsUrl && rc) {
@@ -232,7 +232,7 @@ async function loadStatus() {
       wait.style.display = 'none';
       waitLabel.style.display = 'none';
       document.getElementById('leaveBtn').style.display = 'none';
-      stopStatusUpdates(); // #42: terminal state — stop polling and close the WS
+      stopStatusUpdates(); // #42: terminal state, stop polling and close the WS
     } else {
       banner.style.display = 'none';
       document.getElementById('position').textContent = '#' + data.position;
@@ -297,7 +297,7 @@ async function _confirmLeave() {
   try {
     const res = await fetch('/api/queue/cancel/' + entryId, { method: 'POST' });
     if (res.status === 409) {
-      // Already seated or already cancelled — just refresh
+      // Already seated or already cancelled, just refresh
       loadStatus();
       return;
     }
@@ -319,10 +319,10 @@ let statusWsBackoff = 1000;
 let statusInterval = null;
 let statusVenueId = null;
 let loadStatusInFlight = false; // #41: dedup overlapping loadStatus calls
-let statusDone = false;         // #42: terminal state reached — stop polling/reconnecting
+let statusDone = false;         // #42: terminal state reached, stop polling/reconnecting
 
 // Subscribe to the venue's PII-free public channel so queue-wide position changes push
-// in real time. Safe to call repeatedly — the server dedups, and it no-ops until the WS
+// in real time. Safe to call repeatedly, the server dedups, and it no-ops until the WS
 // is open and we know the venue id (learned from the first loadStatus).
 function subscribeVenuePublic() {
   if (statusVenueId && statusWs && statusWs.readyState === WebSocket.OPEN) {
@@ -332,7 +332,7 @@ function subscribeVenuePublic() {
 
 function setStatusPollRate() {
   if (statusInterval) clearInterval(statusInterval);
-  // Poll as a slow fallback — real-time position changes now arrive via the venue-public
+  // Poll as a slow fallback, real-time position changes now arrive via the venue-public
   // WS channel, so we no longer need an aggressive 3s poll.
   statusInterval = setInterval(loadStatus, 15000);
 }
@@ -363,7 +363,7 @@ function connectStatusWs() {
     try {
       const msg = JSON.parse(e.data);
       if (msg.type === 'entry_changed' || msg.type === 'queue_changed') {
-        // Always refetch — status page needs full venue + computed position/waitMinutes
+        // Always refetch, status page needs full venue + computed position/waitMinutes
         // which aren't in the broadcast payload. The push just triggers an immediate refetch
         // instead of waiting for the next poll tick. (entry_changed = self events;
         // queue_changed = someone ahead moved, via the venue-public channel.)

@@ -4,7 +4,7 @@ const { broadcast } = require('../lib/realtime');
 
 const router = express.Router();
 
-// Gupshup inbound webhook — receives guest replies
+// Gupshup inbound webhook, receives guest replies
 router.post('/inbound', express.json(), async (req, res) => {
   try {
     // Verify shared secret
