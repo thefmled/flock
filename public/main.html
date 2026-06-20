@@ -706,16 +706,20 @@ body.flock-ready .app { visibility: visible; }
 </style>
 
 <script>
-  (function() {
-    try {
-      const v = JSON.parse(localStorage.getItem('flock_venue') || 'null');
-      const t = (v && v.theme) ? v.theme : 'dark-premium';
-      document.addEventListener('DOMContentLoaded', function() {
-        document.body.classList.remove(...Array.from(document.body.classList).filter(c => c.startsWith('theme-')));
-        document.body.classList.add('theme-' + t);
-      });
-    } catch(e) {}
-  })();
+  // Theme switch handler (set in topbar via the .theme-switch UI)
+  function setFlockTheme(mode) {
+    document.documentElement.setAttribute('data-theme', mode);
+    try { localStorage.setItem('flock_theme', mode); } catch(e) {}
+    document.querySelectorAll('.theme-switch button').forEach(function(b) {
+      b.setAttribute('aria-checked', b.dataset.mode === mode ? 'true' : 'false');
+    });
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    var current = document.documentElement.getAttribute('data-theme') || 'system';
+    document.querySelectorAll('.theme-switch button').forEach(function(b) {
+      b.setAttribute('aria-checked', b.dataset.mode === current ? 'true' : 'false');
+    });
+  });
 </script>
 
 <script type="text/javascript">
@@ -726,6 +730,7 @@ body.flock-ready .app { visibility: visible; }
     })(window, document, "clarity", "script", "x35i62ofe4");
 </script>
   
+<script>(function(){try{var t=localStorage.getItem("flock_theme");if(t==="dark"||t==="light"||t==="system"){document.documentElement.setAttribute("data-theme",t)}else{document.documentElement.setAttribute("data-theme","system")}}catch(e){}})();</script>
 </head>
 <body>
 <div class="app">
@@ -776,7 +781,14 @@ body.flock-ready .app { visibility: visible; }
         </div>
         <div id="subStatus" style="font-size:11px;color:var(--text-muted);letter-spacing:0.05em;text-transform:uppercase;"></div>
       </div>
-      <a href="/dashboard.html" class="go-live-btn">Go to live queue →</a>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="theme-switch" role="radiogroup" aria-label="Theme">
+          <button data-mode="light" onclick="setFlockTheme('light')" aria-label="Light" title="Light"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></button>
+          <button data-mode="dark" onclick="setFlockTheme('dark')" aria-label="Dark" title="Dark"><svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="currentColor"/></svg></button>
+          <button data-mode="system" onclick="setFlockTheme('system')" aria-label="System" title="System"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="13" rx="2"/><line x1="9" y1="20" x2="15" y2="20" stroke-linecap="round"/></svg></button>
+        </div>
+        <a href="/dashboard.html" class="go-live-btn">Go to live queue →</a>
+      </div>
     </div>
 
     <div class="main-tab-content" id="analyticsSection" style="display:none;">
@@ -855,7 +867,6 @@ body.flock-ready .app { visibility: visible; }
       <div class="settings-subnav">
         <button class="settings-subnav-btn active" data-sub="venue" onclick="showSettingsSub('venue')">Venue settings</button>
         <button class="settings-subnav-btn" data-sub="wait-time" onclick="showSettingsSub('wait-time')">Wait time</button>
-        <button class="settings-subnav-btn" data-sub="themes" onclick="showSettingsSub('themes')">Themes</button>
         <button class="settings-subnav-btn" data-sub="qr" onclick="showSettingsSub('qr')">QR code</button>
     </div>
   <div id="settingsContent"></div>
@@ -1383,6 +1394,8 @@ let activeSettingsSub = (function() {
 })();
 
 function showSettingsSub(sub) {
+  // Backward compat: old sessions may have stored 'themes' which is no longer offered
+  if (sub === 'themes') sub = 'venue';
   activeSettingsSub = sub;
   try { sessionStorage.setItem('flock_main_settings_sub', sub); } catch(e) {}
   document.querySelectorAll('.settings-subnav-btn').forEach(b => {
@@ -1390,7 +1403,6 @@ function showSettingsSub(sub) {
   });
   if (sub === 'venue') loadVenueSettings();
   if (sub === 'wait-time') loadWaitTimeSettings();
-  if (sub === 'themes') loadThemesSettings();
   if (sub === 'qr') loadQrSettings();
 }
 
