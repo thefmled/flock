@@ -42,6 +42,7 @@
 <script>(function(){try{var t=localStorage.getItem("flock_theme");if(t==="dark"||t==="light"||t==="system"){document.documentElement.setAttribute("data-theme",t)}else{document.documentElement.setAttribute("data-theme","system")}}catch(e){}})();</script>
 </head>
 <body>
+<div data-theme-switch="fixed"></div>
   <main class="container" style="max-width: 480px; padding-top: 48px;">
     <h1 class="logo" style="font-size: 48px; text-align: center; margin-bottom: 8px;">fl<span class="accent">o</span>ck</h1>
     <p style="text-align:center;color:var(--text-muted);font-size:14px;margin-bottom:4px;" id="venueLabel"></p>
@@ -265,5 +266,6 @@
 
     loadVenue();
   </script>
+<script src="/theme.js"></script>
 </body>
 </html>

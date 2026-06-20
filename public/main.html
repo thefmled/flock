@@ -705,22 +705,7 @@ body.flock-ready .app { visibility: visible; }
   
 </style>
 
-<script>
-  // Theme switch handler (set in topbar via the .theme-switch UI)
-  function setFlockTheme(mode) {
-    document.documentElement.setAttribute('data-theme', mode);
-    try { localStorage.setItem('flock_theme', mode); } catch(e) {}
-    document.querySelectorAll('.theme-switch button').forEach(function(b) {
-      b.setAttribute('aria-checked', b.dataset.mode === mode ? 'true' : 'false');
-    });
-  }
-  document.addEventListener('DOMContentLoaded', function() {
-    var current = document.documentElement.getAttribute('data-theme') || 'system';
-    document.querySelectorAll('.theme-switch button').forEach(function(b) {
-      b.setAttribute('aria-checked', b.dataset.mode === current ? 'true' : 'false');
-    });
-  });
-</script>
+<script src="/theme.js"></script>
 
 <script type="text/javascript">
     (function(c,l,a,r,i,t,y){
@@ -782,11 +767,7 @@ body.flock-ready .app { visibility: visible; }
         <div id="subStatus" style="font-size:11px;color:var(--text-muted);letter-spacing:0.05em;text-transform:uppercase;"></div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
-        <div class="theme-switch" role="radiogroup" aria-label="Theme">
-          <button data-mode="light" onclick="setFlockTheme('light')" aria-label="Light" title="Light"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></button>
-          <button data-mode="dark" onclick="setFlockTheme('dark')" aria-label="Dark" title="Dark"><svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="currentColor"/></svg></button>
-          <button data-mode="system" onclick="setFlockTheme('system')" aria-label="System" title="System"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="13" rx="2"/><line x1="9" y1="20" x2="15" y2="20" stroke-linecap="round"/></svg></button>
-        </div>
+        <div data-theme-switch="inline"></div>
         <a href="/dashboard.html" class="go-live-btn">Go to live queue →</a>
       </div>
     </div>
