@@ -690,15 +690,44 @@ footer {
 @media (max-width: 600px) {
   .nav-links a:not(.btn) { display: none; }
   .nav-links { gap: 8px; }
+  .nav-inner { padding: 14px 16px; }
+  .nav-links .btn { padding: 11px 18px; font-size: 13.5px; }
+
   .hero { padding: 56px 20px 72px; }
-  .feature-strip, .dark-panel, .flow, .pricing, .about, .faq-section, .cta {
-    padding-left: 20px;
-    padding-right: 20px;
-  }
-  .dark-panel, .flow, .pricing, .about, .faq-section { padding-top: 80px; padding-bottom: 80px; }
-  .cta { padding-top: 96px; padding-bottom: 96px; }
+
+  .feature-strip { padding: 64px 20px 80px; }
+  .feature-strip-head { margin-bottom: 40px; }
+  .feature-grid { gap: 14px; }
+  .feature-card { padding: 28px 24px; gap: 12px; }
+
+  .dark-panel { padding: 80px 20px; }
+  .dark-stat { padding: 20px; }
+  .dark-stat-n { font-size: 44px; }
+  .dark-stat-grid { gap: 14px; }
+
+  .flow, .pricing, .about, .faq-section { padding-left: 20px; padding-right: 20px; padding-top: 80px; padding-bottom: 80px; }
+  .flow-head { margin-bottom: 48px; }
+
+  .price-card { padding: 36px 26px; }
+  .price-num { font-size: 56px; }
+  .price-num .currency { font-size: 26px; vertical-align: 10px; }
+
+  .faq-head { margin-bottom: 36px; }
+  .faq-q { font-size: 16px; padding: 20px 0; }
+
+  .cta { padding: 96px 20px; }
+
   /* Prevent iOS Safari from zooming inputs */
   input, textarea, select { font-size: 16px !important; }
+}
+
+@media (max-width: 380px) {
+  /* iPhone SE class: hide secondary nav button so primary CTA always fits */
+  .nav-links .btn-ghost { display: none; }
+  .wordmark { font-size: 20px; }
+  .dark-stat-n { font-size: 38px; }
+  .price-num { font-size: 48px; }
+  .price-card { padding: 30px 22px; }
 }
 </style>
 <script type="text/javascript">
