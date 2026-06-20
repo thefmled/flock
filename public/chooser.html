@@ -64,26 +64,6 @@
 }
 </style>
 <script>
-  (function() {
-    try {
-      const v = JSON.parse(localStorage.getItem('flock_venue') || 'null');
-      const t = (v && v.theme) ? v.theme : 'dark-premium';
-      document.addEventListener('DOMContentLoaded', function() {
-        // Swap only the theme-* class, preserve landing-light (the light-mode overlay) and
-        // any other body classes, instead of clobbering className wholesale.
-        [...document.body.classList].filter(c => c.startsWith('theme-')).forEach(c => document.body.classList.remove(c));
-        document.body.classList.add('theme-' + t);
-      });
-    } catch(e) {}
-  })();
-</script>
-<script>
-  (function() {
-    try {
-      const saved = localStorage.getItem('flock_landing_theme');
-      if (saved === 'light') document.documentElement.classList.add('landing-light-pre');
-    } catch(e) {}
-  })();
 </script>
 <script type="text/javascript">
     (function(c,l,a,r,i,t,y){
@@ -95,13 +75,6 @@
 <script>(function(){try{var t=localStorage.getItem("flock_theme");if(t==="dark"||t==="light"||t==="system"){document.documentElement.setAttribute("data-theme",t)}else{document.documentElement.setAttribute("data-theme","system")}}catch(e){}})();</script>
 </head>
 <body>
-<script>
-  if (document.documentElement.classList.contains('landing-light-pre')) {
-    document.body.classList.add('landing-light');
-    document.documentElement.classList.remove('landing-light-pre');
-  }
-</script>
-<button class="theme-toggle theme-toggle-fixed" onclick="toggleAppTheme()" aria-label="Toggle theme" id="themeToggle">☀</button>
 <div class="chooser-wrap">
   <div class="chooser">
     <h1 class="chooser-logo">fl<span class="accent">o</span>ck</h1>
@@ -138,18 +111,6 @@ if (!token) {
   // Chooser is deprecated, send straight to dashboard
   window.location.replace('/dashboard.html');
 }
-
-function toggleAppTheme() {
-  document.body.classList.toggle('landing-light');
-  const isLight = document.body.classList.contains('landing-light');
-  localStorage.setItem('flock_landing_theme', isLight ? 'light' : 'dark');
-  const btn = document.getElementById('themeToggle');
-  if (btn) btn.textContent = isLight ? '☾' : '☀';
-}
-document.addEventListener('DOMContentLoaded', () => {
-  const btn = document.getElementById('themeToggle');
-  if (btn) btn.textContent = document.body.classList.contains('landing-light') ? '☾' : '☀';
-});
 
 </script>
 </body>

@@ -64,28 +64,6 @@
   }
   return res;
 };
-  
-  (function() {
-    try {
-      const v = JSON.parse(localStorage.getItem('flock_venue') || 'null');
-      const t = (v && v.theme) ? v.theme : 'dark-premium';
-      document.addEventListener('DOMContentLoaded', function() {
-        // Swap only the theme-* class, preserve landing-light (the light-mode overlay) and
-        // any other body classes, instead of clobbering className wholesale.
-        [...document.body.classList].filter(c => c.startsWith('theme-')).forEach(c => document.body.classList.remove(c));
-        document.body.classList.add('theme-' + t);
-      });
-    } catch(e) {}
-  })();
-</script>
-  
-<script>
-  (function() {
-    try {
-      const saved = localStorage.getItem('flock_landing_theme');
-      if (saved === 'light') document.documentElement.classList.add('landing-light-pre');
-    } catch(e) {}
-  })();
 </script>
 
 <script type="text/javascript">
@@ -98,13 +76,6 @@
 <script>(function(){try{var t=localStorage.getItem("flock_theme");if(t==="dark"||t==="light"||t==="system"){document.documentElement.setAttribute("data-theme",t)}else{document.documentElement.setAttribute("data-theme","system")}}catch(e){}})();</script>
 </head>
 <body>
-<script>
-  if (document.documentElement.classList.contains('landing-light-pre')) {
-    document.body.classList.add('landing-light');
-    document.documentElement.classList.remove('landing-light-pre');
-  }
-</script>
-<button class="theme-toggle theme-toggle-fixed" onclick="toggleAppTheme()" aria-label="Toggle theme" id="themeToggle">☀</button>
   <main class="container" style="max-width: 560px; padding-top: 64px;">
     <h1 class="logo" style="font-size: 48px; text-align: center; margin-bottom: 8px;">fl<span class="accent">o</span>ck</h1>
 
@@ -225,12 +196,6 @@
       const errorEl = document.getElementById('setupError');
       const btn = document.querySelector('.button');
       errorEl.textContent = '';
-      // Carry over the user's auth-shell theme preference as the venue's initial theme.
-      // Light pref → light-amber (same palette as landing-light). Dark/none → dark-premium.
-      let initialTheme = 'dark-premium';
-      try {
-        if (localStorage.getItem('flock_landing_theme') === 'light') initialTheme = 'light-amber';
-      } catch(e) {}
 
       const payload = {
         floorManagerName: document.getElementById('floorManagerName').value.trim(),
@@ -238,7 +203,7 @@
         address: document.getElementById('venueAddress').value.trim(),
         googleReviewsUrl: document.getElementById('googleReviewsUrl').value.trim() || null,
         seatingOptions: seatingOptions.filter(o => o.selected).map(o => o.name).join(',') || 'Indoor,Outdoor,No preference',
-        theme: initialTheme,
+        theme: 'dark-premium',
       };
       if (!payload.floorManagerName || !payload.name || !payload.address) {
         errorEl.textContent = 'Please fill in name, venue name, and address.';
@@ -290,18 +255,6 @@
         btn.textContent = 'Create venue';
       }
     }
-
-    function toggleAppTheme() {
-      document.body.classList.toggle('landing-light');
-      const isLight = document.body.classList.contains('landing-light');
-      localStorage.setItem('flock_landing_theme', isLight ? 'light' : 'dark');
-      const btn = document.getElementById('themeToggle');
-      if (btn) btn.textContent = isLight ? '☾' : '☀';
-    }
-    document.addEventListener('DOMContentLoaded', () => {
-      const btn = document.getElementById('themeToggle');
-      if (btn) btn.textContent = document.body.classList.contains('landing-light') ? '☾' : '☀';
-    });
     
   </script>
 </body>

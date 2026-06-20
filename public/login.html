@@ -10,14 +10,6 @@
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=optional">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=optional">
   <link rel="stylesheet" href="/styles.css" />
-<script>
-  (function() {
-    try {
-      const saved = localStorage.getItem('flock_landing_theme');
-      if (saved === 'light') document.documentElement.classList.add('landing-light-pre');
-    } catch(e) {}
-  })();
-</script>
 
 <script type="text/javascript">
     (function(c,l,a,r,i,t,y){
@@ -29,13 +21,6 @@
 <script>(function(){try{var t=localStorage.getItem("flock_theme");if(t==="dark"||t==="light"||t==="system"){document.documentElement.setAttribute("data-theme",t)}else{document.documentElement.setAttribute("data-theme","system")}}catch(e){}})();</script>
 </head>
 <body>
-<script>
-  if (document.documentElement.classList.contains('landing-light-pre')) {
-    document.body.classList.add('landing-light');
-    document.documentElement.classList.remove('landing-light-pre');
-  }
-</script>
-<button class="theme-toggle theme-toggle-fixed" onclick="toggleAppTheme()" aria-label="Toggle theme" id="themeToggle">☀</button>
   <main class="container" style="max-width: 440px; padding-top: 80px;">
     <h1 class="logo" style="font-size: 48px; text-align: center; margin-bottom: 8px;">fl<span class="accent">o</span>ck</h1>
 
@@ -197,18 +182,6 @@
       document.getElementById('code').value = '';
       document.getElementById('otpError').textContent = '';
     }
-
-    function toggleAppTheme() {
-      document.body.classList.toggle('landing-light');
-      const isLight = document.body.classList.contains('landing-light');
-      localStorage.setItem('flock_landing_theme', isLight ? 'light' : 'dark');
-      const btn = document.getElementById('themeToggle');
-      if (btn) btn.textContent = isLight ? '☾' : '☀';
-    }
-    document.addEventListener('DOMContentLoaded', () => {
-      const btn = document.getElementById('themeToggle');
-      if (btn) btn.textContent = document.body.classList.contains('landing-light') ? '☾' : '☀';
-    });
     
   </script>
   
