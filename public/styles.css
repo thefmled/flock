@@ -278,8 +278,8 @@ body.theme-light-amber {
 }
 
 .logo {
-  font-family: 'Fraunces', serif;
-  font-style: italic;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: -0.025em;
   font-weight: 400;
   font-size: clamp(56px, 14vw, 88px);
   color: var(--text);
@@ -340,8 +340,8 @@ body.theme-light-amber {
 
 /* Headings */
 .heading {
-  font-family: 'Fraunces', serif;
-  font-style: italic;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: -0.025em;
   font-weight: 400;
   font-size: 28px;
   color: var(--text);
@@ -492,8 +492,8 @@ body.theme-light-amber {
 }
 
 .wait-time {
-  font-family: 'Fraunces', serif;
-  font-style: italic;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: -0.025em;
   font-size: 26px;
   color: var(--accent);
   flex-shrink: 0;
@@ -555,8 +555,8 @@ body.theme-light-amber {
 
 /* Position number (guest status) */
 .position {
-  font-family: 'Fraunces', serif;
-  font-style: italic;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: -0.025em;
   font-weight: 400;
   font-size: clamp(96px, 24vw, 120px);
   color: var(--accent);
