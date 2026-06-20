@@ -27,9 +27,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Caveat:wght@400;500&display=swap">
+<script>(function(){try{var t=localStorage.getItem("flock_theme");if(t==="dark"||t==="light"||t==="system"){document.documentElement.setAttribute("data-theme",t)}else{document.documentElement.setAttribute("data-theme","system")}}catch(e){}})();</script>
 <style>
 :root {
   --canvas: #ffffff;
+  --canvas-trans: rgba(255,255,255,0.86);
+  --canvas-trans-strong: rgba(255,255,255,0.95);
   --whisper: #faf6ef;
   --ink: #1a1814;
   --ink-soft: rgba(26,24,20,0.66);
@@ -43,6 +46,70 @@
   --sky: #e0e7f5;
   --dark-panel: #1a1814;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Explicit dark mode */
+[data-theme="dark"] {
+  --canvas: #0f0d0a;
+  --canvas-trans: rgba(15,13,10,0.86);
+  --canvas-trans-strong: rgba(15,13,10,0.95);
+  --whisper: #1a1714;
+  --ink: #f5ead4;
+  --ink-soft: rgba(245,234,212,0.66);
+  --ink-faint: rgba(245,234,212,0.06);
+  --hairline: rgba(245,234,212,0.12);
+  --dark-panel: #050402;
+}
+
+/* System mode: follow OS preference */
+@media (prefers-color-scheme: dark) {
+  [data-theme="system"],
+  html:not([data-theme]) {
+    --canvas: #0f0d0a;
+    --canvas-trans: rgba(15,13,10,0.86);
+    --canvas-trans-strong: rgba(15,13,10,0.95);
+    --whisper: #1a1714;
+    --ink: #f5ead4;
+    --ink-soft: rgba(245,234,212,0.66);
+    --ink-faint: rgba(245,234,212,0.06);
+    --hairline: rgba(245,234,212,0.12);
+    --dark-panel: #050402;
+  }
+}
+
+/* Theme switch (3-segment pill: light/dark/system) */
+.theme-switch {
+  display: inline-flex;
+  align-items: center;
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: 9999px;
+  padding: 3px;
+}
+.theme-switch button {
+  background: transparent;
+  border: none;
+  color: var(--ink-soft);
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  padding: 0;
+  transition: background 0.18s, color 0.18s;
+}
+.theme-switch button:hover { color: var(--ink); }
+.theme-switch button[aria-checked="true"] {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+.theme-switch svg {
+  width: 14px;
+  height: 14px;
+  display: block;
 }
 
 * { box-sizing: border-box; }
@@ -153,14 +220,14 @@ a { color: inherit; text-decoration: none; }
 
 .nav {
   position: sticky; top: 0; z-index: 50;
-  background: rgba(255,255,255,0.86);
+  background: var(--canvas-trans);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid transparent;
   transition: border-color 0.3s var(--ease), background 0.3s var(--ease);
 }
 .nav.scrolled {
   border-bottom-color: var(--hairline);
-  background: rgba(255,255,255,0.95);
+  background: var(--canvas-trans-strong);
 }
 .nav-inner {
   max-width: 1160px;
@@ -245,6 +312,10 @@ a { color: inherit; text-decoration: none; }
 .feature-card.mint  { background: var(--mint); }
 .feature-card.peach { background: var(--peach); }
 .feature-card.sky   { background: var(--sky); }
+/* Pastel cards keep dark text in both themes for legibility */
+.feature-card.mint, .feature-card.peach, .feature-card.sky { color: #1a1814; }
+.feature-card.mint .h3, .feature-card.peach .h3, .feature-card.sky .h3 { color: #1a1814; }
+.feature-card.mint p, .feature-card.peach p, .feature-card.sky p { color: rgba(26,24,20,0.66); }
 .feature-card .h3 { margin-bottom: 4px; }
 .feature-card p {
   color: var(--ink-soft);
@@ -520,7 +591,7 @@ a { color: inherit; text-decoration: none; }
 .pricing .h2 { margin-bottom: 20px; }
 .pricing .lead { margin: 0 auto 40px; max-width: 520px; }
 .price-card {
-  background: #fff;
+  background: var(--canvas);
   border-radius: 24px;
   padding: 48px 40px;
   display: inline-block;
@@ -849,6 +920,7 @@ footer {
       <a href="#how">How it works</a>
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
+      <div data-theme-switch="inline"></div>
       <a href="/login.html" class="btn btn-ghost">Sign in</a>
       <a href="/login.html" class="btn btn-primary">Start free trial</a>
     </div>
@@ -1334,6 +1406,7 @@ const counterObserver = new IntersectionObserver((entries) => {
 counters.forEach(c => counterObserver.observe(c));
 </script>
 
+<script src="/theme.js"></script>
 <script src="/pricing.js"></script>
 </body>
 </html>
