@@ -13,22 +13,13 @@
 
   <style>body{opacity:0;}body.theme-loaded{opacity:1;transition:opacity 0.15s;}</style>
   <script>
-    (function() {
-      try {
-        const venueSlug = new URLSearchParams(window.location.search).get('venue');
-        const cached = venueSlug ? sessionStorage.getItem('flock_venue_theme_' + venueSlug) : null;
-        document.addEventListener('DOMContentLoaded', function() {
-          if (cached) {
-            document.body.className = 'theme-' + cached + ' theme-loaded';
-          }
-        });
-        setTimeout(function() {
-          if (!document.body.classList.contains('theme-loaded')) {
-            document.body.className = 'theme-dark-premium theme-loaded';
-          }
-        }, 4000);
-      } catch(e) {}
-    })();
+    // Fade body in once the document is ready, or after a short timeout fallback.
+    document.addEventListener('DOMContentLoaded', function() {
+      document.body.classList.add('theme-loaded');
+    });
+    setTimeout(function() {
+      document.body.classList.add('theme-loaded');
+    }, 4000);
   </script>
 
 <script type="text/javascript">
@@ -110,7 +101,7 @@
     const params = new URLSearchParams(window.location.search);
     const slug = params.get('venue');
     if (!slug) {
-      document.body.className = 'theme-dark-premium theme-loaded';
+      document.body.classList.add('theme-loaded');
       document.body.innerHTML = '<div class="empty" style="padding-top:100px;text-align:center;color:var(--text-muted);">Invalid queue link.</div>';
     }
 
@@ -118,7 +109,7 @@
     let notesState = [];
 
     function showVenueUnavailable() {
-      document.body.className = 'theme-dark-premium theme-loaded';
+      document.body.classList.add('theme-loaded');
       document.body.innerHTML = '<div class="empty" style="padding:100px 24px 0;text-align:center;color:var(--text-muted);"><p style="font-size:16px;">This queue link is invalid or the venue is unavailable.</p><p style="margin-top:8px;font-size:13px;">Please ask staff for a fresh QR code.</p></div>';
     }
 

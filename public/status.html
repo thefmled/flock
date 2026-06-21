@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="/styles.css">
 <style>
 .status-card { text-align: center; padding: 48px 24px; }
-.position { font-family: 'Inter', sans-serif; font-style: italic; font-size: 96px; color: var(--accent); line-height: 1; margin-bottom: 8px; }
+.position { font-family: 'Inter', sans-serif; letter-spacing: -0.04em; font-weight: 500; font-size: 96px; color: var(--accent); line-height: 1; margin-bottom: 8px; }
 .position-label { font-size: 14px; color: var(--text-muted); margin-bottom: 32px; }
 .wait { font-family: 'Inter', sans-serif; font-size: 28px; margin-bottom: 8px; }
 .wait-label { font-size: 13px; color: var(--text-muted); }
@@ -40,22 +40,13 @@
 
 <style>body{opacity:0;}body.theme-loaded{opacity:1;transition:opacity 0.15s;}</style>
 <script>
-  (function() {
-    try {
-      const v = JSON.parse(sessionStorage.getItem('flock_venue_data') || 'null');
-      const t = v && v.theme ? v.theme : null;
-      document.addEventListener('DOMContentLoaded', function() {
-        if (t) {
-          document.body.className = 'theme-' + t + ' theme-loaded';
-        }
-      });
-      setTimeout(function() {
-        if (!document.body.classList.contains('theme-loaded')) {
-          document.body.className = 'theme-dark-premium theme-loaded';
-        }
-      }, 4000);
-    } catch(e) {}
-  })();
+  // Fade body in once the document is ready, or after a short timeout fallback.
+  document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('theme-loaded');
+  });
+  setTimeout(function() {
+    document.body.classList.add('theme-loaded');
+  }, 4000);
 </script>
 
 <script type="text/javascript">
