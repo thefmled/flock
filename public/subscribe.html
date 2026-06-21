@@ -89,7 +89,7 @@
     <button class="button" onclick="startSubscription()" id="payBtn">Start free trial</button>
     <p class="error" id="payError"></p>
 
-    <p class="fineprint">No charges for 14 days. Your card will be charged ₹<span data-flock-price="{price}">999</span> automatically every month after the trial. Cancel anytime.</p>
+    <p class="fineprint">No credit card required for the trial. After 14 days, add a card to keep using flock, or walk away with nothing to cancel.</p>
   </div>
 </main>
 
@@ -196,6 +196,12 @@ async function startSubscription() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to create subscription');
     _isReturning = !!data.isReturning;
+
+    // First-time user: trial started without requiring a card. Send them straight to setup.
+    if (data.trialStarted) {
+      window.location.replace('/setup.html');
+      return;
+    }
 
     // If user already has an active subscription, skip checkout and route them appropriately
     if (data.alreadyExists) {

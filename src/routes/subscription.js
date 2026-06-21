@@ -17,7 +17,9 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// Create a subscription with 14-day trial, starts at quantity 1
+// Create a subscription. For first-time users this is a no-card 14-day trial tracked in our DB.
+// Once the trial is exhausted (or for returning users resuming), we create a Razorpay subscription
+// and the user enters card details via Razorpay checkout.
 router.post('/create', requireAuth, async (req, res) => {
   try {
     const owner = await prisma.owner.findUnique({ where: { id: req.ownerId } });
@@ -27,6 +29,10 @@ router.post('/create', requireAuth, async (req, res) => {
     const trialStillValid = owner.subscriptionStatus === 'trial' && owner.trialEndsAt && new Date(owner.trialEndsAt) > new Date();
     if (owner.razorpaySubscriptionId && (owner.subscriptionStatus === 'active' || trialStillValid)) {
       return res.json({ subscriptionId: owner.razorpaySubscriptionId, alreadyExists: true });
+    }
+    // A no-card trial that's still running is also already-exists (no Razorpay subscription yet)
+    if (!owner.razorpaySubscriptionId && trialStillValid) {
+      return res.json({ alreadyExists: true, trialActive: true });
     }
     // Grace period (trial expired but within 24h) OR pending payment, let them resume checkout
     // on the same Razorpay subscription rather than creating a new orphan.
@@ -39,9 +45,26 @@ router.post('/create', requireAuth, async (req, res) => {
       });
     }
 
-    // Has the owner already used a trial? If so, no second free trial.
-    // We detect this by the presence of a prior razorpaySubscriptionId OR a past trialEndsAt.
+    // Has the owner already used a trial?
     const hasHadTrial = !!owner.razorpaySubscriptionId || !!owner.trialEndsAt;
+
+    if (!hasHadTrial) {
+      // FIRST-TIME USER: start a no-card 14-day trial tracked in our DB.
+      // No Razorpay subscription is created until the user wants to continue past day 14.
+      // This honors the landing page promise of "no credit card required".
+      const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+      await prisma.owner.update({
+        where: { id: owner.id },
+        data: {
+          subscriptionStatus: 'trial',
+          trialEndsAt,
+        },
+      });
+      invalidateSubCache(owner.id);
+      return res.json({ trialStarted: true, trialEndsAt: trialEndsAt.toISOString() });
+    }
+
+    // RETURNING USER: trial already used, need to add a card to continue. Create Razorpay subscription.
     const venueCount = await prisma.venue.count({ where: { ownerId: owner.id } });
     const initialQuantity = Math.max(1, venueCount); // preserve current venue count
 
@@ -55,13 +78,7 @@ router.post('/create', requireAuth, async (req, res) => {
         email: owner.email,
       },
     };
-    let trialEndsAt = null;
-    if (!hasHadTrial) {
-      // First-time user gets a 14-day trial
-      trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
-      subParams.start_at = Math.floor(trialEndsAt.getTime() / 1000);
-    }
-    // Returning user: omit start_at, Razorpay starts billing immediately
+    // No start_at — Razorpay starts billing immediately (returning user, trial already consumed)
 
     const subscription = await razorpay.subscriptions.create(subParams);
 
@@ -69,8 +86,7 @@ router.post('/create', requireAuth, async (req, res) => {
       where: { id: owner.id },
       data: {
         razorpaySubscriptionId: subscription.id,
-        subscriptionStatus: hasHadTrial ? 'pending' : 'trial',
-        trialEndsAt: trialEndsAt || owner.trialEndsAt, // preserve original trial date for record
+        subscriptionStatus: 'pending',
         venueQuantity: initialQuantity,
       },
     });
@@ -80,7 +96,7 @@ router.post('/create', requireAuth, async (req, res) => {
       subscriptionId: subscription.id,
       shortUrl: subscription.short_url,
       keyId: process.env.RAZORPAY_KEY_ID,
-      isReturning: hasHadTrial,
+      isReturning: true,
     });
   } catch (error) {
     console.error('Subscription create error:', error);
