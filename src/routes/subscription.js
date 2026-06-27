@@ -78,7 +78,7 @@ router.post('/create', requireAuth, async (req, res) => {
         email: owner.email,
       },
     };
-    // No start_at — Razorpay starts billing immediately (returning user, trial already consumed)
+    // No start_at, so Razorpay starts billing immediately (returning user, trial already consumed)
 
     const subscription = await razorpay.subscriptions.create(subParams);
 
