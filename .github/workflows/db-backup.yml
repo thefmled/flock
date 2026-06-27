@@ -1,8 +1,6 @@
 name: DB Backup
 on:
-  schedule:
-    - cron: '30 19 * * *'   # daily ~01:00 IST
-  workflow_dispatch: {}       # adds a manual "Run workflow" button
+  workflow_dispatch: {}       # manual "Run workflow" button only, no daily schedule
 
 jobs:
   backup:
