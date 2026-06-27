@@ -895,7 +895,7 @@ function pickReportingTime() {
 
     // Reset chips
     ['rt-3', 'rt-5', 'rt-10'].forEach(id => {
-      document.getElementById(id).classList.remove('selected');
+      document.getElementById(id)?.classList.remove('selected');
     });
     document.getElementById('confirmNotifyBtn').disabled = true;
     document.getElementById('confirmNotifyBtn').style.opacity = '0.4';
@@ -903,9 +903,9 @@ function pickReportingTime() {
     window._selectReportingTime = (val) => {
       selected = val;
       ['rt-3', 'rt-5', 'rt-10'].forEach(id => {
-        document.getElementById(id).classList.remove('selected');
+        document.getElementById(id)?.classList.remove('selected');
       });
-      document.getElementById('rt-' + val).classList.add('selected');
+      document.getElementById('rt-' + val)?.classList.add('selected');
       document.getElementById('confirmNotifyBtn').disabled = false;
       document.getElementById('confirmNotifyBtn').style.opacity = '1';
     };

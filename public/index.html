@@ -1257,8 +1257,10 @@ document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
 const nav = document.getElementById('nav');
 const waFab = document.getElementById('whatsappFab');
 const onScroll = () => {
-  if (window.scrollY > 8) nav.classList.add('scrolled');
-  else nav.classList.remove('scrolled');
+  if (nav) {
+    if (window.scrollY > 8) nav.classList.add('scrolled');
+    else nav.classList.remove('scrolled');
+  }
   // Show the WhatsApp button once user has scrolled past the hero a bit
   if (waFab) {
     if (window.scrollY > 320) waFab.classList.add('in');

@@ -976,7 +976,7 @@ window.addEventListener('storage', (e) => {
 if (!token) window.location.href = '/login.html';
 
 function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('collapsed');
+  document.getElementById('sidebar')?.classList.toggle('collapsed');
 }
 
 function showSection(s) {
